@@ -1,0 +1,416 @@
+@import '../_choices.css';
+
+.digicommerce-setup-wizard {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    z-index: 999999;
+}
+
+.digicommerce-setup-wizard * {
+    box-sizing: border-box;
+}
+
+.digicommerce-setup,
+.digicommerce-setup-wizard .setup-wizard,
+.digicommerce-setup-wizard .setup-wizard-content,
+.digicommerce-setup-wizard .setup-wizard-text,
+.digicommerce-setup-wizard .digicommerce-setup-actions,
+.digicommerce-setup-wizard .digicommerce-setup-actions a,
+.digicommerce-setup-wizard .setup-form,
+.digicommerce-setup-wizard .business-form,
+.digicommerce-setup-wizard .setup-addons,
+.digicommerce-setup-wizard .setup-ready {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.digicommerce-setup {
+    padding: 1.5rem;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.digicommerce-setup-wizard .hidden {
+    display: none !important;
+}
+
+.digicommerce-setup-wizard .setup-wizard {
+    flex-direction: column;
+    gap: 4rem;
+    width: 32rem;
+    max-width: 100%;
+}
+
+.digicommerce-setup-wizard .setup-wizard img {
+    max-width: 22rem;
+}
+
+.digicommerce-setup-wizard .setup-wizard-content {
+    flex-direction: column;
+    gap: 4rem;
+    text-align: center;
+}
+
+.digicommerce-setup-wizard .setup-wizard-text {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+}
+
+.digicommerce-setup-wizard h2 {
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.digicommerce-setup-wizard p {
+    font-size: 1rem;
+    color: #828282;
+    margin: 0;
+}
+
+.digicommerce-setup-wizard .digicommerce-setup-actions {
+    flex-direction: column;
+    gap: 1rem;
+    width: 16rem;
+    margin: 0;
+}
+
+.digicommerce-setup-wizard .digicommerce-setup-actions a,
+.digicommerce-setup-wizard .digicommerce-setup-actions button,
+.digicommerce-setup-wizard .setup-ready .outline-gold,
+.digicommerce-setup-wizard .setup-ready .outline-dark {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    min-width: 16rem;
+    max-width: 100%;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s ease-in-out;
+}
+
+.digicommerce-setup-wizard .digicommerce-setup-actions a.gold,
+.digicommerce-setup-wizard .digicommerce-setup-actions button,
+.digicommerce-setup-wizard .setup-ready .outline-gold {
+    background-color: #ccb161;
+    color: #fff;
+}
+
+.digicommerce-setup-wizard .digicommerce-setup-actions a.gold:hover,
+.digicommerce-setup-wizard .digicommerce-setup-actions button:hover,
+.digicommerce-setup-wizard .setup-ready .outline-dark {
+    background-color: #09053a;
+}
+
+.digicommerce-setup-wizard .digicommerce-setup-actions a.normal {
+    background-color: transparent;
+    color: #09053a;
+}
+
+.digicommerce-setup-wizard .digicommerce-setup-actions a.normal:hover {
+    background-color: #09053a;
+    color: #fff;
+}
+
+.digicommerce-setup-wizard .setup-form {
+    flex-direction: column;
+    width: 36rem;
+    gap: 3rem;
+    max-width: 100%;
+}
+
+.digicommerce-setup-wizard .business-form {
+    flex-direction: column;
+    gap: 3rem;
+    width: 100%;
+}
+
+.digicommerce-setup-wizard .business-form > div {
+    width: 100%;
+}
+
+.digicommerce-setup-wizard .business-form-fields {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.digicommerce-setup-wizard .form-fields-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}
+
+.digicommerce-setup-wizard .form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.digicommerce-setup-wizard .form-fields label {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.digicommerce-setup-wizard .form-fields label.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 400;
+}
+
+.digicommerce-setup-wizard .form-fields label.checkbox-label span {
+    flex: 1;
+}
+
+.digicommerce-setup-wizard .form-fields input[type='text'],
+.digicommerce-setup-wizard .form-fields input[type='email'],
+.digicommerce-setup-wizard .form-fields select {
+    width: 100%;
+}
+
+.digicommerce-setup-wizard .form-fields input,
+.digicommerce-setup-wizard .form-fields select {
+    padding: 0.4rem 1rem;
+    border: 1px solid #caced9;
+    border-radius: 0.2rem;
+    font-size: 0.9rem;
+    box-shadow: none;
+    outline: none;
+}
+
+.digicommerce-setup-wizard .form-fields input:focus,
+.digicommerce-setup-wizard .form-fields select:focus {
+    border-color: #ccb161;
+}
+
+.digicommerce-setup-wizard .business-form .digicommerce-setup-actions {
+    width: 100%;
+}
+
+.digicommerce-setup-wizard .business-form .digicommerce-setup-actions button {
+    width: 100%;
+    padding: 1rem;
+}
+
+.digicommerce-setup-wizard .setup-addons {
+    flex-direction: column;
+    width: 60rem;
+    gap: 3rem;
+    max-width: 100%;
+}
+
+.digicommerce-setup-wizard .addons-wrapper {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    max-width: 60rem;
+}
+
+.digicommerce-setup-wizard .addon-box {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid #e1e4ed;
+    border-radius: 0.25rem;
+    padding: 1rem;
+}
+
+.digicommerce-setup-wizard .box-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    background-color: #e1e4ed;
+    padding: 1rem;
+    border-radius: 50%;
+}
+
+.digicommerce-setup-wizard .box-icon svg {
+    fill: #09053a;
+    width: 1.5rem;
+}
+
+.digicommerce-setup-wizard .box-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.digicommerce-setup-wizard .box-content h3 {
+    font-size: 1rem;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.digicommerce-setup-wizard .box-content p {
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.digicommerce-setup-wizard .addons-footer {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+}
+
+.digicommerce-setup-wizard .setup-ready {
+    flex-direction: column;
+    gap: 4rem;
+    width: 32rem;
+    max-width: 100%;
+}
+
+.digicommerce-setup-wizard .setup-ready .dashboard-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #09053a;
+}
+
+.digicommerce-setup-wizard .setup-ready .dashboard-link:hover {
+    color: #ccb161;
+}
+
+.digicommerce-setup-wizard .setup-ready .digicommerce-setup-next-steps {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+}
+
+.digicommerce-setup-wizard .setup-ready .outline-gold {
+    border: 2px solid #ccb161;
+}
+
+.digicommerce-setup-wizard .setup-ready .outline-dark {
+    border: 2px solid #09053a;
+    color: #fff;
+}
+
+.digicommerce-setup-wizard .setup-ready .outline-gold:hover,
+.digicommerce-setup-wizard .setup-ready .outline-dark:hover {
+    background-color: transparent;
+}
+
+.digicommerce-setup-wizard .setup-ready .outline-gold:hover {
+    color: #ccb161;
+}
+
+.digicommerce-setup-wizard .setup-ready .outline-dark:hover {
+    color: #09053a;
+}
+
+/* Choices select */
+.choices {
+    margin: 0;
+}
+
+.choices__inner {
+    min-height: 0;
+    width: 100%;
+    border-radius: 0.2rem;
+    border-color: #caced9;
+    background-color: white;
+    padding: 0 0.75rem;
+    color: #09053a;
+    transition: all 300ms ease-in-out;
+}
+
+.choices__inner:focus {
+    border-color: #ccb161;
+    box-shadow: none;
+}
+
+.choices__item--selectable {
+    font-size: 0.9rem;
+}
+
+.choices.is-open .choices__inner {
+    border-top-left-radius: 0.375rem;
+    border-top-right-radius: 0.375rem;
+}
+
+.choices[data-type*='select-one'] .choices__inner {
+    padding-bottom: 0;
+}
+
+.choices[data-type*='select-one']::after {
+    content: '';
+    right: 7px;
+    margin: 0;
+    height: 0.7rem;
+    width: 0.7rem;
+    transform: translateY(-50%);
+    border-width: 0;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256 429.3l22.6-22.6 192-192L493.3 192 448 146.7l-22.6 22.6L256 338.7 86.6 169.4 64 146.7 18.7 192l22.6 22.6 192 192L256 429.3z"/></svg>');
+}
+
+.choices[data-type*='select-one'] .choices__input {
+    min-height: 3rem;
+    border-radius: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-color: #dddddd;
+    padding: 0.25rem 0.75rem;
+    outline: none;
+}
+
+.choices[data-type*='select-one'] .choices__input:focus {
+    border-color: #dddddd;
+    padding: 0.25rem 0.75rem;
+    box-shadow: none;
+    outline: none;
+}
+
+.choices[data-type*='select-one'].is-open::after {
+    margin-top: 0;
+}
+
+.choices__list--single {
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0.8125rem;
+    padding-bottom: 0.8125rem;
+}
+
+/* Responsive */
+@media (max-width: 680px) {
+    .digicommerce-setup {
+        align-items: flex-start;
+    }
+
+    .digicommerce-setup-wizard h2 {
+        font-size: 1.7rem;
+    }
+
+    .digicommerce-setup-wizard .form-fields-wrapper,
+    .digicommerce-setup-wizard .setup-ready .digicommerce-setup-next-steps {
+        flex-direction: column;
+    }
+
+    .digicommerce-setup-wizard .addons-wrapper {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+}

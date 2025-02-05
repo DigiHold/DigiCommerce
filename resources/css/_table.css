@@ -1,0 +1,84 @@
+/* Base table styles */
+.digicommerce-table {
+	@apply w-full bg-white m-0 border-collapse border-0;
+
+	.end {
+		@apply text-right;
+	}
+
+	th,
+	td {
+		@apply text-left leading-normal p-4 border-0;
+	}
+
+	th {
+		@apply font-bold text-dark-blue;
+	}
+
+	thead th {
+		@apply border-b-[#e1e1e1] border-b border-solid;
+	}
+
+	tbody {
+		@apply text-sm;
+
+		tr:nth-child(odd) {
+			@apply bg-[#f7f7f9];
+		}
+	}
+
+	tfoot {
+		@apply text-sm;
+
+		th {
+			@apply text-dark-blue;
+		}
+
+		td,
+		th {
+			@apply border-t-[#e1e1e1] border-t border-solid;
+		}
+
+		.order-total {
+			@apply text-medium;
+		}
+	}
+
+	.amount {
+		@apply text-base font-bold text-green-600;
+	}
+}
+
+/* Responsive styles */
+@media only screen and (max-width: 768px) {
+	.digicommerce-table {
+		tbody,
+		tr,
+		td {
+			@apply block w-full;
+		}
+
+		th,
+		thead {
+			@apply hidden;
+		}
+
+		td {
+			@apply text-right flex justify-between relative before:content-[attr(data-label)] before:float-left before:font-semibold before:text-dark-blue before:text-medium;
+		}
+
+		td[rowspan] {
+			@apply hidden;
+		}
+	}
+}
+
+/* Order total row */
+.digicommerce-table tr.order-total {
+	@apply bg-[#f7f7f9];
+
+	th,
+	td {
+		@apply font-bold;
+	}
+}

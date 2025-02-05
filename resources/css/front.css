@@ -1,0 +1,90 @@
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@import '_choices.css';
+@import '_forms.css';
+@import '_table.css';
+
+:root {
+    --dc-gold: #ccb161;
+    --dc-yellow: #ffe599;
+    --dc-border: #caced9;
+    --dc-light-blue: #e1e4ed;
+    --dc-light-blue-bg: #f6f7f9;
+    --dc-dark-blue: #09053a;
+    --dc-dark-blue-10: #e6e5eb;
+    --dc-dark-blue-20: #bab8c8;
+    --dc-hover-blue: #362f85;
+    --dc-grey: #646071;
+    --dc-dark-grey: #5b5766;
+}
+
+.digicommerce {
+    @apply text-medium;
+
+    button {
+        @apply cursor-pointer;
+        transition: all 300ms ease-in-out;
+    }
+
+    a {
+        text-decoration: none !important;
+        transition: all 300ms ease-in-out;
+    }
+}
+
+body .no-margin {
+    @apply m-0;
+}
+
+.no-background {
+    @apply bg-transparent p-0 shadow-none hover:bg-transparent focus:bg-transparent;
+}
+
+.default-transition {
+    transition: all 300ms ease-in-out;
+}
+
+.price-wrapper {
+    @apply flex items-start leading-none;
+
+    .price-symbol {
+        @apply text-[.75em];
+    }
+
+    &.single-price {
+        @apply whitespace-nowrap font-bold text-green-600;
+    }
+}
+
+.end .price-wrapper {
+    @apply justify-end;
+}
+
+.product-share a:hover svg {
+    @apply fill-white;
+}
+
+/* Solve conflict if other theme or plugin use Tailwind */
+.cart-item {
+    .cart-item-name {
+        @apply flex-col items-start md:flex-row md:items-center;
+
+        &.has-variation-name {
+            @apply items-start;
+        }
+    }
+
+    .cart-item-info {
+        @apply items-start md:items-end;
+    }
+}
+
+input[type='radio']:checked + .payment_method_name {
+    @apply bg-light-blue-bg;
+}
+
+/* Hide floating reCAPTCHA */
+.digi-captcha .grecaptcha-badge {
+    @apply hidden;
+}

@@ -1,0 +1,90 @@
+.digicommerce-dashboard .digicommerce-blocks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+  .digicommerce-dashboard .digicommerce-element {
+    background-color: #f6f7f9;
+    padding: 1rem;
+    border-radius: 0.3rem;
+  }
+  .digicommerce-dashboard hr {
+    display: flex;
+    justify-content: flex-start;
+    background-color: rgba(9, 5, 58, 0.2);
+    width: 2rem;
+    height: 0.15rem;
+    border: 0;
+    border-radius: 1rem;
+    margin: 0.5rem 0 0.7rem;
+  }
+  .digicommerce-dashboard .stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .digicommerce-dashboard .stats > div {
+      display: flex;
+      justify-content: space-between;
+    }
+  .digicommerce-dashboard .price {
+    color: #16a34a;
+    font-weight: 700;
+  }
+  .digicommerce-dashboard .digi-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    background-color: rgba(9, 5, 58, 0.1);
+    color: #09053a;
+    border: 1px solid #09053a;
+    padding: 1rem 1rem;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+  }
+  .digicommerce-dashboard .digi-button:hover {
+      background-color: #09053a;
+      color: #fff;
+    }
+  .digicommerce-dashboard .digi-button:hover svg {
+        fill: #fff;
+      }
+  .digicommerce-dashboard .digi-button .icon {
+      display: flex;
+      transition: all 0.3s ease-in-out;
+    }
+  .digicommerce-dashboard .digi-button .icon svg {
+        transition: all 0.3s ease-in-out;
+      }
+  .digicommerce-dashboard .digi-button.active .icon {
+      animation: spin 1s linear forwards;
+    }
+
+#dashboard-widgets .digicommerce-dashboard h3 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #09053a;
+  margin: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media screen and (min-width: 800px) and (max-width: 940px) {
+  .digicommerce-dashboard .stats > div {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  .digicommerce-dashboard .digicommerce-blocks {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}

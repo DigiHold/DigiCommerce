@@ -1,0 +1,77 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@import '../_choices.css';
+@import '../_forms.css';
+@import '../_table.css';
+@import 'admin.css';
+
+/* Date range selector and custom range inputs */
+.date-range-selector select,
+.date-range-selector input[type='date'] {
+    @apply border-border min-w-[200px] rounded-md border border-solid bg-white px-4 py-2 transition-all duration-[0.2s];
+    outline: none;
+
+    &:focus {
+        @apply border-gold shadow-[0_0_0_2px_rgba(204,177,97,0.2)];
+    }
+}
+
+/* Stats cards */
+.stats-overview .stat-card {
+    @apply transition-transform duration-[0.2s] hover:-translate-y-0.5;
+}
+
+/* Chart container */
+.charts-container {
+    @apply bg-light-blue rounded-md p-6 shadow-[0_1px_3px_rgba(0,0,0,0.1)];
+}
+
+/* Loading states */
+.stats-overview .stat-card.loading {
+    @apply relative overflow-hidden after:absolute after:inset-0 after:animate-[shimmer_1.5s_infinite] after:content-[''];
+
+    &::after {
+        background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.4) 50%,
+            rgba(255, 255, 255, 0) 100%
+        );
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Custom date range panel */
+.custom-date-range {
+    @apply flex items-center gap-4;
+}
+
+.custom-date-range.masked {
+    @apply hidden;
+}
+
+/* Responsive layout */
+@media (max-width: 768px) {
+    .stats-overview {
+        @apply grid-cols-1;
+    }
+
+    .custom-date-range {
+        @apply flex-col items-stretch;
+    }
+
+    .date-range-selector select,
+    .date-range-selector input[type='date'] {
+        @apply w-full;
+    }
+}

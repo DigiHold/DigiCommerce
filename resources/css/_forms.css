@@ -1,0 +1,336 @@
+.digi__form {
+    .digi__register a,
+    .digi__login a {
+        @apply text-dark-blue hover:text-gold underline hover:no-underline;
+    }
+
+    .field {
+        input {
+            @apply border-border text-dark-blue focus:border-gold min-h-[64px] w-full rounded-md border border-solid px-4 py-3 text-base;
+            box-shadow: none;
+            outline: none;
+
+            &:focus,
+            &.focused {
+                @apply px-5 pb-3 pt-[1.3rem] transition-all duration-[0.3s] ease-[cubic-bezier(.64,0.09,0.08,1)];
+            }
+
+            &:focus + label,
+            &.focused + label {
+                @apply top-4 text-[.7rem] transition-all duration-[0.3s] ease-[cubic-bezier(.64,0.09,0.08,1)];
+            }
+        }
+
+        label {
+            @apply text-medium pointer-events-none absolute left-4 top-2/4 m-0 -translate-y-2/4 font-bold transition-all duration-[0.3s] ease-[cubic-bezier(.64,0.09,0.08,1)];
+        }
+    }
+
+    button {
+        &.digi__button {
+            @apply text-medium min-h-[62px] w-full cursor-pointer justify-center gap-2 font-bold;
+        }
+
+        &.pass__icon {
+            @apply hover:text-dark-blue absolute right-0 top-1/2 flex w-12 -translate-y-1/2 items-center justify-center text-black/50 focus:outline-none;
+            box-shadow: none;
+            outline: none;
+
+            &:focus {
+                box-shadow: none;
+                outline: none;
+            }
+        }
+    }
+
+    .return__link {
+        svg {
+            @apply fill-dark-blue;
+        }
+
+        &:hover svg {
+            @apply fill-gold;
+        }
+    }
+
+    .message {
+        @apply mb-4 rounded-xl p-4 text-center text-[.875rem] text-white;
+
+        &.success {
+            @apply bg-[#46b450];
+        }
+
+        &.error {
+            @apply bg-[#fe5252];
+        }
+    }
+}
+
+.digicommerce {
+    input[type='checkbox'] {
+        @apply border-border relative top-0 m-0 h-6 w-6 cursor-pointer appearance-none rounded-sm border border-solid bg-white transition-all duration-300;
+        box-shadow: none;
+
+        &:focus {
+            box-shadow: none;
+            outline: none;
+        }
+
+        &:focus-visible {
+            outline: none;
+        }
+
+        &:checked,
+        &:checked:hover,
+        &:checked:focus {
+            @apply bg-gold border-gold;
+        }
+
+        &:checked {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="white"><path d="M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z"/></svg>');
+        }
+    }
+
+    input[type='radio'] {
+        @apply border-border m-0 hidden h-6 w-6 border border-solid bg-white shadow-none;
+
+        &:checked {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="white"><circle cx="8" cy="8" r="3" /></svg>');
+            @apply bg-dark-blue border-dark-blue;
+        }
+
+        &::before {
+            @apply hidden;
+        }
+
+        &:focus {
+            box-shadow: none;
+        }
+    }
+
+    select {
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="20" height="20" fill="currentColor"><path d="M201.4 374.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 306.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z" /></svg>');
+        background-position: right 0.7rem top 50%;
+        background-size: 1rem 1rem;
+        @apply min-w-40 cursor-pointer bg-no-repeat py-0 pl-2 pr-8;
+        -webkit-appearance: none;
+    }
+}
+
+/* Reset pass */
+.custom-login.reset-pass {
+    .field input {
+        @apply pr-12;
+    }
+
+    .hide__btn {
+        @apply absolute right-0 top-0 flex w-12 items-center;
+    }
+}
+
+/* Password strength */
+.password-strength {
+    @apply mx-0 mb-5 mt-3 mt-4;
+
+    &.weak {
+        .password-strength-meter-bar {
+            @apply w-1/5 bg-red-500;
+        }
+
+        .password-strength-text {
+            @apply text-red-500;
+        }
+    }
+
+    &.medium {
+        .password-strength-meter-bar {
+            @apply w-2/4 bg-amber-500;
+        }
+
+        .password-strength-text {
+            @apply text-amber-500;
+        }
+    }
+
+    &.strong {
+        .password-strength-meter-bar {
+            @apply w-full bg-emerald-500;
+        }
+
+        .password-strength-text {
+            @apply text-emerald-500;
+        }
+    }
+
+    &-text {
+        @apply text-sm;
+    }
+}
+
+/* Progress bar */
+.password-strength-meter {
+    @apply relative mb-2 h-1 w-full rounded-sm bg-slate-200;
+
+    &-bar {
+        @apply h-full w-0 rounded-sm transition-all duration-[0.3s] ease-[ease];
+    }
+}
+
+/* Login form during checkout */
+#digicommerce-login-checkout.digi__form {
+    .field {
+        input {
+            @apply min-h-[50px] py-1 text-sm;
+
+            &:focus,
+            &.focused {
+                @apply pb-1 pt-[1.2rem];
+            }
+
+            &:focus + label,
+            &.focused + label {
+                @apply text-[.7rem];
+            }
+        }
+
+        label {
+            @apply text-sm;
+        }
+    }
+
+    button {
+        &.digi__button {
+            @apply min-h-[50px] w-auto px-4 py-0 text-sm;
+        }
+    }
+
+    .message {
+        @apply mb-0 mt-4 rounded-sm p-1;
+    }
+}
+
+/* Choices select */
+.choices {
+    @apply m-0;
+
+    &__inner {
+        @apply border-border text-dark-blue hover:border-gold focus:border-gold min-h-0 w-full rounded-md bg-white px-3 py-1 shadow-none outline-none;
+        transition: all 300ms ease-in-out;
+
+        &::placeholder {
+            @apply text-dark-blue;
+        }
+
+        &:focus {
+            box-shadow: none;
+        }
+    }
+
+    &__placeholder {
+        @apply text-medium m-0 font-bold opacity-100;
+    }
+
+    &__item--selectable {
+        @apply text-medium;
+    }
+
+    &.is-open .choices__inner {
+        @apply rounded-t-md;
+    }
+
+    &[data-type*='select-one'] {
+        .choices__inner {
+            @apply pb-1;
+        }
+
+        &::after {
+            @apply right-[7px] m-0 h-[.7rem] w-[.7rem] -translate-y-2/4 border-0 bg-contain bg-center bg-no-repeat content-[""];
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256 429.3l22.6-22.6 192-192L493.3 192 448 146.7l-22.6 22.6L256 338.7 86.6 169.4 64 146.7 18.7 192l22.6 22.6 192 192L256 429.3z"/></svg>');
+        }
+
+        .choices__input {
+            @apply min-h-12 rounded-none border-x-0 border-t-0 border-[#ddd] px-3 py-1 shadow-none;
+            outline: none;
+
+            &:focus {
+                @apply border-[#ddd] px-3 py-1;
+                box-shadow: none;
+                outline: none;
+            }
+        }
+
+        &.is-open::after {
+            @apply mt-0;
+        }
+    }
+
+    &__list--single {
+        @apply px-0 py-[.8125rem];
+    }
+}
+
+/* Single product */
+.button-disabled {
+    @apply pointer-events-none cursor-not-allowed opacity-50;
+}
+
+.digicommerce-single-product .product-summary {
+    input[type='radio'] {
+        @apply absolute -m-px h-px w-px overflow-hidden whitespace-nowrap border-0 p-0;
+        clip: rect(0, 0, 0, 0);
+
+        + label {
+            @apply bg-light-blue-bg hover:bg-dark-blue text-dark-blue m-0 flex flex-col items-center justify-center gap-2 rounded p-4 text-center text-[.85rem] font-normal hover:text-white;
+            transition: all 300ms ease-in-out;
+
+            &::before,
+            &::after {
+                @apply hidden;
+            }
+
+            .variation-regular-price {
+                @apply text-black/50;
+                transition: all 300ms ease-in-out;
+            }
+        }
+
+        &:hover + label,
+        &:checked + label {
+            @apply bg-dark-blue text-white;
+
+            .variation-regular-price {
+                @apply text-white/50;
+            }
+        }
+    }
+}
+
+.digicommerce-radio input[type='radio'] {
+    + .payment_method_name .radio-icon {
+        @apply relative;
+
+        &::before {
+            @apply absolute left-2/4 top-2/4 h-3 w-3 -translate-x-2/4 -translate-y-2/4 rounded-[100%] transition-all duration-300 ease-[ease-in-out] content-[''];
+        }
+    }
+
+    &:checked + .payment_method_name .radio-icon {
+        @apply border-gold;
+
+        &::before {
+            @apply bg-gold;
+        }
+    }
+}
+
+@media (max-width: 600px) {
+    .digicommerce-radio .payment_method_name svg {
+        @apply h-12 w-12;
+    }
+}
+
+@media (max-width: 480px) {
+    .digicommerce-radio .payment_method_name svg {
+        @apply hidden;
+    }
+}

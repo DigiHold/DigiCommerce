@@ -1,0 +1,811 @@
+<?php
+/**
+ * Stripe Payment Gateway for DigiCommerce
+ */
+class DigiCommerce_Stripe {
+	private static $instance = null;
+	private $secret_key;
+	private $publishable_key;
+	private $is_test_mode;
+
+	public static function instance() {
+		if ( is_null( self::$instance ) ) {
+			self::$instance = new self();
+		}
+		return self::$instance;
+	}
+
+	private function __construct() {
+		$this->is_test_mode    = DigiCommerce()->get_option( 'stripe_mode', 'test' ) === 'test';
+		$this->secret_key      = $this->is_test_mode
+			? DigiCommerce()->get_option( 'stripe_test_secret_key', '' )
+			: DigiCommerce()->get_option( 'stripe_live_secret_key', '' );
+		$this->publishable_key = $this->is_test_mode
+			? DigiCommerce()->get_option( 'stripe_test_publishable_key', '' )
+			: DigiCommerce()->get_option( 'stripe_live_publishable_key', '' );
+
+		// Load Stripe SDK
+		require_once DIGICOMMERCE_PLUGIN_DIR . 'vendor/autoload.php';
+
+		// Initialize Stripe with API key
+		\Stripe\Stripe::setApiKey( $this->secret_key );
+
+		add_action('wp_ajax_digicommerce_process_stripe_payment', array($this, 'handle_stripe_payment'));
+        add_action('wp_ajax_nopriv_digicommerce_process_stripe_payment', array($this, 'handle_stripe_payment'));
+	}
+
+	// Update the DigiCommerce_Stripe class with new payment handler
+	public function handle_stripe_payment() {
+		try {
+			check_ajax_referer('digicommerce_process_checkout', 'nonce');
+	
+			// Get stripe payment data from request
+			$stripe_payment_data = isset($_POST['stripe_payment_data']) ? 
+				json_decode(stripslashes($_POST['stripe_payment_data']), true) : null;
+	
+			// Get cart and session data
+			$cart = DigiCommerce_Checkout::instance();
+			$cart_items = $cart->get_cart_items();
+			$session_key = $cart->get_current_session_key();
+			$session_data = $cart->get_session($session_key);
+	
+			// Get user billing data
+			$billing_data = array(
+				'email' => sanitize_email($_POST['email'] ?? ''),
+				'first_name' => sanitize_text_field($_POST['first_name'] ?? ''),
+				'last_name' => sanitize_text_field($_POST['last_name'] ?? ''),
+				'company' => sanitize_text_field($_POST['company'] ?? ''),
+				'phone' => sanitize_text_field($_POST['phone'] ?? ''),
+				'address' => sanitize_text_field($_POST['address'] ?? ''),
+				'city' => sanitize_text_field($_POST['city'] ?? ''),
+				'postcode' => sanitize_text_field($_POST['postcode'] ?? ''),
+				'country' => sanitize_text_field($_POST['country'] ?? ''),
+				'vat_number' => sanitize_text_field($_POST['vat_number'] ?? '')
+			);
+	
+			// Calculate initial payment amount (signup fee or first payment)
+			$initial_payment = 0;
+			$has_subscription = false;
+			$has_free_trial = false;
+	
+			foreach ($cart_items as $item) {
+				if (!empty($item['subscription_enabled'])) {
+					$has_subscription = true;
+
+					// If there's a signup fee, only charge that
+					if (!empty($item['subscription_signup_fee']) && floatval($item['subscription_signup_fee']) > 0) {
+						$initial_payment += floatval($item['subscription_signup_fee']);
+					} 
+					// If no signup fee, check trial and regular payment
+					else {
+						// If there's a free trial
+						if (!empty($item['subscription_free_trial']) && 
+							intval($item['subscription_free_trial']['duration']) > 0) {
+							$has_free_trial = true;
+							$initial_payment += 0;
+						} 
+						// No signup fee and no trial, charge full price
+						else {
+							$initial_payment += floatval($item['price']);
+						}
+					}
+				} else {
+					// Add one-time product price
+					$initial_payment += floatval($item['price']);
+				}
+			}
+	
+			// Apply VAT and discount calculations to initial payment
+			$subtotal = $initial_payment;
+			$business_country = DigiCommerce()->get_option('business_country');
+			$buyer_country = $billing_data['country'];
+			$vat_number = $billing_data['vat_number'];
+
+			// Initialize VAT amount
+			$vat_amount = 0;
+			$tax_rate = 0;
+			$apply_vat = false;
+
+			// Only calculate VAT if taxes are not disabled
+			if (!DigiCommerce()->get_option('remove_taxes')) {
+				$countries = DigiCommerce()->get_countries();
+				
+				if ($buyer_country === $business_country) {
+					// Domestic sale: Always charge seller's country VAT
+					$tax_rate = $countries[$business_country]['tax_rate'] ?? 0;
+					$vat_amount = round($subtotal * $tax_rate, 2);
+					$apply_vat = true;
+				} 
+				elseif (!empty($countries[$buyer_country]['eu']) && !empty($countries[$business_country]['eu'])) {
+					// EU cross-border sale
+					if (empty($vat_number) || !DigiCommerce_Orders::instance()->validate_vat_number($vat_number, $buyer_country)) {
+						// No valid VAT number - charge buyer's country rate
+						$tax_rate = $countries[$buyer_country]['tax_rate'] ?? 0;
+						$vat_amount = round($subtotal * $tax_rate, 2);
+						$apply_vat = true;
+					}
+					// With valid VAT number - no VAT (vat_amount remains 0)
+				}
+				// Non-EU sale - no VAT (vat_amount remains 0)
+			}
+
+			$total_with_vat = $subtotal + $vat_amount;
+	
+			// Apply discount if exists
+			$discount_amount = 0;
+			if (!empty($session_data['discount'])) {
+				$discount_data = $session_data['discount'];
+				if ($discount_data['type'] === 'percentage') {
+					$discount_amount = round(($total_with_vat * $discount_data['amount']) / 100, 2);
+				} else {
+					$discount_amount = min($discount_data['amount'], $total_with_vat);
+				}
+			}
+	
+			$total = $total_with_vat - $discount_amount;
+
+			// IMPORTANT: Create customer once and store it
+			$customer = null;
+			if (!empty($stripe_payment_data['customer_id'])) {
+				// If we already have a customer ID, retrieve it
+				$customer = \Stripe\Customer::retrieve($stripe_payment_data['customer_id']);
+			}
+	
+			// If no customer yet, create one
+			if (!$customer) {
+				$customer = $this->get_or_create_customer([
+					'email' => $billing_data['email'],
+					'name' => trim($billing_data['first_name'] . ' ' . $billing_data['last_name']),
+					'phone' => $billing_data['phone'],
+					'address' => [
+						'line1' => $billing_data['address'],
+						'city' => $billing_data['city'],
+						'postal_code' => $billing_data['postcode'],
+						'country' => $billing_data['country'],
+					],
+					'metadata' => [
+						'vat_number' => $billing_data['vat_number'],
+						'company' => $billing_data['company'],
+						'user_id' => get_current_user_id() ?: 'guest'
+					]
+				]);
+			}
+	
+			$response = [
+				'success' => true,
+				'data' => [
+					'customerId' => $customer->id
+				]
+			];
+	
+			// Handle subscription creation if payment_method and setup_intent_id exist
+			if (!empty($stripe_payment_data['payment_method']) && 
+				!empty($stripe_payment_data['setup_intent_id'])) {
+				
+					try {
+						$payment_method = \Stripe\PaymentMethod::retrieve($stripe_payment_data['payment_method']);
+
+						if ($payment_method->customer !== $customer->id) {
+							try {
+								$payment_method->attach(['customer' => $customer->id]);
+							} catch (Exception $attachError) {
+								throw $attachError;
+							}
+						}
+					
+						// Log the update attempt
+						try {
+							\Stripe\Customer::update(
+								$customer->id,
+								[
+									'invoice_settings' => [
+										'default_payment_method' => $stripe_payment_data['payment_method']
+									]
+								]
+							);
+						} catch (Exception $updateError) {
+							throw $updateError;
+						}
+
+						// Create subscription
+					$subscription_params = [
+						'customer' => $customer->id,
+						'default_payment_method' => $stripe_payment_data['payment_method'],
+						'items' => $this->prepare_subscription_items($cart_items, $billing_data),
+						'metadata' => $this->prepare_metadata($cart_items, $billing_data),
+						'expand' => ['latest_invoice.payment_intent']
+					];
+	
+					// Add trial period if applicable
+					if ($has_free_trial) {
+						foreach ($cart_items as $item) {
+							if (!empty($item['subscription_enabled']) && 
+								!empty($item['subscription_free_trial']) &&
+								!empty($item['subscription_free_trial']['duration'])) {
+								$trial_days = $this->get_trial_period_days($item['subscription_free_trial']);
+								if ($trial_days > 0) {
+									$subscription_params['trial_period_days'] = $trial_days;
+								}
+								break;
+							}
+						}
+					}
+	
+					$subscription = \Stripe\Subscription::create($subscription_params);
+					$response['data']['subscriptionId'] = $subscription->id;
+					
+					} catch (\Stripe\Exception\CardException $e) {
+						wp_send_json_error(['message' => $e->getMessage()]);
+						return;
+					} catch (Exception $e) {
+						wp_send_json_error(['message' => $e->getMessage()]);
+						return;
+					}
+			}
+			// If no payment method/setup intent, prepare intents based on payment requirements
+			else {
+				// For subscriptions, always create SetupIntent
+				if ($has_subscription) {
+					$setup_intent = \Stripe\SetupIntent::create([
+						'customer' => $customer->id,
+						'payment_method_types' => ['card'],
+						'usage' => 'off_session',
+						'metadata' => $this->prepare_metadata($cart_items, $billing_data)
+					]);
+				
+					$response['data']['setupIntent'] = [
+						'client_secret' => $setup_intent->client_secret,
+						'id' => $setup_intent->id
+					];
+				}
+	
+				// Create PaymentIntent if there's an immediate payment needed
+				if ($total > 0) {
+					$payment_intent = \Stripe\PaymentIntent::create([
+						'amount' => $this->convert_to_cents($total),
+						'currency' => strtolower(DigiCommerce()->get_option('currency', 'USD')),
+						'customer' => $customer->id,
+						'metadata' => array_merge(
+							$this->prepare_metadata($cart_items, $billing_data),
+							[
+								'subtotal' => $subtotal,
+								'vat_amount' => $vat_amount,
+								'vat_applied' => $apply_vat ? 'yes' : 'no',
+								'tax_rate' => $tax_rate,
+								'discount_amount' => $discount_amount,
+								'total' => $total
+							]
+						),
+						'description' => $this->get_payment_description($cart_items)
+					]);
+	
+					$response['data']['paymentIntent'] = [
+						'client_secret' => $payment_intent->client_secret,
+						'id' => $payment_intent->id
+					];
+				}
+			}
+	
+			wp_send_json_success($response['data']);
+	
+		} catch (Exception $e) {
+			wp_send_json_error(['message' => $e->getMessage()]);
+		}
+	}
+	
+	private function get_or_create_customer($data) {
+		$user_id = get_current_user_id();
+		
+		if ($user_id) {
+			$stripe_customer_id = get_user_meta($user_id, '_stripe_customer_id', true);
+			
+			if ($stripe_customer_id) {
+				try {
+					$customer = \Stripe\Customer::retrieve($stripe_customer_id);
+					
+					// Update existing customer
+					$customer = \Stripe\Customer::update($stripe_customer_id, $data);
+					return $customer;
+				} catch (Exception $e) {
+				}
+			}
+		}
+	
+		// Create new customer
+		try {
+			$customer = \Stripe\Customer::create($data);
+			
+			if ($user_id) {
+				update_user_meta($user_id, '_stripe_customer_id', $customer->id);
+			}
+			
+			return $customer;
+		} catch (Exception $e) {
+			throw $e;
+		}
+	}
+
+	private function prepare_metadata($cart_items, $billing_data) {
+		$items_description = array();
+		foreach ($cart_items as $item) {
+			$desc = $item['name'];
+			if (!empty($item['variation_name'])) {
+				$desc .= ' (' . $item['variation_name'] . ')';
+			}
+			$items_description[] = $desc;
+		}
+
+		return array(
+			'customer_email' => $billing_data['email'],
+			'customer_name' => trim($billing_data['first_name'] . ' ' . $billing_data['last_name']),
+			'company' => $billing_data['company'],
+			'address' => $billing_data['address'],
+			'city' => $billing_data['city'],
+			'postcode' => $billing_data['postcode'],
+			'country' => $billing_data['country'],
+			'vat_number' => $billing_data['vat_number'],
+			'items' => substr(implode(', ', $items_description), 0, 499)
+		);
+	}
+
+	private function get_payment_description($cart_items) {
+		$descriptions = array();
+		foreach ($cart_items as $item) {
+			$desc = $item['name'];
+			if (!empty($item['variation_name'])) {
+				$desc .= ' (' . $item['variation_name'] . ')';
+			}
+			$descriptions[] = $desc;
+		}
+		return implode(', ', $descriptions);
+	}
+
+	public function get_trial_period_days( $trial_data ) {
+		if ( empty( $trial_data ) || empty( $trial_data['duration'] ) || empty( $trial_data['period'] ) ) {
+			return null;
+		}
+
+		$duration = intval( $trial_data['duration'] );
+		if ( $duration <= 0 ) {
+			return null;
+		}
+
+		switch ( $trial_data['period'] ) {
+			case 'days':
+				return $duration;
+			case 'weeks':
+				return $duration * 7;
+			case 'months':
+				return $duration * 30;
+			default:
+				return null;
+		}
+	}
+
+	/**
+	 * Prepare subscription items for Stripe
+	 */
+	public function prepare_subscription_items($cart_items, $billing_data) {
+		$stripe_items = array();
+
+		// Get business country and buyer country
+		$business_country = DigiCommerce()->get_option('business_country');
+		$buyer_country = $billing_data['country'];
+		$vat_number = $billing_data['vat_number'];
+		
+		// Initialize VAT rate
+		$vat_rate = 0;
+		$apply_vat = false;
+	
+		// Only calculate VAT if taxes are not disabled
+		if (!DigiCommerce()->get_option('remove_taxes')) {
+			$countries = DigiCommerce()->get_countries();
+			
+			if ($buyer_country === $business_country) {
+				// Domestic sale: Always charge seller's country VAT
+				$vat_rate = $countries[$business_country]['tax_rate'] ?? 0;
+				$apply_vat = true;
+			} 
+			elseif (!empty($countries[$buyer_country]['eu']) && !empty($countries[$business_country]['eu'])) {
+				// EU cross-border sale
+				if (empty($vat_number) || !DigiCommerce_Orders::instance()->validate_vat_number($vat_number, $buyer_country)) {
+					// No valid VAT number - charge buyer's country rate
+					$vat_rate = $countries[$buyer_country]['tax_rate'] ?? 0;
+					$apply_vat = true;
+				}
+				// With valid VAT number - no VAT (vat_rate remains 0, apply_vat remains false)
+			}
+			// Non-EU sale - no VAT (vat_rate remains 0, apply_vat remains false)
+		}
+	
+		foreach ($cart_items as $item) {
+			if (!empty($item['subscription_enabled'])) {
+				// For subscription upgrades, use the full variation price instead of the prorated price
+				$base_price = !empty($item['meta']['subscription_upgrade']) ? 
+					floatval($item['meta']['variation_price']) :  // Full price for upgrades
+					floatval($item['price']);                     // Regular price for new subscriptions
+				$vat_amount = $apply_vat ? round($base_price * $vat_rate, 2) : 0;
+				$total_price = $base_price + $vat_amount;
+	
+				$price_in_cents = $this->convert_to_cents($total_price);
+				
+				// Create price with total amount (including VAT)
+				$price = \Stripe\Price::create([
+					'unit_amount' => $price_in_cents,
+					'currency' => strtolower(DigiCommerce()->get_option('currency', 'USD')),
+					'recurring' => [
+						'interval' => $this->get_stripe_interval($item['subscription_period']),
+					],
+					'product_data' => [
+						'name' => $item['name'],
+						'metadata' => [
+							'base_price' => $base_price,
+							'vat_rate' => $vat_rate,
+							'vat_amount' => $vat_amount,
+							'has_vat' => $apply_vat ? 'yes' : 'no',
+							'country' => $buyer_country,
+							'business_country' => $business_country,
+							'vat_type' => $buyer_country === $business_country ? 'domestic' : 
+										(!empty($countries[$buyer_country]['eu']) ? 'eu' : 'non_eu')
+						]
+					],
+				]);
+	
+				$stripe_items[] = [
+					'price' => $price->id,
+				];
+			}
+		}
+	
+		return $stripe_items;
+	}
+
+	/**
+	 * Convert subscription period to Stripe interval
+	 */
+	public function get_stripe_interval( $period ) {
+		$intervals = array(
+			'day'   => 'day',
+			'week'  => 'week',
+			'month' => 'month',
+			'year'  => 'year',
+		);
+
+		return isset( $intervals[ $period ] ) ? $intervals[ $period ] : 'month';
+	}
+
+	/**
+	 * Process refunds for any type of order (normal, subscription, or mixed)
+	 */
+	public function process_refund( $order_id, $amount = null, $reason = '' ) {
+		try {
+			global $wpdb;
+
+			// Get order details
+			$order = DigiCommerce_Orders::instance()->get_order( $order_id );
+			if ( ! $order ) {
+				throw new Exception( 'Order not found' );
+			}
+
+			// Get payment data from order meta
+			$payment_intent_id = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
+                WHERE order_id = %d AND meta_key = '_stripe_payment_intent_id'",
+					$order_id
+				)
+			);
+
+			// Get subscription ID
+			$subscription_id = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT si.subscription_id 
+                FROM {$wpdb->prefix}digicommerce_subscription_items si
+                WHERE si.order_id = %d",
+					$order_id
+				)
+			);
+
+			$refund_results = array();
+
+			// Handle one-time payment refund if exists
+			if ( $payment_intent_id ) {
+				try {
+					$one_time_refund = $this->process_one_time_refund( $payment_intent_id, $amount );
+					if ( $one_time_refund ) {
+						$refund_results['one_time'] = $one_time_refund;
+					}
+				} catch ( Exception $e ) {
+					$refund_results['one_time'] = array(
+						'status' => 'failed',
+						'error'  => $e->getMessage(),
+					);
+				}
+			}
+
+			// Handle subscription refund if exists
+			if ( $subscription_id ) {
+				try {
+					// Get Stripe subscription ID
+					$stripe_subscription_id = $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT meta_value 
+                        FROM {$wpdb->prefix}digicommerce_order_meta 
+                        WHERE order_id = %d AND meta_key = '_stripe_subscription_id'",
+							$order_id
+						)
+					);
+
+					if ( $stripe_subscription_id ) {
+						$subscription_refund = $this->process_subscription_refund( $order_id, $subscription_id, $stripe_subscription_id, $amount );
+						if ( $subscription_refund ) {
+							$refund_results['subscription'] = $subscription_refund;
+						}
+					}
+				} catch ( Exception $e ) {
+					$refund_results['subscription'] = array(
+						'status' => 'failed',
+						'error'  => $e->getMessage(),
+					);
+				}
+			}
+
+			// Log refund attempt
+			$this->log_refund( $order_id, $amount, $reason, $refund_results );
+
+			// Check if any refund was successful
+			$has_success = false;
+			foreach ( $refund_results as $result ) {
+				if ( isset( $result['status'] ) && $result['status'] === 'succeeded' ) {
+					$has_success = true;
+					break;
+				}
+			}
+
+			if ( ! $has_success ) {
+				throw new Exception( 'No successful refunds processed' );
+			}
+
+			do_action('digicommerce_order_refunded', $order_id, $amount);
+
+			return $refund_results;
+
+		} catch ( Exception $e ) {
+			// Log the error
+			$this->log_refund( $order_id, $amount, $reason, array( 'error' => $e->getMessage() ) );
+			throw $e;
+		}
+	}
+
+	/**
+	 * Process refund for one-time payment
+	 */
+	private function process_one_time_refund( $payment_intent_id, $amount ) {
+		$payment_intent = \Stripe\PaymentIntent::retrieve( $payment_intent_id );
+
+		if ( empty( $payment_intent->latest_charge ) ) {
+			throw new Exception( 'No charge found in payment intent' );
+		}
+
+		$charge = \Stripe\Charge::retrieve( $payment_intent->latest_charge );
+
+		if ( $charge->refunded ) {
+			throw new Exception( 'Charge has already been refunded' );
+		}
+
+		if ( $charge->status !== 'succeeded' ) {
+			throw new Exception( 'Charge status is not succeeded: ' . $charge->status );
+		}
+
+		$refund = \Stripe\Refund::create(
+			array(
+				'charge' => $payment_intent->latest_charge,
+				'amount' => $amount ? $this->convert_to_cents( $amount ) : null,
+			)
+		);
+
+		return array(
+			'status'    => $refund->status,
+			'amount'    => $amount ? $amount : $charge->amount / 100,
+			'refund_id' => $refund->id,
+		);
+	}
+
+	/**
+	 * Process refund for subscription
+	 */
+	private function process_subscription_refund( $order_id, $subscription_id, $stripe_subscription_id, $amount ) {
+		global $wpdb;
+
+		try {
+			$refund_result = array();
+
+			// First check if there was a signup fee payment
+			$signup_fee_intent_id = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
+                WHERE order_id = %d AND meta_key = '_stripe_signup_fee_intent_id'",
+					$order_id
+				)
+			);
+
+			// Get initial subscription payment intent
+			$initial_payment_intent_id = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
+                WHERE order_id = %d AND meta_key = '_stripe_initial_payment_intent_id'",
+					$order_id
+				)
+			);
+
+			// Process signup fee refund if exists
+			if ( $signup_fee_intent_id ) {
+				try {
+					$payment_intent = \Stripe\PaymentIntent::retrieve( $signup_fee_intent_id );
+
+					if ( ! empty( $payment_intent->latest_charge ) ) {
+						// Calculate refund amount for signup fee
+						$signup_fee_amount = $payment_intent->amount / 100;
+						$refund_amount     = min( $amount, $signup_fee_amount );
+
+						$refund = \Stripe\Refund::create(
+							array(
+								'charge' => $payment_intent->latest_charge,
+								'amount' => $this->convert_to_cents( $refund_amount ),
+							)
+						);
+
+						$refund_result['signup_fee'] = array(
+							'status'    => $refund->status,
+							'amount'    => $refund_amount,
+							'refund_id' => $refund->id,
+						);
+
+						// Update remaining amount to refund
+						$amount -= $refund_amount;
+					}
+				} catch ( Exception $e ) {
+					$refund_result['signup_fee'] = array(
+						'status' => 'failed',
+						'error'  => $e->getMessage(),
+					);
+				}
+			}
+
+			// Process initial subscription payment refund if there's remaining amount
+			if ( $amount > 0 && $initial_payment_intent_id ) {
+				try {
+					$payment_intent = \Stripe\PaymentIntent::retrieve( $initial_payment_intent_id );
+					if ( ! empty( $payment_intent->latest_charge ) ) {
+						$refund = \Stripe\Refund::create(
+							array(
+								'charge' => $payment_intent->latest_charge,
+								'amount' => $this->convert_to_cents( $amount ),
+							)
+						);
+
+						$refund_result['subscription'] = array(
+							'status'    => $refund->status,
+							'amount'    => $amount,
+							'refund_id' => $refund->id,
+						);
+					}
+				} catch ( Exception $e ) {
+					$refund_result['subscription'] = array(
+						'status' => 'failed',
+						'error'  => $e->getMessage(),
+					);
+				}
+			}
+
+			// Cancel the subscription in Stripe
+			try {
+				$subscription = \Stripe\Subscription::retrieve($stripe_subscription_id);
+				if ($subscription->status !== 'canceled') {
+					$result = $subscription->cancel();
+				}
+			} catch (Exception $e) {
+				throw $e;
+			}
+
+			// Update subscription status in database
+			$wpdb->update(
+				$wpdb->prefix . 'digicommerce_subscriptions',
+				array(
+					'status'        => 'cancelled',
+					'date_modified' => current_time( 'mysql' ),
+				),
+				array( 'id' => $subscription_id ),
+				array( '%s', '%s' ),
+				array( '%d' )
+			);
+
+			// Cancel pending schedules
+			$wpdb->update(
+				$wpdb->prefix . 'digicommerce_subscription_schedule',
+				array( 'status' => 'cancelled' ),
+				array(
+					'subscription_id' => $subscription_id,
+					'status'          => 'pending',
+				),
+				array( '%s' ),
+				array( '%d', '%s' )
+			);
+
+			// Add subscription note with all refund details
+			$note = esc_html__( 'Subscription cancelled due to refund.', 'digicommerce' );
+
+			$wpdb->insert(
+				$wpdb->prefix . 'digicommerce_subscription_meta',
+				array(
+					'subscription_id' => $subscription_id,
+					'meta_key'        => 'note',
+					'meta_value'      => $note,
+				),
+				array( '%d', '%s', '%s' )
+			);
+
+			// Fire subscription cancelled action
+			do_action( 'digicommerce_subscription_cancelled', $subscription_id );
+
+			// Return combined refund results
+			$total_refunded   = 0;
+			$refund_status    = 'succeeded';
+			$latest_refund_id = '';
+
+			foreach ( $refund_result as $refund ) {
+				if ( isset( $refund['amount'] ) ) {
+					$total_refunded += $refund['amount'];
+				}
+				if ( isset( $refund['status'] ) && $refund['status'] !== 'succeeded' ) {
+					$refund_status = 'partially_succeeded';
+				}
+				if ( isset( $refund['refund_id'] ) ) {
+					$latest_refund_id = $refund['refund_id'];
+				}
+			}
+
+			return array(
+				'status'    => $refund_status,
+				'amount'    => $total_refunded,
+				'refund_id' => $latest_refund_id,
+				'details'   => $refund_result,
+			);
+
+		} catch ( Exception $e ) {
+			throw $e;
+		}
+	}
+
+	/**
+	 * Log refund details
+	 */
+	private function log_refund( $order_id, $amount, $reason, $results ) {
+		global $wpdb;
+
+		$log_data = array(
+			'amount'    => $amount,
+			'reason'    => $reason,
+			'results'   => $results,
+			'timestamp' => current_time( 'mysql' ),
+		);
+
+		$wpdb->insert(
+			$wpdb->prefix . 'digicommerce_order_meta',
+			array(
+				'order_id'   => $order_id,
+				'meta_key'   => 'refund_log',
+				'meta_value' => maybe_serialize( $log_data ),
+			)
+		);
+	}
+
+	public function convert_to_cents( $amount ) {
+		return round( $amount * 100 );
+	}
+
+	public function get_publishable_key() {
+		return $this->publishable_key;
+	}
+}
+DigiCommerce_Stripe::instance();

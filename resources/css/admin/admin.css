@@ -1,0 +1,276 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@import '../_choices.css';
+@import '../_forms.css';
+
+:root {
+    --dc-gold: #ccb161;
+    --dc-yellow: #ffe599;
+    --dc-border: #caced9;
+    --dc-light-blue: #e1e4ed;
+    --dc-light-blue-bg: #f6f7f9;
+    --dc-dark-blue: #09053a;
+    --dc-dark-blue-10: #e6e5eb;
+    --dc-dark-blue-20: #bab8c8;
+    --dc-hover-blue: #362f85;
+    --dc-grey: #646071;
+    --dc-dark-grey: #5b5766;
+}
+
+.default-transition {
+    transition: all 300ms ease-in-out;
+}
+
+.digicommerce {
+    &-help {
+        a {
+            box-shadow: none;
+            outline: none;
+
+            &:hover .digicommerce-help-icon {
+                @apply bg-white;
+
+                svg {
+                    @apply fill-gold;
+                }
+            }
+        }
+    }
+
+    &-tabs {
+        a {
+            box-shadow: none;
+            outline: none;
+
+            &.active {
+                @apply cursor-default bg-white hover:bg-white;
+            }
+
+            span {
+                @apply relative;
+            }
+
+            .digicommerce-tab-icon {
+                @apply absolute -top-2 left-full rotate-45;
+            }
+        }
+    }
+
+    &-tab-content.active {
+        @apply flex flex-col;
+    }
+
+    a {
+        box-shadow: none;
+        outline: none;
+
+        svg {
+            @apply fill-current;
+        }
+    }
+
+    input {
+        &[type='checkbox'],
+        &[type='radio'] {
+            &:checked,
+            &:checked:hover,
+            &:checked:focus {
+                @apply bg-dark-blue border-dark-blue;
+            }
+
+            &::before {
+                @apply hidden;
+            }
+        }
+    }
+
+    input[type='radio'] {
+        @apply flex;
+    }
+
+    input[type='text'],
+    input[type='email'],
+    input[type='password'],
+    input[type='url'],
+    input[type='number'],
+    select,
+    textarea {
+        @apply border-border text-dark-blue hover:border-gold focus:border-gold min-h-[42px] w-full bg-white px-3 py-1 shadow-none outline-none;
+        transition: all 300ms ease-in-out;
+
+        &:focus {
+            box-shadow: none;
+        }
+    }
+
+    select {
+        @apply min-h-[42px];
+    }
+
+    .digi__button {
+        @apply text-medium from-gold to-yellow text-dark-blue hover:text-gold relative flex items-center gap-2 overflow-hidden rounded-[40px] bg-gradient-to-tr px-7 py-4 font-bold leading-none tracking-wide;
+        transition: all 300ms ease-in-out;
+
+        &:focus {
+            box-shadow: none;
+            outline: none;
+        }
+
+        svg {
+            @apply fill-dark-blue z-10;
+            transition: all 300ms ease-in-out;
+        }
+
+        &::before {
+            content: '';
+            @apply from-hover-blue to-dark-blue absolute left-0 top-0 z-0 h-full w-full bg-gradient-to-tr opacity-0;
+            transition: opacity 300ms ease-in-out;
+        }
+
+        &:hover {
+            &::before {
+                @apply opacity-100;
+            }
+
+            svg {
+                @apply fill-gold;
+            }
+        }
+
+        .text {
+            @apply relative z-10;
+        }
+    }
+
+    .digi__link {
+        &:focus {
+            box-shadow: none;
+            outline: none;
+        }
+    }
+
+    .notice {
+        @apply my-5 mb-4 ml-0 mr-5 rounded-md border-0 p-3 text-[.875rem] text-white;
+
+        p {
+            @apply m-0 p-0;
+        }
+
+        &-dismiss {
+            @apply top-2/4 -translate-y-2/4;
+
+            &:before {
+                @apply text-white;
+            }
+        }
+
+        &-success {
+            @apply bg-[#46b450];
+        }
+
+        &-error {
+            @apply bg-[#fe5252];
+        }
+    }
+
+    &-tab-content[id='addons'].active ~ .submit {
+        @apply hidden;
+    }
+
+    .blocs {
+        .digi__button {
+            @apply justify-center rounded-none text-sm;
+        }
+    }
+}
+
+.choices {
+    @apply m-0 w-full md:min-w-[25rem] md:max-w-[25rem];
+
+    &__inner {
+        @apply border-border text-dark-blue hover:border-gold focus:border-gold min-h-0 w-full bg-white px-3 py-1 shadow-none outline-none md:max-w-[25rem];
+
+        &::placeholder {
+            @apply text-dark-blue;
+        }
+
+        &:focus {
+            box-shadow: none;
+        }
+    }
+
+    &[data-type*='select-one'] {
+        .choices__inner {
+            @apply pb-1;
+        }
+
+        &::after {
+            @apply right-[7px] m-0 h-[.7rem] w-[.7rem] -translate-y-2/4 border-0 bg-contain bg-center bg-no-repeat content-[""];
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256 429.3l22.6-22.6 192-192L493.3 192 448 146.7l-22.6 22.6L256 338.7 86.6 169.4 64 146.7 18.7 192l22.6 22.6 192 192L256 429.3z"/></svg>');
+        }
+
+        .choices__input {
+            @apply rounded-none border-x-0 border-t-0 border-[#ddd] shadow-none;
+            outline: none;
+
+            &:focus {
+                box-shadow: none;
+                outline: none;
+            }
+        }
+    }
+
+    &__list--single {
+        @apply px-0 py-[.2189rem];
+    }
+}
+
+.business-country {
+    .choices {
+        @apply max-w-full;
+
+        &__inner {
+            @apply max-w-full;
+        }
+
+        &__list--single {
+            @apply py-[.344rem];
+        }
+    }
+}
+
+.social-link-row {
+    &.drag-over {
+        @apply border-2 border-dashed border-[#999];
+    }
+
+    &.dragging {
+        @apply opacity-40;
+    }
+}
+
+.digicommerce .social-links-repeater select {
+    @apply min-w-40;
+}
+
+.drag-handle {
+    @apply cursor-move text-[#666] hover:text-[#333];
+}
+
+body .digi-color {
+    @apply flex min-h-12 w-full cursor-pointer items-center justify-center rounded-none border-0 p-0 shadow-none;
+}
+
+.choices__item--selectable {
+    @apply text-[.9rem];
+}
+
+.choices__inner {
+    @apply rounded-[3px];
+}
+
+.wp-admin .digicommerce p label input[type='checkbox'] {
+    margin: 0;
+}
