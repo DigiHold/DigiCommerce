@@ -3,9 +3,10 @@
  * Email handling class
  */
 class DigiCommerce_Emails {
-
 	/**
 	 * Instance of the class
+	 *
+	 * @var DigiCommerce_Emails
 	 */
 	private static $instance = null;
 
@@ -58,6 +59,8 @@ class DigiCommerce_Emails {
 
 	/**
 	 * Send order confirmation email
+	 *
+	 * @param int $order_id Order ID.
 	 */
 	public function send_order_confirmation( $order_id ) {
 		$order = DigiCommerce_Orders::instance()->get_order( $order_id );
@@ -103,6 +106,9 @@ class DigiCommerce_Emails {
 
 	/**
 	 * Send welcome email
+	 *
+	 * @param string $user_email User email.
+	 * @param string $password User password.
 	 */
 	public function send_welcome_email( $user_email, $password ) {
 		$subject = apply_filters(
@@ -134,6 +140,10 @@ class DigiCommerce_Emails {
 
 	/**
 	 * Send password reset email
+	 *
+	 * @param string $user_email User email.
+	 * @param string $key Reset key.
+	 * @param string $user_login User login.
 	 */
 	public function send_password_reset( $user_email, $key, $user_login ) {
 		$subject = apply_filters(
@@ -174,6 +184,8 @@ class DigiCommerce_Emails {
 
 	/**
 	 * Send order cancelled notification
+	 *
+	 * @param int $order_id Order ID.
 	 */
 	public function send_order_cancelled( $order_id ) {
 		$order = DigiCommerce_Orders::instance()->get_order( $order_id );
@@ -219,6 +231,8 @@ class DigiCommerce_Emails {
 
 	/**
 	 * Send order refunded notification
+	 *
+	 * @param int $order_id Order ID.
 	 */
 	public function send_order_refunded( $order_id ) {
 		$order = DigiCommerce_Orders::instance()->get_order( $order_id );
@@ -264,6 +278,8 @@ class DigiCommerce_Emails {
 
 	/**
 	 * Send new order notification to admin
+	 *
+	 * @param int $order_id Order ID.
 	 */
 	public function send_new_order_admin( $order_id ) {
 		$order = DigiCommerce_Orders::instance()->get_order( $order_id );
@@ -378,7 +394,7 @@ class DigiCommerce_Emails {
 		if ( ! empty( $footer_text ) ) {
 			$footer_html .= str_replace(
 				array( '{year}', '{site}' ),
-				array( date( 'Y' ), get_bloginfo( 'name' ) ),
+				array( date( 'Y' ), get_bloginfo( 'name' ) ), // phpcs:ignore
 				wp_kses_post( $footer_text )
 			);
 		}

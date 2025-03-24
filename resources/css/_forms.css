@@ -22,7 +22,7 @@
         }
 
         label {
-            @apply text-medium pointer-events-none absolute left-4 top-2/4 m-0 -translate-y-2/4 font-bold transition-all duration-[0.3s] ease-[cubic-bezier(.64,0.09,0.08,1)];
+            @apply text-medium pointer-events-none absolute top-2/4 m-0 -translate-y-2/4 font-bold transition-all duration-[0.3s] ease-[cubic-bezier(.64,0.09,0.08,1)] ltr:left-4 rtl:right-4;
         }
     }
 
@@ -32,7 +32,7 @@
         }
 
         &.pass__icon {
-            @apply hover:text-dark-blue absolute right-0 top-1/2 flex w-12 -translate-y-1/2 items-center justify-center text-black/50 focus:outline-none;
+            @apply hover:text-dark-blue absolute top-1/2 flex w-12 -translate-y-1/2 items-center justify-center text-black/50 focus:outline-none ltr:right-0 rtl:left-0;
             box-shadow: none;
             outline: none;
 
@@ -110,9 +110,8 @@
 
     select {
         background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="20" height="20" fill="currentColor"><path d="M201.4 374.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 306.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z" /></svg>');
-        background-position: right 0.7rem top 50%;
         background-size: 1rem 1rem;
-        @apply min-w-40 cursor-pointer bg-no-repeat py-0 pl-2 pr-8;
+        @apply min-w-40 cursor-pointer bg-no-repeat ltr:bg-[right_0.7rem_top_50%] ltr:pl-2 ltr:pr-8 rtl:bg-[left_0.7rem_top_50%] rtl:pl-8 rtl:pr-2;
         -webkit-appearance: none;
     }
 }
@@ -130,7 +129,7 @@
 
 /* Password strength */
 .password-strength {
-    @apply mx-0 mb-5 mt-3 mt-4;
+    @apply mx-0 mb-5 mt-4;
 
     &.weak {
         .password-strength-meter-bar {
@@ -244,7 +243,7 @@
         }
 
         &::after {
-            @apply right-[7px] m-0 h-[.7rem] w-[.7rem] -translate-y-2/4 border-0 bg-contain bg-center bg-no-repeat content-[""];
+            @apply m-0 h-[.7rem] w-[.7rem] -translate-y-2/4 border-0 bg-contain bg-center bg-no-repeat content-[""] ltr:right-[7px] rtl:left-[7px] rtl:right-auto;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256 429.3l22.6-22.6 192-192L493.3 192 448 146.7l-22.6 22.6L256 338.7 86.6 169.4 64 146.7 18.7 192l22.6 22.6 192 192L256 429.3z"/></svg>');
         }
 

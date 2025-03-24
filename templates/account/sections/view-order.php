@@ -5,12 +5,6 @@
 
 defined( 'ABSPATH' ) || exit;
 
-error_log('Order ID: ' . (isset($_GET['view-order']) ? $_GET['view-order'] : 'not set'));
-				error_log('Order Data: ' . (is_array($order_data) ? 'exists' : 'is false or empty'));
-				if (is_array($order_data)) {
-					error_log('Order ID from data: ' . (isset($order_data['id']) ? $order_data['id'] : 'not set'));
-				}
-
 // Get order ID from the order data
 $order_id = isset( $order_data['id'] ) ? $order_data['id'] : null;
 
@@ -240,6 +234,7 @@ if ( $order_data ) : ?>
 										printf(
 											'<div class="flex items-center">%s</div>',
 											sprintf(
+												// translators: %s is the billing period
 												esc_html__( 'Billed %s until cancellation', 'digicommerce' ),
 												esc_html( $period_display )
 											)
@@ -250,9 +245,10 @@ if ( $order_data ) : ?>
 											printf(
 												'<div class="flex items-center gap-1">%s</div>',
 												sprintf(
+													// translators: %1$s is the signup fee, %2$s is the total price
 													esc_html__( 'First payment of %1$s then %2$s', 'digicommerce' ),
-													DigiCommerce_Product::instance()->format_price( $signup_fee, '' ),
-													DigiCommerce_Product::instance()->format_price( $item['total'], '' )
+													DigiCommerce_Product::instance()->format_price( $signup_fee, '' ), // phpcs:ignore
+													DigiCommerce_Product::instance()->format_price( $item['total'], '' ) // phpcs:ignore
 												)
 											);
 										}
@@ -262,6 +258,7 @@ if ( $order_data ) : ?>
 											printf(
 												'<div class="flex items-center">%s</div>',
 												sprintf(
+													// translators: %1$d is the duration, %2$s is the period
 													esc_html__( '%1$d %2$s free trial', 'digicommerce' ),
 													esc_html( $free_trial['duration'] ),
 													esc_html( $free_trial['period'] )
@@ -280,11 +277,11 @@ if ( $order_data ) : ?>
 										$show_variation_files = false;
 										$variation_files      = array();
 										$regular_files        = array();
-									
+
 										// First check for variation files if it's a variable product
-										if ( $price_mode === 'variations' && ! empty( $variation_name ) ) {
+										if ( 'variations' === $price_mode && ! empty( $variation_name ) ) {
 											$variations = get_post_meta( $product_id, 'digi_price_variations', true );
-									
+
 											if ( ! empty( $variations ) && is_array( $variations ) ) {
 												foreach ( $variations as $variation ) {
 													if ( isset( $variation['name'] ) && $variation['name'] === $variation_name ) {
@@ -297,24 +294,24 @@ if ( $order_data ) : ?>
 												}
 											}
 										}
-									
+
 										// Only get regular files if no variation files were found
 										if ( ! $show_variation_files ) {
 											$cache_key     = 'product_files_' . $product_id;
 											$regular_files = wp_cache_get( $cache_key, 'digicommerce_files' );
-									
+
 											if ( false === $regular_files ) {
 												$regular_files = get_post_meta( $product_id, 'digi_files', true );
-									
+
 												if ( ! empty( $regular_files ) && is_array( $regular_files ) ) {
 													wp_cache_set( $cache_key, $regular_files, 'digicommerce_files', HOUR_IN_SECONDS );
 												}
 											}
 										}
-									
+
 										// Use variation files if available, otherwise fall back to regular files
 										$files_to_show = $show_variation_files ? $variation_files : $regular_files;
-									
+
 										if ( ! empty( $files_to_show ) && is_array( $files_to_show ) ) :
 											?>
 											<div class="no-invoice flex flex-col items-start gap-2">
@@ -322,10 +319,10 @@ if ( $order_data ) : ?>
 												// First check if this is a subscription product
 												$subscription_enabled = ! empty( $item['subscription_enabled'] );
 												$downloadable_files = array();
-									
+
 												foreach ( $files_to_show as $file ) {
 													$can_download = false;
-									
+
 													if ( $subscription_enabled ) {
 														// Get subscription status for this order/product
 														global $wpdb;
@@ -341,11 +338,11 @@ if ( $order_data ) : ?>
 															),
 															ARRAY_A
 														);
-									
+
 														if ( $subscription ) {
-															if ( $subscription['status'] === 'active' ) {
+															if ( 'active' === $subscription['status'] ) {
 																$can_download = true;
-															} elseif ( $subscription['status'] === 'cancelled' ) {
+															} elseif ( 'cancelled' === $subscription['status'] ) {
 																$next_payment = strtotime( $subscription['next_payment'] );
 																$now         = time();
 																$can_download = ( $now < $next_payment );
@@ -355,30 +352,30 @@ if ( $order_data ) : ?>
 														// Regular product - use normal order access check
 														$can_download = DigiCommerce_Orders::instance()->verify_order_access( $order_id );
 													}
-									
-													if ( $can_download && !empty( $file['id'] ) ) {
+
+													if ( $can_download && ! empty( $file['id'] ) ) {
 														$downloadable_files[] = $file;
 													}
 												}
-									
+
 												if ( count( $downloadable_files ) > 1 ) :
 													// Reverse the array so newest files appear first
-													$downloadable_files = array_reverse($downloadable_files);
+													$downloadable_files = array_reverse( $downloadable_files );
 													?>
 													<div class="flex items-scretch gap-2">
 														<select class="py-2 px-3 text-sm rounded border border-solid border-dark-blue-20 bg-white text-dark-blue" 
 																name="file_select" 
-																id="file_select_<?php echo esc_attr($product_id); ?>">
+																id="file_select_<?php echo esc_attr( $product_id ); ?>">
 															<?php foreach ( $downloadable_files as $file ) : ?>
-																<option value="<?php echo esc_attr($file['id']); ?>">
-																	<?php echo esc_html($file['itemName'] ?? $file['name'] ?? esc_html__( 'Download', 'digicommerce' )); ?>
+																<option value="<?php echo esc_attr( $file['id'] ); ?>">
+																	<?php echo esc_html( $file['itemName'] ?? $file['name'] ?? esc_html__( 'Download', 'digicommerce' ) ); ?>
 																</option>
 															<?php endforeach; ?>
 														</select>
 														
 														<button type="button" 
 																class="download-item flex items-center gap-2 text-sm rounded py-2 px-3 bg-dark-blue-10 hover:bg-dark-blue text-dark-blue hover:text-white border border-solid border-dark-blue-20 hover:border-dark-blue default-transition" 
-																data-order="<?php echo esc_attr($order_id); ?>">
+																data-order="<?php echo esc_attr( $order_id ); ?>">
 															<div class="icon flex-shrink-0">
 																<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="20" height="20" fill="currentColor">
 																	<path d="m28 24v-4a1 1 0 0 0 -2 0v4a1 1 0 0 1 -1 1h-18a1 1 0 0 1 -1-1v-4a1 1 0 0 0 -2 0v4a3 3 0 0 0 3 3h18a3 3 0 0 0 3-3zm-6.38-5.22-5 4a1 1 0 0 1 -1.24 0l-5-4a1 1 0 0 1 1.24-1.56l3.38 2.7v-13.92a1 1 0 0 1 2 0v13.92l3.38-2.7a1 1 0 1 1 1.24 1.56z"/>
@@ -387,13 +384,15 @@ if ( $order_data ) : ?>
 															<span class="text flex-grow"><?php esc_html_e( 'Download', 'digicommerce' ); ?></span>
 														</button>
 													</div>
-												<?php else : 
+													<?php
+												else :
 													// Single file - show just the download button
-													$file = reset($downloadable_files); ?>
+													$file = reset( $downloadable_files );
+													?>
 													<button type="button" 
 															class="download-item flex items-center gap-2 text-sm rounded py-2 px-3 bg-dark-blue-10 hover:bg-dark-blue text-dark-blue hover:text-white border border-solid border-dark-blue-20 hover:border-dark-blue default-transition" 
-															data-file="<?php echo esc_attr($file['id']); ?>" 
-															data-order="<?php echo esc_attr($order_id); ?>">
+															data-file="<?php echo esc_attr( $file['id'] ); ?>" 
+															data-order="<?php echo esc_attr( $order_id ); ?>">
 														<div class="icon flex-shrink-0">
 															<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="20" height="20" fill="currentColor">
 																<path d="m28 24v-4a1 1 0 0 0 -2 0v4a1 1 0 0 1 -1 1h-18a1 1 0 0 1 -1-1v-4a1 1 0 0 0 -2 0v4a3 3 0 0 0 3 3h18a3 3 0 0 0 3-3zm-6.38-5.22-5 4a1 1 0 0 1 -1.24 0l-5-4a1 1 0 0 1 1.24-1.56l3.38 2.7v-13.92a1 1 0 0 1 2 0v13.92l3.38-2.7a1 1 0 1 1 1.24 1.56z"/>
@@ -401,7 +400,9 @@ if ( $order_data ) : ?>
 														</div>
 														<span class="text flex-grow"><?php esc_html_e( 'Download', 'digicommerce' ); ?></span>
 													</button>
-												<?php endif; ?>
+													<?php
+												endif;
+												?>
 											</div>
 											<?php
 										endif;
@@ -410,7 +411,7 @@ if ( $order_data ) : ?>
 								</div>
 							</td>
 							<td data-label="<?php esc_html_e( 'Total', 'digicommerce' ); ?>" class="end">
-								<?php echo DigiCommerce_Product::instance()->format_price( $item['price'], 'total-price' ); ?>
+								<?php echo DigiCommerce_Product::instance()->format_price( $item['price'], 'total-price' ); // phpcs:ignore ?>
 							</td>
 						</tr>
 						<?php
@@ -426,7 +427,7 @@ if ( $order_data ) : ?>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Subtotal:', 'digicommerce' ); ?></th>
 						<td data-label="<?php esc_html_e( 'Subtotal', 'digicommerce' ); ?>" class="text-dark-blue font-bold end">
-							<?php echo DigiCommerce_Product::instance()->format_price( $order_data['subtotal'], 'subtotal-price' ); ?>
+							<?php echo DigiCommerce_Product::instance()->format_price( $order_data['subtotal'], 'subtotal-price' ); // phpcs:ignore ?>
 						</td>
 					</tr>
 					
@@ -451,7 +452,7 @@ if ( $order_data ) : ?>
 							?>
 						</th>
 						<td data-label="<?php esc_html_e( 'VAT', 'digicommerce' ); ?>" class="text-dark-blue font-bold end">
-							<?php echo DigiCommerce_Product::instance()->format_price( $order_data['vat'], 'vat-price' ); ?>
+							<?php echo DigiCommerce_Product::instance()->format_price( $order_data['vat'], 'vat-price' ); // phpcs:ignore ?>
 						</td>
 					</tr>
 					<?php
@@ -465,7 +466,7 @@ if ( $order_data ) : ?>
 							<?php esc_html_e( 'Coupon:', 'digicommerce' ); ?>
 						</th>
 						<td data-label="<?php esc_html_e( 'Discount', 'digicommerce' ); ?>" class="text-dark-blue font-bold end">
-							<div class="flex justify-end">-<?php echo DigiCommerce_Product::instance()->format_price( $order_data['discount_amount'], 'discount-amount' ); ?></div>
+							<div class="flex justify-end">-<?php echo DigiCommerce_Product::instance()->format_price( $order_data['discount_amount'], 'discount-amount' ); // phpcs:ignore ?></div>
 						</td>
 					</tr>
 				<?php endif; ?>
@@ -475,7 +476,7 @@ if ( $order_data ) : ?>
 					<th scope="row"><?php esc_html_e( 'Total:', 'digicommerce' ); ?></th>
 					<td data-label="<?php esc_html_e( 'Total', 'digicommerce' ); ?>" class="end">
 						<span class="amount">
-							<?php echo DigiCommerce_Product::instance()->format_price( $order_data['total'], 'total-price' ); ?>
+							<?php echo DigiCommerce_Product::instance()->format_price( $order_data['total'], 'total-price' ); // phpcs:ignore ?>
 						</span>
 					</td>
 				</tr>
@@ -490,13 +491,7 @@ if ( $order_data ) : ?>
 
 		$subscription = $wpdb->get_row(
 			$wpdb->prepare(
-				"
-			SELECT s.* 
-			FROM {$subscription_items_table} si
-			JOIN {$subscriptions_table} s ON si.subscription_id = s.id
-			WHERE si.order_id = %d
-			LIMIT 1
-		",
+				"SELECT s.* FROM {$subscription_items_table} si JOIN {$subscriptions_table} s ON si.subscription_id = s.id WHERE si.order_id = %d LIMIT 1", // phpcs:ignore
 				$order_id
 			),
 			ARRAY_A
@@ -517,10 +512,10 @@ if ( $order_data ) : ?>
 					<table class="digicommerce-table no-invoice">
 						<thead>
 							<tr>
-								<th scope="col" class="px-6 py-3 text-left text-xs font-bold text-dark-blue"><?php esc_html_e( 'ID', 'digicommerce' ); ?></th>
-								<th scope="col" class="px-6 py-3 text-left text-xs font-bold text-dark-blue"><?php esc_html_e( 'Next Payment', 'digicommerce' ); ?></th>
-								<th scope="col" class="px-6 py-3 text-left text-xs font-bold text-dark-blue"><?php esc_html_e( 'Status', 'digicommerce' ); ?></th>
-								<th scope="col" class="px-6 py-3 text-left text-xs font-bold text-dark-blue"><?php esc_html_e( 'Amount', 'digicommerce' ); ?></th>
+								<th scope="col" class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue"><?php esc_html_e( 'ID', 'digicommerce' ); ?></th>
+								<th scope="col" class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue"><?php esc_html_e( 'Next Payment', 'digicommerce' ); ?></th>
+								<th scope="col" class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue"><?php esc_html_e( 'Status', 'digicommerce' ); ?></th>
+								<th scope="col" class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue"><?php esc_html_e( 'Amount', 'digicommerce' ); ?></th>
 								<th scope="col" class="relative px-6 py-3"><span class="sr-only"><?php esc_html_e( 'Actions', 'digicommerce' ); ?></span></th>
 							</tr>
 						</thead>
@@ -528,7 +523,17 @@ if ( $order_data ) : ?>
 							<tr>
 								<td class="px-6 py-4" data-label="<?php esc_html_e( 'ID', 'digicommerce' ); ?>">
 									<span class="whitespace-nowrap text-medium font-bold text-dark-blue">
-										<a href="<?php echo esc_url(add_query_arg(array('section' => 'subscriptions', 'view-subscription' => $subscription['id']), get_permalink())); ?>" class="whitespace-nowrap text-medium font-bold text-dark-blue hover:text-gold default-transition">
+										<?php
+										// Link
+										$num_link = add_query_arg(
+											array(
+												'section'           => 'subscriptions',
+												'view-subscription' => $subscription['id'],
+											),
+											get_permalink()
+										);
+										?>
+										<a href="<?php echo esc_url( $num_link ); ?>" class="whitespace-nowrap text-medium font-bold text-dark-blue hover:text-gold default-transition">
 											<?php echo esc_html( $subscription['subscription_number'] ); ?>
 										</a>
 									</span>
@@ -542,10 +547,20 @@ if ( $order_data ) : ?>
 									</span>
 								</td>
 								<td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600" data-label="<?php esc_html_e( 'Amount', 'digicommerce' ); ?>">
-									<?php echo DigiCommerce_Product::instance()->format_price( $subscription['total'], 'subscription-price' ); ?>
+									<?php echo DigiCommerce_Product::instance()->format_price( $subscription['total'], 'subscription-price' ); // phpcs:ignore ?>
 								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2" data-label="<?php esc_html_e( 'Actions', 'digicommerce' ); ?>">
-									<a href="<?php echo esc_url(add_query_arg(array('section' => 'subscriptions', 'view-subscription' => $subscription['id']), get_permalink())); ?>" class="whitespace-nowrap text-medium font-bold text-dark-blue hover:text-gold default-transition">
+								<td class="px-6 py-4 whitespace-nowrap ltr:text-right rtl:text-left text-sm font-medium space-x-2" data-label="<?php esc_html_e( 'Actions', 'digicommerce' ); ?>">
+									<?php
+									// Link
+									$sub_link = add_query_arg(
+										array(
+											'section'           => 'subscriptions',
+											'view-subscription' => $subscription['id'],
+										),
+										get_permalink()
+									);
+									?>
+									<a href="<?php echo esc_url( $sub_link ); ?>" class="whitespace-nowrap text-medium font-bold text-dark-blue hover:text-gold default-transition">
 										<?php esc_html_e( 'View details', 'digicommerce' ); ?>
 									</a>
 								</td>

@@ -4,13 +4,53 @@
  * Handles all order-related functionality using custom database tables
  */
 class DigiCommerce_Orders {
+	/**
+	 * Singleton instance
+	 *
+	 * @var DigiCommerce_Orders
+	 */
 	private static $instance = null;
+
+	/**
+	 * Main orders table name
+	 *
+	 * @var string
+	 */
 	private $table_orders;
+
+	/**
+	 * Order items table name
+	 *
+	 * @var string
+	 */
 	private $table_items;
+
+	/**
+	 * Order notes table name
+	 *
+	 * @var string
+	 */
 	private $table_notes;
+
+	/**
+	 * Order meta table name
+	 *
+	 * @var string
+	 */
 	private $table_meta;
+
+	/**
+	 * Order billing details table name
+	 *
+	 * @var string
+	 */
 	private $table_billing;
 
+	/**
+	 * Returns the singleton instance
+	 *
+	 * @return DigiCommerce_Orders
+	 */
 	public static function instance() {
 		if ( is_null( self::$instance ) ) {
 			self::$instance = new self();
@@ -18,6 +58,9 @@ class DigiCommerce_Orders {
 		return self::$instance;
 	}
 
+	/**
+	 * Constructor
+	 */
 	private function __construct() {
 		global $wpdb;
 		// Set up table names
@@ -165,6 +208,9 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Creates a new order
+	 *
+	 * @param array $order_data Order data.
+	 * @throws Exception If the order creation fails.
 	 */
 	public function create_order( $order_data ) {
 		global $wpdb;
@@ -182,27 +228,26 @@ class DigiCommerce_Orders {
 
 		try {
 			// Get seller's country and buyer's country
-			$business_country = DigiCommerce()->get_option('business_country');
-			$buyer_country = $order_data['billing_details']['country'] ?? '';
-			$countries = DigiCommerce()->get_countries();
-			$vat_number = $order_data['billing_details']['vat_number'] ?? '';
+			$business_country = DigiCommerce()->get_option( 'business_country' );
+			$buyer_country    = $order_data['billing_details']['country'] ?? '';
+			$countries        = DigiCommerce()->get_countries();
+			$vat_number       = $order_data['billing_details']['vat_number'] ?? '';
 
 			// Initialize VAT rate and amount
-			$tax_rate = 0;
+			$tax_rate   = 0;
 			$vat_amount = 0;
 
 			// Only calculate VAT if taxes are not disabled
-			if (!DigiCommerce()->get_option('remove_taxes')) {
-				if ($buyer_country === $business_country) {
+			if ( ! DigiCommerce()->get_option( 'remove_taxes' ) ) {
+				if ( $buyer_country === $business_country ) {
 					// Domestic sale: Always charge seller's country VAT
-					$tax_rate = $countries[$business_country]['tax_rate'] ?? 0;
+					$tax_rate   = $countries[ $business_country ]['tax_rate'] ?? 0;
 					$vat_amount = $order_data['subtotal'] * $tax_rate;
-				} 
-				elseif (!empty($countries[$buyer_country]['eu']) && !empty($countries[$business_country]['eu'])) {
+				} elseif ( ! empty( $countries[ $buyer_country ]['eu'] ) && ! empty( $countries[ $business_country ]['eu'] ) ) {
 					// EU cross-border sale
-					if (empty($vat_number) || !$this->validate_vat_number($vat_number, $buyer_country)) {
+					if ( empty( $vat_number ) || ! $this->validate_vat_number( $vat_number, $buyer_country ) ) {
 						// No valid VAT number - charge buyer's country rate
-						$tax_rate = $countries[$buyer_country]['tax_rate'] ?? 0;
+						$tax_rate   = $countries[ $buyer_country ]['tax_rate'] ?? 0;
 						$vat_amount = $order_data['subtotal'] * $tax_rate;
 					}
 					// With valid VAT number - no VAT (vat_amount and tax_rate remain 0)
@@ -308,7 +353,7 @@ class DigiCommerce_Orders {
 							'subscription_period'     => $item['subscription_period'] ?? null,
 							'subscription_free_trial' => isset( $item['subscription_free_trial'] ) ? maybe_serialize( $item['subscription_free_trial'] ) : null,
 							'subscription_signup_fee' => $item['subscription_signup_fee'] ?? 0.00,
-							'meta'                    => !empty($item['meta']) ? maybe_serialize($item['meta']) : null
+							'meta'                    => ! empty( $item['meta'] ) ? maybe_serialize( $item['meta'] ) : null,
 						),
 						array( '%d', '%d', '%s', '%s', '%f', '%f', '%f', '%f', '%d', '%s', '%s', '%f', '%s' )
 					);
@@ -324,7 +369,7 @@ class DigiCommerce_Orders {
 
 				$wpdb->query(
 					$wpdb->prepare(
-						"INSERT INTO {$this->table_billing} 
+						"INSERT INTO {$this->table_billing}
                         (order_id, first_name, last_name, company, address, city, postcode, country, email, phone, vat_number) 
                         VALUES (%d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         ON DUPLICATE KEY UPDATE 
@@ -411,16 +456,15 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Gets order data
+	 *
+	 * @param int $order_id Order ID.
 	 */
 	public function get_order( $order_id ) {
 		global $wpdb;
 
 		// Get main order data
 		$order = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT * FROM {$this->table_orders} WHERE id = %d",
-				$order_id
-			),
+			$wpdb->prepare( "SELECT * FROM {$this->table_orders} WHERE id = %d", $order_id ), // phpcs:ignore
 			ARRAY_A
 		);
 
@@ -430,37 +474,28 @@ class DigiCommerce_Orders {
 
 		// Get order items
 		$order['items'] = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT * FROM {$this->table_items} WHERE order_id = %d",
-				$order_id
-			),
+			$wpdb->prepare( "SELECT * FROM {$this->table_items} WHERE order_id = %d", $order_id ), // phpcs:ignore
 			ARRAY_A
 		);
 
 		// Unserialize if it exists
-		if (!empty($order['items'])) {
-			foreach ($order['items'] as &$item) {
-				$item['meta'] = !empty($item['meta']) ? maybe_unserialize($item['meta']) : array();
-				$item['subscription_free_trial'] = !empty($item['subscription_free_trial']) ? 
-					maybe_unserialize($item['subscription_free_trial']) : null;
+		if ( ! empty( $order['items'] ) ) {
+			foreach ( $order['items'] as &$item ) {
+				$item['meta']                    = ! empty( $item['meta'] ) ? maybe_unserialize( $item['meta'] ) : array();
+				$item['subscription_free_trial'] = ! empty( $item['subscription_free_trial'] ) ?
+					maybe_unserialize( $item['subscription_free_trial'] ) : null;
 			}
 		}
 
 		// Get billing details
 		$order['billing_details'] = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT * FROM {$this->table_billing} WHERE order_id = %d",
-				$order_id
-			),
+			$wpdb->prepare( "SELECT * FROM {$this->table_billing} WHERE order_id = %d", $order_id ), // phpcs:ignore
 			ARRAY_A
 		);
 
 		// Get order notes
 		$order['notes'] = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT * FROM {$this->table_notes} WHERE order_id = %d ORDER BY date DESC",
-				$order_id
-			),
+			$wpdb->prepare( "SELECT * FROM {$this->table_notes} WHERE order_id = %d ORDER BY date DESC", $order_id ), // phpcs:ignore
 			ARRAY_A
 		);
 
@@ -469,6 +504,9 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Gets user orders
+	 *
+	 * @param int   $user_id User ID.
+	 * @param array $args    Arguments.
 	 */
 	public function get_user_orders( $user_id, $args = array() ) {
 		global $wpdb;
@@ -506,7 +544,7 @@ class DigiCommerce_Orders {
 				ORDER BY o.{$orderby} {$order}
 				{$limit} {$offset}";
 
-		$results = $wpdb->get_results( $query, ARRAY_A );
+		$results = $wpdb->get_results( $query, ARRAY_A ); // phpcs:ignore
 
 		if ( empty( $results ) ) {
 			return array();
@@ -523,7 +561,7 @@ class DigiCommerce_Orders {
 		// Safely construct the query for items
 		$items_query = "SELECT * FROM {$this->table_items} 
                         WHERE order_id IN (" . implode( ',', $order_ids ) . ')';
-		$items       = $wpdb->get_results( $items_query, ARRAY_A );
+		$items       = $wpdb->get_results( $items_query, ARRAY_A ); // phpcs:ignore
 
 		// Organize items by order
 		$items_by_order = array();
@@ -548,11 +586,7 @@ class DigiCommerce_Orders {
 		$prefix = apply_filters( 'digicommerce_order_number_prefix', '#' );
 
 		// Get the last order number
-		$last_order = $wpdb->get_var(
-			"SELECT order_number FROM {$this->table_orders} 
-            ORDER BY id DESC 
-            LIMIT 1"
-		);
+		$last_order = $wpdb->get_var( "SELECT order_number FROM {$this->table_orders} ORDER BY id DESC LIMIT 1" ); // phpcs:ignore
 
 		if ( $last_order ) {
 			// Extract the numeric part
@@ -576,6 +610,10 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Add order note
+	 *
+	 * @param int    $order_id     Order ID.
+	 * @param string $note_content Note content.
+	 * @param string $author       Author.
 	 */
 	public function add_order_note( $order_id, $note_content, $author = '' ) {
 		global $wpdb;
@@ -599,6 +637,9 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Update billing details
+	 *
+	 * @param int   $order_id     Order ID.
+	 * @param array $billing_data Billing data.
 	 */
 	public function update_billing_details( $order_id, $billing_data ) {
 		global $wpdb;
@@ -614,10 +655,13 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Verify order access
+	 *
+	 * @param int    $order_id Order ID.
+	 * @param string $token    Token.
 	 */
 	public function verify_order_access( $order_id, $token = null ) {
 		// If token is provided (success page), only verify token
-		if ( $token !== null ) {
+		if ( null !== $token ) {
 			$has_token_access = $this->verify_order_token( $order_id, $token );
 			return $has_token_access;
 		}
@@ -633,11 +677,7 @@ class DigiCommerce_Orders {
 
 		global $wpdb;
 		$count = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$this->table_orders} WHERE id = %d AND user_id = %d",
-				$order_id,
-				get_current_user_id()
-			)
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$this->table_orders} WHERE id = %d AND user_id = %d", $order_id, get_current_user_id() ) // phpcs:ignore
 		);
 
 		return ( $count > 0 );
@@ -645,16 +685,16 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Verify order token
+	 *
+	 * @param int    $order_id Order ID.
+	 * @param string $token    Token.
 	 */
 	public function verify_order_token( $order_id, $token ) {
 		global $wpdb;
 
 		// Fetch order details
 		$order = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT * FROM {$this->table_orders} WHERE id = %d",
-				$order_id
-			),
+			$wpdb->prepare( "SELECT * FROM {$this->table_orders} WHERE id = %d", $order_id ), // phpcs:ignore
 			ARRAY_A
 		);
 
@@ -679,7 +719,7 @@ class DigiCommerce_Orders {
 	 * Render orders page in admin
 	 */
 	public function render_orders_page() {
-		if ( isset( $_GET['action'] ) && $_GET['action'] === 'edit' && isset( $_GET['id'] ) ) {
+		if ( isset( $_GET['action'] ) && 'edit' === $_GET['action'] && isset( $_GET['id'] ) ) {
 			// Render the Edit Order page
 			$this->render_edit_order_page( intval( $_GET['id'] ) );
 		} else {
@@ -709,6 +749,10 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Save screen options
+	 *
+	 * @param string $status Status.
+	 * @param string $option Option.
+	 * @param int    $value Value.
 	 */
 	public function set_screen_option( $status, $option, $value ) {
 		if ( 'digicommerce_orders_per_page' === $option ) {
@@ -717,8 +761,11 @@ class DigiCommerce_Orders {
 		return $status;
 	}
 
+	/**
+	 * Handle actions
+	 */
 	public function handle_actions() {
-		if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'digi-orders' ) {
+		if ( ! isset( $_GET['page'] ) || 'digi-orders' !== $_GET['page'] ) {
 			return;
 		}
 
@@ -728,7 +775,7 @@ class DigiCommerce_Orders {
 			$action   = sanitize_text_field( $_GET['action'] );
 
 			// Skip nonce verification for edit action since it uses form nonce
-			if ( $action === 'edit' ) {
+			if ( 'edit' === $action ) {
 				return;
 			}
 
@@ -762,15 +809,15 @@ class DigiCommerce_Orders {
 		}
 
 		// Handle bulk actions
-		if ( ( isset( $_GET['action'] ) && $_GET['action'] !== '-1' ) ||
-		( isset( $_GET['action2'] ) && $_GET['action2'] !== '-1' ) ) {
+		if ( ( isset( $_GET['action'] ) && '-1' !== $_GET['action'] ) ||
+		( isset( $_GET['action2'] ) && '-1' !== $_GET['action2'] ) ) {
 			// Verify the bulk actions nonce
 			if ( ! check_admin_referer( 'digi_orders_bulk_action', '_wpnonce_bulk' ) ) {
 				wp_die( esc_html__( 'Security check failed.', 'digicommerce' ) );
 			}
 
 			// Determine the action to process
-			$action = ( $_GET['action'] !== '-1' ) ? sanitize_text_field( $_GET['action'] ) : sanitize_text_field( $_GET['action2'] );
+			$action = ( '-1' !== $_GET['action'] ) ? sanitize_text_field( $_GET['action'] ) : sanitize_text_field( $_GET['action2'] );
 			$ids    = isset( $_GET['post'] ) ? array_map( 'intval', $_GET['post'] ) : array();
 
 			if ( ! empty( $ids ) ) {
@@ -821,26 +868,26 @@ class DigiCommerce_Orders {
 		}
 
 		// Get total counts for each status
-		$total_all        = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status != 'trash'" );
-		$total_completed  = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'completed'" );
-		$total_processing = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'processing'" );
-		$total_cancelled  = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'cancelled'" );
-		$total_refunded   = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'refunded'" );
-		$total_trash      = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'trash'" );
+		$total_all        = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status != 'trash'" ); // phpcs:ignore
+		$total_completed  = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'completed'" ); // phpcs:ignore
+		$total_processing = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'processing'" ); // phpcs:ignore
+		$total_cancelled  = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'cancelled'" ); // phpcs:ignore
+		$total_refunded   = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'refunded'" ); // phpcs:ignore
+		$total_trash      = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'trash'" ); // phpcs:ignore
 
 		// Get the current status filter
 		$current_status = isset( $_GET['status'] ) ? sanitize_text_field( $_GET['status'] ) : 'all';
 
 		// Get total items for current view
 		$where = '1=1';
-		if ( $current_status !== 'all' ) {
+		if ( 'all' !== $current_status ) {
 			$where .= $wpdb->prepare( ' AND status = %s', $current_status );
 		} else {
 			$where .= " AND status != 'trash'";
 		}
 
 		// Calculate total items for current view
-		$total_items = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE {$where}" );
+		$total_items = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE {$where}" ); // phpcs:ignore
 
 		$pagenum = $this->get_pagenum();
 		$offset  = ( $pagenum - 1 ) * $per_page;
@@ -853,8 +900,8 @@ class DigiCommerce_Orders {
 			array(
 				'offset'        => $offset,
 				'limit'         => $per_page,
-				'status'        => $current_status === 'all' ? '' : $current_status,
-				'exclude_trash' => $current_status === 'all',
+				'status'        => 'all' === $current_status ? '' : $current_status,
+				'exclude_trash' => 'all' === $current_status,
 				's'             => $search_query,
 			)
 		);
@@ -863,6 +910,14 @@ class DigiCommerce_Orders {
 		include DIGICOMMERCE_PLUGIN_DIR . 'admin/orders-list.php';
 	}
 
+	/**
+	 * Update order status
+	 *
+	 * @param int    $order_id Order ID.
+	 * @param string $status   New status.
+	 * @return bool
+	 * @throws Exception If refund fails.
+	 */
 	public function update_order_status( $order_id, $status ) {
 		global $wpdb;
 
@@ -874,14 +929,11 @@ class DigiCommerce_Orders {
 
 		// Get current status before updating
 		$current_status = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT status FROM {$this->table_orders} WHERE id = %d",
-				$order_id
-			)
+			$wpdb->prepare( "SELECT status FROM {$this->table_orders} WHERE id = %d", $order_id ) // phpcs:ignore
 		);
 
 		// If status is being changed to refunded, process the refund first
-		if ( $status === 'refunded' && $current_status !== 'refunded' ) {
+		if ( 'refunded' === $status && 'refunded' !== $current_status ) {
 			try {
 				// Get order details
 				$order = $this->get_order( $order_id );
@@ -1000,6 +1052,11 @@ class DigiCommerce_Orders {
 		return false;
 	}
 
+	/**
+	 * Delete orders
+	 *
+	 * @param int $order_id Order ID.
+	 */
 	public function delete_order( $order_id ) {
 		global $wpdb;
 
@@ -1012,10 +1069,15 @@ class DigiCommerce_Orders {
 			array( '%d' )
 		);
 
-		return $updated !== false;
+		return false !== $updated;
 	}
 
-	// Restore an order from trash
+	/**
+	 * Restore an order from trash
+	 *
+	 * @param int $order_id Order ID.
+	 * @return bool
+	 */
 	public function restore_order( $order_id ) {
 		global $wpdb;
 
@@ -1027,10 +1089,15 @@ class DigiCommerce_Orders {
 			array( '%d' )
 		);
 
-		return $updated !== false;
+		return false !== $updated;
 	}
 
-	// Permanently delete an order
+	/**
+	 * Permanently delete an order
+	 *
+	 * @param int $order_id Order ID.
+	 * @return bool
+	 */
 	public function delete_order_permanently( $order_id ) {
 		global $wpdb;
 
@@ -1040,15 +1107,17 @@ class DigiCommerce_Orders {
 			array( '%d' )
 		);
 
-		if ($deleted) {
-			do_action('digicommerce_order_deleted', $order_id);
+		if ( $deleted ) {
+			do_action( 'digicommerce_order_deleted', $order_id );
 		}
 
-		return $deleted !== false;
+		return false !== $deleted;
 	}
 
 	/**
 	 * Get subscription data for order
+	 *
+	 * @param int $order_id Order ID.
 	 */
 	public function get_order_subscription_data( $order_id ) {
 		if ( ! class_exists( 'DigiCommerce_Pro' ) ) {
@@ -1070,6 +1139,8 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Render order item page in admin
+	 *
+	 * @param int $order_id Order ID.
 	 */
 	public function render_edit_order_page( $order_id ) {
 		if ( ! $order_id || ! is_numeric( $order_id ) ) {
@@ -1125,12 +1196,12 @@ class DigiCommerce_Orders {
 				$this->update_order_status( $order_id, $new_status );
 
 				// Send cancelled email if status changed to cancelled and email notification is enabled
-				if ( $new_status === 'cancelled' && $current_status !== 'cancelled' && DigiCommerce()->get_option( 'email_order_cancelled' ) ) {
+				if ( 'cancelled' === $new_status && 'cancelled' !== $current_status && DigiCommerce()->get_option( 'email_order_cancelled' ) ) {
 					DigiCommerce_Emails::instance()->send_order_cancelled( $order_id );
 				}
 
 				// Send refunded email if status changed to refunded and email notification is enabled
-				if ( $new_status === 'refunded' && $current_status !== 'refunded' && DigiCommerce()->get_option( 'email_order_refunded' ) ) {
+				if ( 'refunded' === $new_status && 'refunded' !== $current_status && DigiCommerce()->get_option( 'email_order_refunded' ) ) {
 					DigiCommerce_Emails::instance()->send_order_refunded( $order_id );
 				}
 			}
@@ -1162,10 +1233,7 @@ class DigiCommerce_Orders {
 
 			// Get user ID from orders table
 			$user_id = $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT user_id FROM {$this->table_orders} WHERE id = %d",
-					$order_id
-				)
+				$wpdb->prepare( "SELECT user_id FROM {$this->table_orders} WHERE id = %d", $order_id ) // phpcs:ignore
 			);
 
 			if ( $user_id ) {
@@ -1208,6 +1276,8 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Get orders for admin list
+	 *
+	 * @param array $args Arguments for fetching orders.
 	 */
 	private function get_orders( $args = array() ) {
 		global $wpdb;
@@ -1226,7 +1296,7 @@ class DigiCommerce_Orders {
 		$where = 'WHERE 1=1';
 
 		// Exclude trash for "all" status
-		if ( $args['status'] === 'all' || $args['status'] === '' ) {
+		if ( 'all' === $args['status'] || '' === $args['status'] ) {
 			$where .= " AND o.status != 'trash'";
 		} elseif ( ! empty( $args['status'] ) ) {
 			$where .= $wpdb->prepare( ' AND o.status = %s', $args['status'] );
@@ -1244,18 +1314,9 @@ class DigiCommerce_Orders {
 		}
 
 		// Construct the query
-		$query = $wpdb->prepare(
-			"SELECT o.*, b.first_name, b.last_name 
-             FROM {$this->table_orders} o 
-             LEFT JOIN {$this->table_billing} b ON o.id = b.order_id 
-             $where 
-             ORDER BY o.{$args['orderby']} {$args['order']}
-             LIMIT %d OFFSET %d",
-			$args['limit'],
-			$args['offset']
-		);
+		$query = $wpdb->prepare( "SELECT o.*, b.first_name, b.last_name  FROM {$this->table_orders} o  LEFT JOIN {$this->table_billing} b ON o.id = b.order_id  $where  ORDER BY o.{$args['orderby']} {$args['order']} LIMIT %d OFFSET %d", $args['limit'], $args['offset'] ); // phpcs:ignore
 
-		return $wpdb->get_results( $query, ARRAY_A );
+		return $wpdb->get_results( $query, ARRAY_A ); // phpcs:ignore
 	}
 
 	/**
@@ -1268,6 +1329,11 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Correct format for EU countries
+	 *
+	 * @param string $city City name.
+	 * @param string $postal_code Postal code.
+	 * @param string $country_code Country code.
+	 * @param array  $countries List of countries.
 	 */
 	public function format_city_postal( $city, $postal_code, $country_code, $countries ) {
 		// Check if the country is in the EU
@@ -1283,6 +1349,8 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Enqueue admin assets
+	 *
+	 * @param string $hook Current page hook.
 	 */
 	public function enqueue_admin_assets( $hook ) {
 		if ( strpos( $hook, 'digi-orders' ) === false ) {
@@ -1315,15 +1383,17 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Enqueue frontend assets
+	 *
+	 * @param string $hook Current page hook.
 	 */
 	public function enqueue_frontend_assets( $hook ) {
 		// Only enqueue on account page
-		if (!is_digicommerce_account()) {
+		if ( ! is_digicommerce_account() ) {
 			return;
 		}
-	
+
 		// Only enqueue when viewing an order or subscription
-		if (!isset($_GET['view-order']) && !isset($_GET['view-subscription'])) {
+		if ( ! isset( $_GET['view-order'] ) && ! isset( $_GET['view-subscription'] ) ) {
 			return;
 		}
 
@@ -1370,7 +1440,7 @@ class DigiCommerce_Orders {
 					'invoice'           => esc_html__( 'invoice', 'digicommerce' ),
 					'allRightsReserved' => str_replace(
 						array( '{year}', '{site}' ),
-						array( date( 'Y' ), get_bloginfo( 'name' ) ),
+						array( date( 'Y' ), get_bloginfo( 'name' ) ), // phpcs:ignore
 						wp_kses_post( DigiCommerce()->get_option( 'invoices_footer', esc_html__( 'Copyright © {year} {site} All rights reserved.', 'digicommerce' ) ) )
 					),
 					'generating'        => esc_html__( 'Generating PDF...', 'digicommerce' ),
@@ -1380,7 +1450,12 @@ class DigiCommerce_Orders {
 		);
 	}
 
-	// Validate VAT numbers
+	/**
+	 * Validate VAT number
+	 *
+	 * @param string $vat_number VAT number.
+	 * @param string $country_code Country code.
+	 */
 	public function validate_vat_number( $vat_number, $country_code ) {
 		// Remove any spaces or special characters
 		$vat_number = strtoupper( preg_replace( '/[^A-Z0-9]/', '', $vat_number ) );
@@ -1429,9 +1504,11 @@ class DigiCommerce_Orders {
 		// Validate against the country's format
 		return (bool) preg_match( $formats[ $country_code ], $vat_number );
 	}
-	
+
 	/**
 	 * Customize admin footer
+	 *
+	 * @param string $text Footer text.
 	 */
 	public function footer_text( $text ) {
 		$screen = get_current_screen();
@@ -1455,6 +1532,8 @@ class DigiCommerce_Orders {
 
 	/**
 	 * Customize admin footer version
+	 *
+	 * @param string $version Version string.
 	 */
 	public function update_footer( $version ) {
 		$screen = get_current_screen();

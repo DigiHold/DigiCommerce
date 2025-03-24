@@ -3,11 +3,39 @@
  * PayPal Payment Gateway for DigiCommerce
  */
 class DigiCommerce_PayPal {
+	/**
+	 * Singleton instance
+	 *
+	 * @var DigiCommerce_PayPal
+	 */
 	private static $instance = null;
+
+	/**
+	 * PayPal client ID
+	 *
+	 * @var string
+	 */
 	private $client_id;
+
+	/**
+	 * PayPal client secret
+	 *
+	 * @var string
+	 */
 	private $client_secret;
+
+	/**
+	 * Whether PayPal is in sandbox mode
+	 *
+	 * @var bool
+	 */
 	private $is_sandbox;
 
+	/**
+	 * Get singleton instance
+	 *
+	 * @return DigiCommerce_PayPal
+	 */
 	public static function instance() {
 		if ( is_null( self::$instance ) ) {
 			self::$instance = new self();
@@ -15,6 +43,9 @@ class DigiCommerce_PayPal {
 		return self::$instance;
 	}
 
+	/**
+	 * Constructor
+	 */
 	private function __construct() {
 		$this->is_sandbox    = DigiCommerce()->get_option( 'paypal_sandbox', '0' );
 		$this->client_id     = DigiCommerce()->get_option( 'paypal_client_id', '' );
@@ -24,15 +55,26 @@ class DigiCommerce_PayPal {
 		add_action( 'wp_ajax_nopriv_digicommerce_create_paypal_plan', array( $this, 'create_paypal_plan' ) );
 	}
 
+	/**
+	 * Get PayPal API URL
+	 *
+	 * @return string
+	 */
 	private function get_api_url() {
 		return $this->is_sandbox
 			? 'https://api-m.sandbox.paypal.com'
 			: 'https://api-m.paypal.com';
 	}
 
+	/**
+	 * Get PayPal access token
+	 *
+	 * @return string
+	 * @throws Exception If access token cannot be retrieved.
+	 */
 	private function get_access_token() {
 		if ( empty( $this->client_id ) || empty( $this->client_secret ) ) {
-			throw new Exception( __( 'PayPal configuration incomplete', 'digicommerce' ) );
+			throw new Exception( esc_html__( 'PayPal configuration incomplete', 'digicommerce' ) );
 		}
 
 		$api_url = $this->get_api_url() . '/v1/oauth2/token';
@@ -56,20 +98,25 @@ class DigiCommerce_PayPal {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			throw new Exception( $response->get_error_message() );
+			throw new Exception( $response->get_error_message() ); // phpcs:ignore
 		}
 
 		$body   = json_decode( wp_remote_retrieve_body( $response ), true );
 		$status = wp_remote_retrieve_response_code( $response );
 
-		if ( $status !== 200 || empty( $body['access_token'] ) ) {
+		if ( 200 !== $status || empty( $body['access_token'] ) ) {
 			$error_message = isset( $body['error_description'] ) ? $body['error_description'] : 'Unknown error';
-			throw new Exception( __( 'Failed to get PayPal access token: ', 'digicommerce' ) . $error_message );
+			throw new Exception( esc_html__( 'Failed to get PayPal access token: ', 'digicommerce' ) . $error_message ); // phpcs:ignore
 		}
 
 		return $body['access_token'];
 	}
 
+	/**
+	 * Create PayPal plan
+	 *
+	 * @throws Exception If plan creation fails.
+	 */
 	public function create_paypal_plan() {
 		try {
 
@@ -96,7 +143,7 @@ class DigiCommerce_PayPal {
 			}
 
 			if ( ! $subscription_item ) {
-				throw new Exception( __( 'No subscription product found', 'digicommerce' ) );
+				throw new Exception( esc_html__( 'No subscription product found', 'digicommerce' ) );
 			}
 
 			// Get base price and VAT information
@@ -104,12 +151,12 @@ class DigiCommerce_PayPal {
 			$signup_fee = ! empty( $subscription_item['subscription_signup_fee'] ) ?
 				floatval( $subscription_item['subscription_signup_fee'] ) : 0;
 
-			$business_country = DigiCommerce()->get_option('business_country');
-			$country          = isset($_POST['country']) ? sanitize_text_field($_POST['country']) : '';
-			$vat_number       = isset($_POST['vat_number']) ? sanitize_text_field($_POST['vat_number']) : '';
+			$business_country = DigiCommerce()->get_option( 'business_country' );
+			$country          = isset( $_POST['country'] ) ? sanitize_text_field( $_POST['country'] ) : '';
+			$vat_number       = isset( $_POST['vat_number'] ) ? sanitize_text_field( $_POST['vat_number'] ) : '';
 
-			if (empty($country)) {
-				throw new Exception(__('Country is required', 'digicommerce'));
+			if ( empty( $country ) ) {
+				throw new Exception( esc_html__( 'Country is required', 'digicommerce' ) );
 			}
 
 			// Initialize VAT rate
@@ -118,16 +165,15 @@ class DigiCommerce_PayPal {
 			// Only calculate VAT if taxes are not disabled
 			if ( ! DigiCommerce()->get_option( 'remove_taxes' ) ) {
 				$countries = DigiCommerce()->get_countries();
-				
-				if ($country === $business_country) {
+
+				if ( $country === $business_country ) {
 					// Domestic sale: Always charge seller's country VAT
-					$vat_rate = $countries[$business_country]['tax_rate'] ?? 0;
-				} 
-				elseif (!empty($countries[$country]['eu']) && !empty($countries[$business_country]['eu'])) {
+					$vat_rate = $countries[ $business_country ]['tax_rate'] ?? 0;
+				} elseif ( ! empty( $countries[ $country ]['eu'] ) && ! empty( $countries[ $business_country ]['eu'] ) ) {
 					// EU cross-border sale
-					if (empty($vat_number) || ! DigiCommerce_Orders::instance()->validate_vat_number($vat_number, $country)) {
+					if ( empty( $vat_number ) || ! DigiCommerce_Orders::instance()->validate_vat_number( $vat_number, $country ) ) {
 						// No valid VAT number - charge buyer's country rate
-						$vat_rate = $countries[$country]['tax_rate'] ?? 0;
+						$vat_rate = $countries[ $country ]['tax_rate'] ?? 0;
 					}
 					// With valid VAT number - no VAT (vat_rate remains 0)
 				}
@@ -157,7 +203,7 @@ class DigiCommerce_PayPal {
 
 				if ( $signup_fee > 0 ) {
 					// Apply discount to signup fee if exists
-					if ( $discount['type'] === 'percentage' ) {
+					if ( 'percentage' === $discount['type'] ) {
 						$discount_amount = ( $signup_fee_with_vat * floatval( $discount['amount'] ) ) / 100;
 					} else {
 						$discount_amount = min( floatval( $discount['amount'] ), $signup_fee_with_vat );
@@ -165,7 +211,7 @@ class DigiCommerce_PayPal {
 					$final_signup_fee = $signup_fee_with_vat - $discount_amount;
 				} else {
 					// Apply discount to subscription price if no signup fee
-					if ( $discount['type'] === 'percentage' ) {
+					if ( 'percentage' === $discount['type'] ) {
 						$discount_amount = ( $subscription_price * floatval( $discount['amount'] ) ) / 100;
 					} else {
 						$discount_amount = min( floatval( $discount['amount'] ), $subscription_price );
@@ -207,13 +253,23 @@ class DigiCommerce_PayPal {
 		}
 	}
 
+	/**
+	 * Create PayPal plan
+	 *
+	 * @param int    $product_id The product ID.
+	 * @param string $name The plan name.
+	 * @param float  $price The plan price.
+	 * @param array  $subscription_data Subscription data.
+	 * @return string The PayPal plan ID.
+	 * @throws Exception If plan creation fails.
+	 */
 	public function create_plan( $product_id, $name, $price, $subscription_data ) {
 		try {
 			// For subscription upgrades, use the full price instead of prorated
-			if (!empty($subscription_data['is_subscription_upgrade'])) {
+			if ( ! empty( $subscription_data['is_subscription_upgrade'] ) ) {
 				$price = $subscription_data['full_price'];  // Use full upgrade price
 			}
-			
+
 			$access_token = $this->get_access_token();
 
 			// Create PayPal product
@@ -397,10 +453,10 @@ class DigiCommerce_PayPal {
 	/**
 	 * Process refund for PayPal payments
 	 *
-	 * @param int        $order_id The order ID to refund
-	 * @param float|null $amount The amount to refund
-	 * @return bool Whether the refund was successful
-	 * @throws Exception If the refund fails
+	 * @param int        $order_id The order ID to refund.
+	 * @param float|null $amount The amount to refund.
+	 * @return bool Whether the refund was successful.
+	 * @throws Exception If the refund fails.
 	 */
 	public function process_refund( $order_id, $amount = null ) {
 		try {
@@ -450,8 +506,8 @@ class DigiCommerce_PayPal {
 					// If no stored capture ID, try to get from recent transactions
 					if ( ! $capture_id ) {
 						// Get transactions from last 30 days
-						$start_time        = date( 'Y-m-d\TH:i:s\Z', strtotime( '-30 days' ) );
-						$end_time          = date( 'Y-m-d\TH:i:s\Z' );
+						$start_time        = date( 'Y-m-d\TH:i:s\Z', strtotime( '-30 days' ) ); // phpcs:ignore
+						$end_time          = date( 'Y-m-d\TH:i:s\Z' ); // phpcs:ignore
 						$transactions_url  = $this->get_api_url() . "/v1/billing/subscriptions/{$paypal_ids['_paypal_subscription_id']}/transactions";
 						$transactions_url .= "?start_time={$start_time}&end_time={$end_time}";
 
@@ -469,7 +525,7 @@ class DigiCommerce_PayPal {
 							$transactions_data = json_decode( wp_remote_retrieve_body( $transactions_response ), true );
 							if ( ! empty( $transactions_data['transactions'] ) ) {
 								foreach ( $transactions_data['transactions'] as $transaction ) {
-									if ( $transaction['status'] === 'COMPLETED' ) {
+									if ( 'COMPLETED' === $transaction['status'] ) {
 										$capture_id = $transaction['id'];
 										break;
 									}
@@ -523,7 +579,7 @@ class DigiCommerce_PayPal {
 
 						if ( ! is_wp_error( $refund_response ) ) {
 							$refund_code = wp_remote_retrieve_response_code( $refund_response );
-							if ( $refund_code === 201 || $refund_code === 200 ) {
+							if ( 201 === $refund_code || 200 === $refund_code ) {
 								$refund_processed = true;
 
 								// Log refund details
@@ -570,7 +626,7 @@ class DigiCommerce_PayPal {
 
 				if ( ! is_wp_error( $cancel_response ) ) {
 						$cancel_code = wp_remote_retrieve_response_code( $cancel_response );
-					if ( $cancel_code === 204 ) {
+					if ( 204 === $cancel_code ) {
 						// Update subscription status
 						$wpdb->update(
 							$wpdb->prefix . 'digicommerce_subscriptions',
@@ -613,7 +669,7 @@ class DigiCommerce_PayPal {
 				} else {
 					throw new Exception( 'Failed to cancel subscription: ' . $cancel_response->get_error_message() );
 				}
-			} else {
+			} else { // phpcs:ignore
 				// Handle regular order refund
 				if ( ! empty( $paypal_ids['_paypal_order_id'] ) && $amount > 0 ) {
 					$order_url      = $this->get_api_url() . "/v2/checkout/orders/{$paypal_ids['_paypal_order_id']}";
@@ -656,7 +712,7 @@ class DigiCommerce_PayPal {
 
 							if ( ! is_wp_error( $refund_response ) ) {
 									$refund_code = wp_remote_retrieve_response_code( $refund_response );
-								if ( $refund_code === 201 || $refund_code === 200 ) {
+								if ( 201 === $refund_code || 200 === $refund_code ) {
 									$refund_processed = true;
 
 									$log_data = array(
@@ -710,12 +766,18 @@ class DigiCommerce_PayPal {
 			return true;
 
 		} catch ( Exception $e ) {
-			throw new Exception( 'Refund failed: ' . $e->getMessage() );
+			throw new Exception( 'Refund failed: ' . $e->getMessage() ); // phpcs:ignore
 		}
 	}
 
 	/**
 	 * Verify PayPal webhook signature
+	 *
+	 * @param array  $headers The webhook headers.
+	 * @param string $payload The webhook payload.
+	 * @param string $webhook_id The webhook ID.
+	 * @return bool Whether the signature is valid.
+	 * @throws Exception If verification fails.
 	 */
 	public function verify_webhook_signature( $headers, $payload, $webhook_id ) {
 		if ( empty( $webhook_id ) ) {
@@ -755,11 +817,11 @@ class DigiCommerce_PayPal {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			throw new Exception( $response->get_error_message() );
+			throw new Exception( $response->get_error_message() ); // phpcs:ignore
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ) );
-		return isset( $body->verification_status ) && $body->verification_status === 'SUCCESS';
+		return isset( $body->verification_status ) && 'SUCCESS' === $body->verification_status;
 	}
 }
 

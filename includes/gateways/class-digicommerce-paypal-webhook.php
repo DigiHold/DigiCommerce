@@ -3,8 +3,18 @@
  * PayPal Webhook Handler class
  */
 class DigiCommerce_PayPal_Webhook {
+	/**
+	 * Singleton instance
+	 *
+	 * @var DigiCommerce_PayPal_Webhook
+	 */
 	private static $instance = null;
 
+	/**
+	 * Get the singleton instance
+	 *
+	 * @return DigiCommerce_PayPal_Webhook
+	 */
 	public static function instance() {
 		if ( is_null( self::$instance ) ) {
 			self::$instance = new self();
@@ -12,6 +22,9 @@ class DigiCommerce_PayPal_Webhook {
 		return self::$instance;
 	}
 
+	/**
+	 * Constructor
+	 */
 	private function __construct() {
 		// Add webhook endpoint
 		add_action( 'rest_api_init', array( $this, 'register_webhook_endpoint' ) );
@@ -25,15 +38,15 @@ class DigiCommerce_PayPal_Webhook {
 			'digicommerce/v2',
 			'/paypal-webhook',
 			array(
-				'methods' => 'POST',
-				'callback' => array($this, 'handle_webhook'),
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'handle_webhook' ),
 				'permission_callback' => '__return_true',
-				'args' => array(
+				'args'                => array(
 					'event_type' => array(
-						'required' => true,
-						'type' => 'string',
-						'description' => 'PayPal webhook event type',
-						'enum' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'description'       => 'PayPal webhook event type',
+						'enum'              => array(
 							'PAYMENT.SALE.COMPLETED',
 							'PAYMENT.SALE.REFUNDED',
 							'BILLING.SUBSCRIPTION.ACTIVATED',
@@ -41,112 +54,117 @@ class DigiCommerce_PayPal_Webhook {
 							'BILLING.SUBSCRIPTION.CANCELLED',
 							'BILLING.SUBSCRIPTION.SUSPENDED',
 							'BILLING.SUBSCRIPTION.EXPIRED',
-							'BILLING.SUBSCRIPTION.PAYMENT.FAILED'
+							'BILLING.SUBSCRIPTION.PAYMENT.FAILED',
 						),
-						'sanitize_callback' => 'sanitize_text_field'
+						'sanitize_callback' => 'sanitize_text_field',
 					),
-					'resource' => array(
-						'required' => true,
-						'type' => 'object',
-						'description' => 'PayPal webhook event resource data'
-					)
-				)
+					'resource'   => array(
+						'required'    => true,
+						'type'        => 'object',
+						'description' => 'PayPal webhook event resource data',
+					),
+				),
 			)
 		);
 	}
 
 	/**
 	 * Handle webhook events
+	 *
+	 * @param WP_REST_Request $request Request object.
 	 */
-	public function handle_webhook($request) {
+	public function handle_webhook( $request ) {
 		try {
-			$payload = $request->get_body();
-			$webhook_id = DigiCommerce()->get_option('paypal_webhook_id');
-	
-			if (empty($webhook_id)) {
+			$payload    = $request->get_body();
+			$webhook_id = DigiCommerce()->get_option( 'paypal_webhook_id' );
+
+			if ( empty( $webhook_id ) ) {
 				return new WP_Error(
 					'invalid_webhook',
 					'PayPal webhook ID is not configured',
-					array('status' => 401)
+					array( 'status' => 401 ),
 				);
 			}
-	
+
 			// Verify webhook signature
 			$headers = getallheaders();
-			$paypal = DigiCommerce_PayPal::instance();
-	
-			if (!$paypal->verify_webhook_signature($headers, $payload, $webhook_id)) {
+			$paypal  = DigiCommerce_PayPal::instance();
+
+			if ( ! $paypal->verify_webhook_signature( $headers, $payload, $webhook_id ) ) {
 				return new WP_Error(
 					'invalid_signature',
 					'Invalid webhook signature',
-					array('status' => 401)
+					array( 'status' => 401 ),
 				);
 			}
-	
-			$event = json_decode($payload);
-	
+
+			$event = json_decode( $payload );
+
 			// Validate event data
-			if (empty($event) || !isset($event->event_type) || !isset($event->resource)) {
+			if ( empty( $event ) || ! isset( $event->event_type ) || ! isset( $event->resource ) ) {
 				return new WP_Error(
 					'invalid_payload',
 					'Invalid webhook payload',
-					array('status' => 400)
+					array( 'status' => 400 ),
 				);
 			}
-	
+
 			// Handle based on event type
-			switch ($event->event_type) {
+			switch ( $event->event_type ) {
 				case 'PAYMENT.SALE.COMPLETED':
-					$this->handle_payment_completed($event);
+					$this->handle_payment_completed( $event );
 					break;
-	
+
 				case 'PAYMENT.SALE.REFUNDED':
-					$this->handle_refund_event($event);
+					$this->handle_refund_event( $event );
 					break;
-	
+
 				case 'BILLING.SUBSCRIPTION.ACTIVATED':
 				case 'BILLING.SUBSCRIPTION.UPDATED':
 				case 'BILLING.SUBSCRIPTION.CANCELLED':
 				case 'BILLING.SUBSCRIPTION.SUSPENDED':
-					$this->handle_subscription_status_change($event);
+					$this->handle_subscription_status_change( $event );
 					break;
-	
+
 				case 'BILLING.SUBSCRIPTION.PAYMENT.SUCCEEDED':
-					$this->handle_subscription_payment($event);
+					$this->handle_subscription_payment( $event );
 					break;
-	
+
 				case 'BILLING.SUBSCRIPTION.PAYMENT.FAILED':
-					$this->handle_subscription_payment_failed($event);
+					$this->handle_subscription_payment_failed( $event );
 					break;
-	
+
 				default:
 					return new WP_Error(
 						'unsupported_event',
 						'Unsupported webhook event type',
-						array('status' => 400)
+						array( 'status' => 400 ),
 					);
 			}
-	
+
 			return new WP_REST_Response(
 				array(
-					'status' => 'success',
-					'message' => 'Webhook processed successfully',
-					'event_type' => $event->event_type
+					'status'     => 'success',
+					'message'    => 'Webhook processed successfully',
+					'event_type' => $event->event_type,
 				),
 				200
 			);
-	
-		} catch (Exception $e) {
+
+		} catch ( Exception $e ) {
 			return new WP_Error(
 				'webhook_error',
 				$e->getMessage(),
-				array('status' => 500)
+				array( 'status' => 500 ),
 			);
 		}
 	}
 
 	/**
 	 * Handle refund events
+	 *
+	 * @param object $event Webhook event data.
+	 * @throws Exception If an error occurs.
 	 */
 	private function handle_refund_event( $event ) {
 		global $wpdb;
@@ -274,13 +292,16 @@ class DigiCommerce_PayPal_Webhook {
 
 	/**
 	 * Handle subscription status changes
+	 *
+	 * @param object $event Webhook event data.
+	 * @throws Exception If an error occurs.
 	 */
-	private function handle_subscription_status_change($event) {
+	private function handle_subscription_status_change( $event ) {
 		global $wpdb;
-	
+
 		try {
 			$subscription_id = $event->resource->id;
-	
+
 			// Get local subscription ID and current status
 			$subscription_data = $wpdb->get_row(
 				$wpdb->prepare(
@@ -293,99 +314,100 @@ class DigiCommerce_PayPal_Webhook {
 					$subscription_id
 				)
 			);
-	
-			if (!$subscription_data) {
-				throw new Exception('Local subscription not found for PayPal subscription ID: ' . $subscription_id);
+
+			if ( ! $subscription_data ) {
+				throw new Exception( 'Local subscription not found for PayPal subscription ID: ' . $subscription_id );
 			}
-	
+
 			$local_subscription_id = $subscription_data->subscription_id;
-			$current_status = $subscription_data->current_status;
-	
+			$current_status        = $subscription_data->current_status;
+
 			// Map PayPal status to local status
 			$status_map = array(
-				'ACTIVE' => 'active',
+				'ACTIVE'    => 'active',
 				'SUSPENDED' => 'paused',
 				'CANCELLED' => 'cancelled',
-				'EXPIRED' => 'expired',
+				'EXPIRED'   => 'expired',
 			);
-	
-			$new_status = $status_map[$event->resource->status] ?? 'cancelled';
-	
+
+			$new_status = $status_map[ $event->resource->status ] ?? 'cancelled';
+
 			// Start transaction
-			$wpdb->query('START TRANSACTION');
-	
+			$wpdb->query( 'START TRANSACTION' );
+
 			try {
 				// Only update if status actually changed
-				if ($current_status !== $new_status) {
+				if ( $current_status !== $new_status ) {
 					// Update subscription status
 					$wpdb->update(
 						$wpdb->prefix . 'digicommerce_subscriptions',
 						array(
-							'status' => $new_status,
-							'date_modified' => current_time('mysql'),
+							'status'        => $new_status,
+							'date_modified' => current_time( 'mysql' ),
 						),
-						array('id' => $local_subscription_id),
-						array('%s', '%s'),
-						array('%d')
+						array( 'id' => $local_subscription_id ),
+						array( '%s', '%s' ),
+						array( '%d' ),
 					);
-	
+
 					// If cancelled, update all pending schedules
-					if ($new_status === 'cancelled') {
+					if ( 'cancelled' === $new_status ) {
 						// Cancel pending schedules
 						$wpdb->update(
 							$wpdb->prefix . 'digicommerce_subscription_schedule',
-							array('status' => 'cancelled'),
+							array( 'status' => 'cancelled' ),
 							array(
 								'subscription_id' => $local_subscription_id,
-								'status' => 'pending',
+								'status'          => 'pending',
 							),
-							array('%s'),
-							array('%d', '%s')
+							array( '%s' ),
+							array( '%d', '%s' ),
 						);
 					}
-	
+
 					// Add subscription note
 					$wpdb->insert(
 						$wpdb->prefix . 'digicommerce_subscription_meta',
 						array(
 							'subscription_id' => $local_subscription_id,
-							'meta_key' => 'note',
-							'meta_value' => sprintf(
+							'meta_key'        => 'note',
+							'meta_value'      => sprintf(
 								'Subscription status changed from %s to %s in PayPal.',
 								$current_status,
 								$new_status
 							),
 						),
-						array('%d', '%s', '%s')
+						array( '%d', '%s', '%s' ),
 					);
-	
+
 					// Store the PayPal status update timestamp
 					$wpdb->insert(
 						$wpdb->prefix . 'digicommerce_subscription_meta',
 						array(
 							'subscription_id' => $local_subscription_id,
-							'meta_key' => 'paypal_status_updated',
-							'meta_value' => current_time('mysql'),
+							'meta_key'        => 'paypal_status_updated',
+							'meta_value'      => current_time( 'mysql' ),
 						),
-						array('%d', '%s', '%s')
+						array( '%d', '%s', '%s' ),
 					);
-	
-					$wpdb->query('COMMIT');
-					do_action('digicommerce_subscription_updated', $local_subscription_id, $new_status);
+
+					$wpdb->query( 'COMMIT' );
+					do_action( 'digicommerce_subscription_updated', $local_subscription_id, $new_status );
 				}
-	
-			} catch (Exception $e) {
-				$wpdb->query('ROLLBACK');
+			} catch ( Exception $e ) {
+				$wpdb->query( 'ROLLBACK' );
 				throw $e;
 			}
-	
-		} catch (Exception $e) {
+		} catch ( Exception $e ) {
 			throw $e;
 		}
 	}
 
 	/**
 	 * Handle successful subscription payments
+	 *
+	 * @param object $event Webhook event data.
+	 * @throws Exception If an error occurs.
 	 */
 	private function handle_subscription_payment( $event ) {
 		global $wpdb;
@@ -411,7 +433,7 @@ class DigiCommerce_PayPal_Webhook {
 
 			// Update next payment date
 			if ( ! empty( $event->resource->billing_info->next_billing_time ) ) {
-				$next_payment = date( 'Y-m-d H:i:s', strtotime( $event->resource->billing_info->next_billing_time ) );
+				$next_payment = date( 'Y-m-d H:i:s', strtotime( $event->resource->billing_info->next_billing_time ) ); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date
 
 				$wpdb->update(
 					$wpdb->prefix . 'digicommerce_subscriptions',
@@ -425,15 +447,7 @@ class DigiCommerce_PayPal_Webhook {
 				);
 
 				// Update license expiration to match next payment
-				$wpdb->query($wpdb->prepare(
-					"UPDATE {$wpdb->prefix}digicommerce_licenses l
-					JOIN {$wpdb->prefix}digicommerce_subscription_items si 
-						ON l.order_id = si.order_id AND l.product_id = si.product_id
-					SET l.expires_at = %s
-					WHERE si.subscription_id = %d",
-					$next_payment,
-					$local_subscription_id
-				));
+				$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}digicommerce_licenses l JOIN {$wpdb->prefix}digicommerce_subscription_items si  ON l.order_id = si.order_id AND l.product_id = si.product_id SET l.expires_at = %s WHERE si.subscription_id = %d", $next_payment, $local_subscription_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			}
 
 			// Store payment details
@@ -459,6 +473,9 @@ class DigiCommerce_PayPal_Webhook {
 
 	/**
 	 * Handle failed subscription payments
+	 *
+	 * @param object $event Webhook event data.
+	 * @throws Exception If an error occurs.
 	 */
 	private function handle_subscription_payment_failed( $event ) {
 		global $wpdb;

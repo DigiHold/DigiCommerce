@@ -7,6 +7,8 @@
 class DigiCommerce_Product {
 	/**
 	 * Instance of the class
+	 *
+	 * @var DigiCommerce_Product
 	 */
 	private static $instance = null;
 
@@ -224,14 +226,14 @@ class DigiCommerce_Product {
 									'items' => array(
 										'type'       => 'object',
 										'properties' => array(
-											'name' => array( 'type' => 'string' ),
-											'file' => array( 'type' => 'string' ),
-											'id'   => array( 'type' => 'string' ),
-											'type' => array( 'type' => 'string' ),
-											'size' => array( 'type' => 'integer' ),
+											'name'     => array( 'type' => 'string' ),
+											'file'     => array( 'type' => 'string' ),
+											'id'       => array( 'type' => 'string' ),
+											'type'     => array( 'type' => 'string' ),
+											'size'     => array( 'type' => 'integer' ),
 											'itemName' => array( 'type' => 'string' ),
 											'versions' => array(
-												'type' => 'array',
+												'type'  => 'array',
 												'items' => array(
 													'type' => 'object',
 													'properties' => array(
@@ -264,12 +266,12 @@ class DigiCommerce_Product {
 									'type'    => 'number',
 									'default' => 0,
 								),
-								'license_enabled' => array(
-									'type' => 'boolean',
+								'license_enabled'         => array(
+									'type'    => 'boolean',
 									'default' => false,
 								),
-								'license_limit' => array(
-									'type' => 'integer',
+								'license_limit'           => array(
+									'type'    => 'integer',
 									'default' => 1,
 								),
 							),
@@ -295,22 +297,22 @@ class DigiCommerce_Product {
 						'items' => array(
 							'type'       => 'object',
 							'properties' => array(
-								'name' => array( 'type' => 'string' ),
-								'file' => array( 'type' => 'string' ),
-								'id'   => array( 'type' => 'string' ),
-								'type' => array( 'type' => 'string' ),
-								'size' => array( 'type' => 'integer' ),
+								'name'     => array( 'type' => 'string' ),
+								'file'     => array( 'type' => 'string' ),
+								'id'       => array( 'type' => 'string' ),
+								'type'     => array( 'type' => 'string' ),
+								'size'     => array( 'type' => 'integer' ),
 								'itemName' => array( 'type' => 'string' ),
 								'versions' => array(
-									'type' => 'array',
+									'type'  => 'array',
 									'items' => array(
-										'type' => 'object',
+										'type'       => 'object',
 										'properties' => array(
-											'version' => array( 'type' => 'string' ),
-											'changelog' => array( 'type' => 'string' ),
+											'version'      => array( 'type' => 'string' ),
+											'changelog'    => array( 'type' => 'string' ),
 											'release_date' => array( 'type' => 'string' ),
-										)
-									)
+										),
+									),
 								),
 							),
 						),
@@ -404,35 +406,35 @@ class DigiCommerce_Product {
 			)
 		);
 
-		if (class_exists('DigiCommerce_Pro') && 
-			class_exists('DigiCommerce_Pro_License') && 
-			DigiCommerce()->get_option('enable_license', false)) {
+		if ( class_exists( 'DigiCommerce_Pro' ) &&
+			class_exists( 'DigiCommerce_Pro_License' ) &&
+			DigiCommerce()->get_option( 'enable_license', false ) ) {
 			register_post_meta(
 				'digi_product',
 				'digi_upgrade_paths',
 				array(
-					'show_in_rest' => array(
+					'show_in_rest'  => array(
 						'schema' => array(
-							'type' => 'array',
+							'type'  => 'array',
 							'items' => array(
-								'type' => 'object',
+								'type'       => 'object',
 								'properties' => array(
-									'product_id' => array('type' => 'string'),
-									'variation_id' => array('type' => 'string'),
-									'prorate' => array('type' => 'boolean'),
-									'include_coupon' => array('type' => 'boolean'),
-									'discount_type' => array('type' => 'string'),
-									'discount_amount' => array('type' => 'string')
-								)
-							)
-						)
+									'product_id'      => array( 'type' => 'string' ),
+									'variation_id'    => array( 'type' => 'string' ),
+									'prorate'         => array( 'type' => 'boolean' ),
+									'include_coupon'  => array( 'type' => 'boolean' ),
+									'discount_type'   => array( 'type' => 'string' ),
+									'discount_amount' => array( 'type' => 'string' ),
+								),
+							),
+						),
 					),
-					'single' => true,
-					'type' => 'array',
-					'default' => array(),
-					'auth_callback' => function() {
-						return current_user_can('edit_posts');
-					}
+					'single'        => true,
+					'type'          => 'array',
+					'default'       => array(),
+					'auth_callback' => function () {
+						return current_user_can( 'edit_posts' );
+					},
 				)
 			);
 
@@ -442,50 +444,50 @@ class DigiCommerce_Product {
 				array(
 					'show_in_rest'  => array(
 						'schema' => array(
-							'type'  => 'object',
+							'type'       => 'object',
 							'properties' => array(
-								'homepage' => array('type' => 'string'),
-								'author' => array('type' => 'string'),
-								'contributors' => array(
-									'type' => 'array',
+								'homepage'       => array( 'type' => 'string' ),
+								'author'         => array( 'type' => 'string' ),
+								'contributors'   => array(
+									'type'  => 'array',
 									'items' => array(
-										'type' => 'object',
+										'type'       => 'object',
 										'properties' => array(
-											'username' => array('type' => 'string'),
-											'avatar' => array('type' => 'string'),
-											'name' => array('type' => 'string')
-										)
-									)
+											'username' => array( 'type' => 'string' ),
+											'avatar'   => array( 'type' => 'string' ),
+											'name'     => array( 'type' => 'string' ),
+										),
+									),
 								),
-								'requires' => array('type' => 'string'),
-								'requires_php' => array('type' => 'string'),
-								'tested' => array('type' => 'string'),
-								'description' => array('type' => 'string'),
-								'installation' => array('type' => 'string'),
-								'changelog' => array('type' => 'string'),
-								'upgrade_notice' => array('type' => 'string'),
-								'icons' => array(
-									'type' => 'object',
+								'requires'       => array( 'type' => 'string' ),
+								'requires_php'   => array( 'type' => 'string' ),
+								'tested'         => array( 'type' => 'string' ),
+								'description'    => array( 'type' => 'string' ),
+								'installation'   => array( 'type' => 'string' ),
+								'changelog'      => array( 'type' => 'string' ),
+								'upgrade_notice' => array( 'type' => 'string' ),
+								'icons'          => array(
+									'type'       => 'object',
 									'properties' => array(
-										'default' => array('type' => 'string')
-									)
+										'default' => array( 'type' => 'string' ),
+									),
 								),
-								'banners' => array(
-									'type' => 'object',
+								'banners'        => array(
+									'type'       => 'object',
 									'properties' => array(
-										'low' => array('type' => 'string'),
-										'high' => array('type' => 'string')
-									)
-								)
-							)
-						)
+										'low'  => array( 'type' => 'string' ),
+										'high' => array( 'type' => 'string' ),
+									),
+								),
+							),
+						),
 					),
-					'single' => true,
-					'type' => 'object',
-					'default' => array(),
-					'auth_callback' => function() {
-						return current_user_can('edit_posts');
-					}
+					'single'        => true,
+					'type'          => 'object',
+					'default'       => array(),
+					'auth_callback' => function () {
+						return current_user_can( 'edit_posts' );
+					},
 				)
 			);
 		}
@@ -497,7 +499,7 @@ class DigiCommerce_Product {
 	public function enqueue_block_editor_assets() {
 		$screen = get_current_screen();
 
-		if ( ! $screen || $screen->post_type !== 'digi_product' ) {
+		if ( ! $screen || 'digi_product' !== $screen->post_type ) {
 			return;
 		}
 
@@ -518,8 +520,8 @@ class DigiCommerce_Product {
 		);
 
 		// Pro plugin features.
-		$pro_active = class_exists( 'DigiCommerce_Pro' );
-		$s3_enabled = $pro_active && class_exists( 'DigiCommerce_Pro_S3' ) && DigiCommerce()->get_option( 's3_enabled', false );
+		$pro_active      = class_exists( 'DigiCommerce_Pro' );
+		$s3_enabled      = $pro_active && class_exists( 'DigiCommerce_Pro_S3' ) && DigiCommerce()->get_option( 's3_enabled', false );
 		$license_enabled = $pro_active && class_exists( 'DigiCommerce_Pro_License' ) && DigiCommerce()->get_option( 'enable_license', false );
 
 		// Add localization for file uploads.
@@ -548,11 +550,13 @@ class DigiCommerce_Product {
 
 	/**
 	 * Enqueue admin styles
+	 *
+	 * @param string $hook The current admin page.
 	 */
 	public function enqueue_admin_styles( $hook ) {
 		global $post_type;
 
-		if ( $post_type === 'digi_product' ) {
+		if ( 'digi_product' === $post_type ) {
 			wp_enqueue_style(
 				'digi-sidebar',
 				DIGICOMMERCE_PLUGIN_URL . 'assets/css/blocks/sidebar.css',
@@ -602,6 +606,8 @@ class DigiCommerce_Product {
 
 	/**
 	 * Get currency symbol from currency code
+	 *
+	 * @param string $currency_code Currency code.
 	 */
 	public function get_currency_symbol( $currency_code ) {
 		$currencies = DigiCommerce()->get_currencies();
@@ -610,6 +616,10 @@ class DigiCommerce_Product {
 
 	/**
 	 * Format price with currency
+	 *
+	 * @param float  $price Price to format.
+	 * @param string $class CSS class to add to the price.
+	 * @param bool   $plain Whether to return plain price without HTML.
 	 */
 	public function format_price( $price, $class = '', $plain = false ) {
 		// Get settings if not provided
@@ -671,20 +681,22 @@ class DigiCommerce_Product {
 
 	/**
 	 * Load custom template for product archives, categories, and tags
+	 *
+	 * @param string $template Template file to load.
 	 */
 	public function load_archive_template( $template ) {
 		// Check if we're on a product archive, category, or tag page
-		if ( is_post_type_archive( 'digi_product' ) || 
-			is_tax( 'digi_product_cat' ) || 
-			is_tax( 'digi_product_tag' ) 
+		if ( is_post_type_archive( 'digi_product' ) ||
+			is_tax( 'digi_product_cat' ) ||
+			is_tax( 'digi_product_tag' )
 		) {
 			// Get archive template data
-			$query_obj = get_queried_object();
+			$query_obj     = get_queried_object();
 			$template_data = array(
-				'is_archive' => is_post_type_archive( 'digi_product' ),
-				'is_tax' => is_tax( 'digi_product_cat' ) || is_tax( 'digi_product_tag' ),
-				'taxonomy' => $query_obj instanceof WP_Term ? $query_obj->taxonomy : '',
-				'term' => $query_obj instanceof WP_Term ? $query_obj : null,
+				'is_archive'     => is_post_type_archive( 'digi_product' ),
+				'is_tax'         => is_tax( 'digi_product_cat' ) || is_tax( 'digi_product_tag' ),
+				'taxonomy'       => $query_obj instanceof WP_Term ? $query_obj->taxonomy : '',
+				'term'           => $query_obj instanceof WP_Term ? $query_obj : null,
 				'posts_per_page' => get_option( 'posts_per_page' ),
 			);
 
@@ -699,13 +711,16 @@ class DigiCommerce_Product {
 
 	/**
 	 * Use custom template for single digi_product posts
+	 *
+	 * @param string $template Template file to load.
 	 */
 	public function load_single_template( $template ) {
 		if ( is_singular( 'digi_product' ) ) {
 			$product_id = get_the_ID();
 
 			// Get product metadata
-			$price_mode       = get_post_meta( $product_id, 'digi_price_mode', true ) ?: 'single';
+			$price_mode_value = get_post_meta( $product_id, 'digi_price_mode', true );
+			$price_mode       = $price_mode_value ? $price_mode_value : 'single';
 			$single_price     = get_post_meta( $product_id, 'digi_price', true );
 			$price_variations = get_post_meta( $product_id, 'digi_price_variations', true );
 			$files            = get_post_meta( $product_id, 'digi_files', true );
@@ -761,6 +776,8 @@ class DigiCommerce_Product {
 
 	/**
 	 * Handle file deletion request
+	 *
+	 * @param WP_REST_Request $request Request object.
 	 */
 	public function handle_file_deletion( $request ) {
 		$file = $request->get_param( 'file' );

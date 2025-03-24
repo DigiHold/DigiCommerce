@@ -24,6 +24,10 @@
 }
 
 .digicommerce {
+    &-header {
+        @apply -ml-5;
+    }
+
     &-help {
         a {
             box-shadow: none;
@@ -183,6 +187,13 @@
         .digi__button {
             @apply justify-center rounded-none text-sm;
         }
+    }
+}
+
+/* Fix RTL margin issues */
+body.rtl .digicommerce {
+    &-header {
+        @apply -ml-0 -mr-5;
     }
 }
 

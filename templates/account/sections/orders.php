@@ -35,16 +35,16 @@ $allowed_html = array(
 		<table class="digicommerce-table">
 			<thead class="bg-light-blue-bg">
 				<tr>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-bold text-dark-blue"><?php esc_html_e( 'Order', 'digicommerce' ); ?></th>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-bold text-dark-blue"><?php esc_html_e( 'Date', 'digicommerce' ); ?></th>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-bold text-dark-blue"><?php esc_html_e( 'Status', 'digicommerce' ); ?></th>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-bold text-dark-blue"><?php esc_html_e( 'Total', 'digicommerce' ); ?></th>
+					<th scope="col" class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue"><?php esc_html_e( 'Order', 'digicommerce' ); ?></th>
+					<th scope="col" class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue"><?php esc_html_e( 'Date', 'digicommerce' ); ?></th>
+					<th scope="col" class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue"><?php esc_html_e( 'Status', 'digicommerce' ); ?></th>
+					<th scope="col" class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue"><?php esc_html_e( 'Total', 'digicommerce' ); ?></th>
 					<th scope="col" class="relative px-6 py-3"><span class="sr-only"><?php esc_html_e( 'View', 'digicommerce' ); ?></span></th>
 				</tr>
 			</thead>
 			<tbody class="bg-white divide-y divide-gray-200">
 				<?php
-				foreach ( $orders as $order ) :
+				foreach ( $orders as $order ) : // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 					switch ( $order['status'] ) {
 						case 'completed':
 							$status_class = 'bg-green-600 text-white';
@@ -64,7 +64,17 @@ $allowed_html = array(
 					?>
 					<tr>
 						<td class="px-6 py-4" data-label="<?php esc_html_e( 'Order', 'digicommerce' ); ?>">
-							<a href="<?php echo esc_url( add_query_arg( array( 'section' => 'orders', 'view-order' => $order['order_id'] ), get_permalink() ) ); ?>" class="whitespace-nowrap text-medium font-bold text-dark-blue hover:text-gold default-transition">
+							<?php
+							// Link
+							$order_link = add_query_arg(
+								array(
+									'section'    => 'orders',
+									'view-order' => $order['order_id'],
+								),
+								get_permalink()
+							);
+							?>
+							<a href="<?php echo esc_url( $order_link ); ?>" class="whitespace-nowrap text-medium font-bold text-dark-blue hover:text-gold default-transition">
 								<?php echo esc_html( $order['order_number'] ); ?>
 							</a>
 						</td>
@@ -87,8 +97,18 @@ $allowed_html = array(
 							);
 							?>
 						</td>
-						<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" data-label="<?php esc_html_e( 'Details', 'digicommerce' ); ?>">
-							<a href="<?php echo esc_url( add_query_arg( array( 'section' => 'orders', 'view-order' => $order['order_id'] ), get_permalink() ) ); ?>" class="whitespace-nowrap text-medium font-bold text-dark-blue hover:text-gold default-transition">
+						<td class="px-6 py-4 whitespace-nowrap ltr:text-right rtl:text-left text-sm font-medium" data-label="<?php esc_html_e( 'Details', 'digicommerce' ); ?>">
+							<?php
+							// Link
+							$details_link = add_query_arg(
+								array(
+									'section'    => 'orders',
+									'view-order' => $order['order_id'],
+								),
+								get_permalink()
+							);
+							?>
+							<a href="<?php echo esc_url( $details_link ); ?>" class="whitespace-nowrap text-medium font-bold text-dark-blue hover:text-gold default-transition">
 								<?php esc_html_e( 'View details', 'digicommerce' ); ?>
 							</a>
 						</td>
@@ -100,7 +120,7 @@ $allowed_html = array(
 <?php else : ?>
 	<div class="bg-light-blue-bg p-6 text-center rounded-lg">
 		<svg class="mx-auto h-12 w-12 text-dark-blue-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
-		<h3 class="mt-2 text-medium font-medium text-dark-blue"><?php esc_html_e( 'No orders found', 'digicommerce-pro' ); ?></h3>
-		<p class="mt-1 text-sm text-dark-blue/50"><?php esc_html_e( 'You haven\'t placed any orders yet.', 'digicommerce-pro' ); ?></p>
+		<h3 class="mt-2 text-medium font-medium text-dark-blue"><?php esc_html_e( 'No orders found', 'digicommerce' ); ?></h3>
+		<p class="mt-1 text-sm text-dark-blue/50"><?php esc_html_e( 'You haven\'t placed any orders yet.', 'digicommerce' ); ?></p>
 	</div>
 <?php endif; ?>

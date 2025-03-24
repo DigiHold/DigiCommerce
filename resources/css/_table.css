@@ -1,84 +1,84 @@
 /* Base table styles */
 .digicommerce-table {
-	@apply w-full bg-white m-0 border-collapse border-0;
+    @apply m-0 w-full border-collapse border-0 bg-white;
 
-	.end {
-		@apply text-right;
-	}
+    .end {
+        @apply ltr:text-right rtl:text-left;
+    }
 
-	th,
-	td {
-		@apply text-left leading-normal p-4 border-0;
-	}
+    th,
+    td {
+        @apply border-0 p-4 leading-normal ltr:text-left rtl:text-right;
+    }
 
-	th {
-		@apply font-bold text-dark-blue;
-	}
+    th {
+        @apply text-dark-blue font-bold;
+    }
 
-	thead th {
-		@apply border-b-[#e1e1e1] border-b border-solid;
-	}
+    thead th {
+        @apply border-b border-solid border-b-[#e1e1e1];
+    }
 
-	tbody {
-		@apply text-sm;
+    tbody {
+        @apply text-sm;
 
-		tr:nth-child(odd) {
-			@apply bg-[#f7f7f9];
-		}
-	}
+        tr:nth-child(odd) {
+            @apply bg-[#f7f7f9];
+        }
+    }
 
-	tfoot {
-		@apply text-sm;
+    tfoot {
+        @apply text-sm;
 
-		th {
-			@apply text-dark-blue;
-		}
+        th {
+            @apply text-dark-blue;
+        }
 
-		td,
-		th {
-			@apply border-t-[#e1e1e1] border-t border-solid;
-		}
+        td,
+        th {
+            @apply border-t border-solid border-t-[#e1e1e1];
+        }
 
-		.order-total {
-			@apply text-medium;
-		}
-	}
+        .order-total {
+            @apply text-medium;
+        }
+    }
 
-	.amount {
-		@apply text-base font-bold text-green-600;
-	}
+    .amount {
+        @apply text-base font-bold text-green-600;
+    }
 }
 
 /* Responsive styles */
 @media only screen and (max-width: 768px) {
-	.digicommerce-table {
-		tbody,
-		tr,
-		td {
-			@apply block w-full;
-		}
+    .digicommerce-table {
+        tbody,
+        tr,
+        td {
+            @apply block w-full;
+        }
 
-		th,
-		thead {
-			@apply hidden;
-		}
+        th,
+        thead {
+            @apply hidden;
+        }
 
-		td {
-			@apply text-right flex justify-between relative before:content-[attr(data-label)] before:float-left before:font-semibold before:text-dark-blue before:text-medium;
-		}
+        td {
+            @apply before:text-dark-blue before:text-medium relative flex justify-between before:float-left before:font-semibold before:content-[attr(data-label)] ltr:text-right rtl:text-left;
+        }
 
-		td[rowspan] {
-			@apply hidden;
-		}
-	}
+        td[rowspan] {
+            @apply hidden;
+        }
+    }
 }
 
 /* Order total row */
 .digicommerce-table tr.order-total {
-	@apply bg-[#f7f7f9];
+    @apply bg-[#f7f7f9];
 
-	th,
-	td {
-		@apply font-bold;
-	}
+    th,
+    td {
+        @apply font-bold;
+    }
 }

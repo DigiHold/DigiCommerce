@@ -1,4 +1,8 @@
 <?php
+/**
+ * Orders list table
+ */
+
 // Prevent direct access
 defined( 'ABSPATH' ) || exit;
 ?>
@@ -12,33 +16,33 @@ defined( 'ABSPATH' ) || exit;
 	<!-- Filter links -->
 	<ul class="subsubsub">
 		<li class="all">
-			<a href="<?php echo admin_url( 'admin.php?page=digi-orders&status=all' ); ?>"
-				class="<?php echo $current_status === 'all' ? 'current' : ''; ?>">
-				<?php esc_html_e( 'All', 'digicommerce' ); ?> <span class="count">(<?php echo $total_all; ?>)</span>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=digi-orders&status=all' ) ); ?>"
+				class="<?php echo 'all' === $current_status ? 'current' : ''; ?>">
+				<?php esc_html_e( 'All', 'digicommerce' ); ?> <span class="count">(<?php echo esc_attr( $total_all ); ?>)</span>
 			</a> |
 		</li>
 		<li class="completed">
-			<a href="<?php echo admin_url( 'admin.php?page=digi-orders&status=completed' ); ?>"
-				class="<?php echo $current_status === 'completed' ? 'current' : ''; ?>">
-				<?php esc_html_e( 'Completed', 'digicommerce' ); ?> <span class="count">(<?php echo $total_completed; ?>)</span>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=digi-orders&status=completed' ) ); ?>"
+				class="<?php echo 'completed' === $current_status ? 'current' : ''; ?>">
+				<?php esc_html_e( 'Completed', 'digicommerce' ); ?> <span class="count">(<?php echo esc_attr( $total_completed ); ?>)</span>
 			</a> |
 		</li>
 		<li class="processing">
-			<a href="<?php echo admin_url( 'admin.php?page=digi-orders&status=processing' ); ?>"
-				class="<?php echo $current_status === 'processing' ? 'current' : ''; ?>">
-				<?php esc_html_e( 'Processing', 'digicommerce' ); ?> <span class="count">(<?php echo $total_processing; ?>)</span>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=digi-orders&status=processing' ) ); ?>"
+				class="<?php echo 'processing' === $current_status ? 'current' : ''; ?>">
+				<?php esc_html_e( 'Processing', 'digicommerce' ); ?> <span class="count">(<?php echo esc_attr( $total_processing ); ?>)</span>
 			</a> |
 		</li>
 		<li class="cancelled">
-			<a href="<?php echo admin_url( 'admin.php?page=digi-orders&status=cancelled' ); ?>"
-				class="<?php echo $current_status === 'cancelled' ? 'current' : ''; ?>">
-				<?php esc_html_e( 'Cancelled', 'digicommerce' ); ?> <span class="count">(<?php echo $total_cancelled; ?>)</span>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=digi-orders&status=cancelled' ) ); ?>"
+				class="<?php echo 'cancelled' === $current_status ? 'current' : ''; ?>">
+				<?php esc_html_e( 'Cancelled', 'digicommerce' ); ?> <span class="count">(<?php echo esc_attr( $total_cancelled ); ?>)</span>
 			</a> |
 		</li>
 		<li class="trash">
-			<a href="<?php echo admin_url( 'admin.php?page=digi-orders&status=trash' ); ?>"
-				class="<?php echo $current_status === 'trash' ? 'current' : ''; ?>">
-				<?php esc_html_e( 'Trash', 'digicommerce' ); ?> <span class="count">(<?php echo $total_trash; ?>)</span>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=digi-orders&status=trash' ) ); ?>"
+				class="<?php echo 'trash' === $current_status ? 'current' : ''; ?>">
+				<?php esc_html_e( 'Trash', 'digicommerce' ); ?> <span class="count">(<?php echo esc_attr( $total_trash ); ?>)</span>
 			</a>
 		</li>
 	</ul>
@@ -59,7 +63,7 @@ defined( 'ABSPATH' ) || exit;
 				<label for="bulk-action-selector-top" class="screen-reader-text"><?php esc_html_e( 'Select bulk action', 'digicommerce' ); ?></label>
 				<select name="action" id="bulk-action-selector-top">
 					<option value="-1"><?php esc_html_e( 'Bulk actions', 'digicommerce' ); ?></option>
-					<?php if ( $current_status === 'trash' ) : ?>
+					<?php if ( 'trash' === $current_status ) : ?>
 						<option value="restore"><?php esc_html_e( 'Restore', 'digicommerce' ); ?></option>
 						<option value="delete"><?php esc_html_e( 'Delete Permanently', 'digicommerce' ); ?></option>
 					<?php else : ?>
@@ -76,8 +80,9 @@ defined( 'ABSPATH' ) || exit;
 				<span class="displaying-num">
 					<?php
 					printf(
-						_n( '%s item', '%s items', $total_items, 'digicommerce' ),
-						number_format_i18n( $total_items )
+						// translators: %s: total number of items
+						esc_html( _n( '%s item', '%s items', $total_items, 'digicommerce' ) ),
+						esc_html( number_format_i18n( $total_items ) )
 					);
 					?>
 				</span>
@@ -176,14 +181,20 @@ defined( 'ABSPATH' ) || exit;
 			</thead>
 
 			<tbody id="the-list">
-				<?php if ( ! empty( $orders ) ) : ?>
-					<?php
-					foreach ( $orders as $order ) :
+				<?php
+				if ( ! empty( $orders ) ) :
+					foreach ( $orders as $order ) : // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 						?>
 						<tr id="post-<?php echo esc_attr( $order['id'] ); ?>" class="iedit">
 							<th scope="row" class="check-column">
 								<label class="screen-reader-text" for="cb-select-<?php echo esc_attr( $order['id'] ); ?>">
-									<?php printf( esc_html__( 'Select order %s', 'digicommerce' ), $order['order_number'] ); ?>
+									<?php
+									printf(
+										// translators: %s: order number
+										esc_html__( 'Select order %s', 'digicommerce' ),
+										esc_attr( $order['order_number'] )
+									);
+									?>
 								</label>
 								<input id="cb-select-<?php echo esc_attr( $order['id'] ); ?>" 
 										type="checkbox" name="post[]" 
@@ -209,7 +220,7 @@ defined( 'ABSPATH' ) || exit;
 								// Generate a single nonce for each action type
 								$actions       = array( 'trash', 'restore', 'delete_permanently' );
 								$action_nonces = array();
-								foreach ( $actions as $action ) {
+								foreach ( $actions as $action ) { // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 									$action_nonces[ $action ] = wp_create_nonce( "digi_order_{$action}_{$order['id']}" );
 								}
 
@@ -245,7 +256,7 @@ defined( 'ABSPATH' ) || exit;
 								?>
 								
 								<div class="row-actions">
-									<?php if ( $order['status'] === 'trash' ) : ?>
+									<?php if ( 'trash' === $order['status'] ) : ?>
 										<span class="restore">
 											<a href="<?php echo esc_url( $restore_link ); ?>" class="submitdelete" aria-label="<?php esc_html_e( 'Delete permanently', 'digicommerce' ); ?>">
 												<?php esc_html_e( 'Restore', 'digicommerce' ); ?>
@@ -280,7 +291,7 @@ defined( 'ABSPATH' ) || exit;
 								</span>
 							</td>
 							<td class="column-total">
-								<?php echo DigiCommerce_Product::instance()->format_price( $order['total'], 'total' ); ?>
+								<?php echo DigiCommerce_Product::instance()->format_price( $order['total'], 'total' ); // phpcs:ignore ?>
 							</td>
 							<td class="column-billing">
 								<?php
@@ -339,7 +350,7 @@ defined( 'ABSPATH' ) || exit;
 				</label>
 				<select name="action2" id="bulk-action-selector-bottom">
 					<option value="-1"><?php esc_html_e( 'Bulk actions', 'digicommerce' ); ?></option>
-					<?php if ( $current_status === 'trash' ) : ?>
+					<?php if ( 'trash' === $current_status ) : ?>
 						<option value="restore"><?php esc_html_e( 'Restore', 'digicommerce' ); ?></option>
 						<option value="delete"><?php esc_html_e( 'Delete Permanently', 'digicommerce' ); ?></option>
 					<?php else : ?>
@@ -359,13 +370,14 @@ defined( 'ABSPATH' ) || exit;
 				<span class="displaying-num">
 					<?php
 					printf(
-						_n( '%s item', '%s items', $total_items, 'digicommerce' ),
-						number_format_i18n( $total_items )
+						esc_html( _n( '%s item', '%s items', $total_items, 'digicommerce' ) ),
+						esc_html( number_format_i18n( $total_items ) )
 					);
 					?>
 				</span>
 
-				<?php if ( empty( $_GET['s'] ) ) : // Display pagination only if there's no search query
+				<?php
+				if ( empty( $_GET['s'] ) ) : // Display pagination only if there's no search query
 					$total_pages = ceil( $total_items / $per_page );
 					if ( $total_pages > 1 ) {
 						$current_page = max( 1, $pagenum );

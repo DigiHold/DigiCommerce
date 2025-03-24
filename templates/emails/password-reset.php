@@ -19,7 +19,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title><?php esc_html_e( 'Password Reset Request', 'digicommerce' ); ?></title>
 	<style type="text/css">
-		<?php echo $styles; ?>
+		<?php echo $styles; // phpcs:ignore ?>
 	</style>
 </head>
 <body>

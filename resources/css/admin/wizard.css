@@ -196,6 +196,11 @@
     border-color: #ccb161;
 }
 
+.digicommerce-setup-wizard .choices[data-type*='select-one']::after {
+    right: auto;
+    left: 7px;
+}
+
 .digicommerce-setup-wizard .business-form .digicommerce-setup-actions {
     width: 100%;
 }

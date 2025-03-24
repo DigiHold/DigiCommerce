@@ -4,586 +4,586 @@
  * Handles all reporting functionality
  */
 class DigiCommerce_Reports {
-    /**
-     * Instance of the class
-     */
-    private static $instance = null;
+	/**
+	 * Instance of the class
+	 *
+	 * @var DigiCommerce_Reports
+	 */
+	private static $instance = null;
 
-    /**
-     * Get instance of the class
-     */
-    public static function instance() {
-        if (is_null(self::$instance)) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
+	/**
+	 * Get instance of the class
+	 */
+	public static function instance() {
+		if ( is_null( self::$instance ) ) {
+			self::$instance = new self();
+		}
+		return self::$instance;
+	}
 
-    /**
-     * Constructor: Initialize hooks
-     */
-    public function __construct() {
-        // Add menu item
-        add_action('admin_menu', array($this, 'add_reports_menu'), 99);
+	/**
+	 * Constructor: Initialize hooks
+	 */
+	public function __construct() {
+		// Add menu item
+		add_action( 'admin_menu', array( $this, 'add_reports_menu' ), 99 );
 
-        // Add scripts and styles
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
+		// Add scripts and styles
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
-        // Register AJAX endpoints
-        add_action('wp_ajax_digicommerce_reports_overview', array($this, 'get_overview_data'));
-        add_action('wp_ajax_digicommerce_reports_products', array($this, 'get_products_data'));
-        add_action('wp_ajax_digicommerce_reports_customers', array($this, 'get_customers_data'));
-        add_action('wp_ajax_digicommerce_reports_taxes', array($this, 'get_taxes_data'));
-		if (class_exists('DigiCommerce_Pro')) {
-			if (DigiCommerce()->get_option('enable_coupon_code', false)) {
-				add_action('wp_ajax_digicommerce_reports_coupons', array($this, 'get_coupons_data'));
+		// Register AJAX endpoints
+		add_action( 'wp_ajax_digicommerce_reports_overview', array( $this, 'get_overview_data' ) );
+		add_action( 'wp_ajax_digicommerce_reports_products', array( $this, 'get_products_data' ) );
+		add_action( 'wp_ajax_digicommerce_reports_customers', array( $this, 'get_customers_data' ) );
+		add_action( 'wp_ajax_digicommerce_reports_taxes', array( $this, 'get_taxes_data' ) );
+		if ( class_exists( 'DigiCommerce_Pro' ) ) {
+			if ( DigiCommerce()->get_option( 'enable_coupon_code', false ) ) {
+				add_action( 'wp_ajax_digicommerce_reports_coupons', array( $this, 'get_coupons_data' ) );
 			}
-			if (DigiCommerce()->get_option('enable_subscriptions', false)) {
-				add_action('wp_ajax_digicommerce_reports_subscriptions', array($this, 'get_subscriptions_data'));
+			if ( DigiCommerce()->get_option( 'enable_subscriptions', false ) ) {
+				add_action( 'wp_ajax_digicommerce_reports_subscriptions', array( $this, 'get_subscriptions_data' ) );
 			}
-			if (DigiCommerce()->get_option('enable_abandoned_cart', false)) {
-				add_action('wp_ajax_digicommerce_reports_abandoned_cart', array($this, 'get_abandoned_cart_data'));
+			if ( DigiCommerce()->get_option( 'enable_abandoned_cart', false ) ) {
+				add_action( 'wp_ajax_digicommerce_reports_abandoned_cart', array( $this, 'get_abandoned_cart_data' ) );
 			}
 		}
 
 		// Custom footer texts
 		add_filter( 'admin_footer_text', array( $this, 'footer_text' ), 99 );
 		add_filter( 'update_footer', array( $this, 'update_footer' ), 99 );
-    }
 
-    /**
-     * Add reports menu
-     */
-    public function add_reports_menu() {
-        add_submenu_page(
-            'digicommerce-settings',
-            esc_html__('Reports', 'digicommerce'),
-            esc_html__('Reports', 'digicommerce'),
-            'manage_options',
-            'digicommerce-reports',
-            array($this, 'render_reports_page')
-        );
-    }
+		// Add dir attr to HTML for LTR compatibility with Tailwind
+		add_filter( 'language_attributes', array( $this, 'attribute_to_html' ) );
+	}
 
-    /**
-     * Enqueue scripts and styles
-     */
-    public function enqueue_scripts($hook) {
-        if ('digicommerce_page_digicommerce-reports' !== $hook) {
-            return;
-        }
+	/**
+	 * Add reports menu
+	 */
+	public function add_reports_menu() {
+		add_submenu_page(
+			'digicommerce-settings',
+			esc_html__( 'Reports', 'digicommerce' ),
+			esc_html__( 'Reports', 'digicommerce' ),
+			'manage_options',
+			'digicommerce-reports',
+			array( $this, 'render_reports_page' )
+		);
+	}
 
-        // Enqueue Chart.js
-        wp_enqueue_script(
-            'chartjs',
-            'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
-            array(),
-            '4.4.1',
-            true
-        );
-
-        // Enqueue our reports script
-        wp_enqueue_script(
-            'digicommerce-reports',
-            DIGICOMMERCE_PLUGIN_URL . 'assets/js/admin/reports.js',
-            array('chartjs'),
-            DIGICOMMERCE_VERSION,
-            true
-        );
-
-        // Enqueue our reports styles
-        wp_enqueue_style(
-            'digicommerce-reports',
-            DIGICOMMERCE_PLUGIN_URL . 'assets/css/admin/reports.css',
-            array(),
-            DIGICOMMERCE_VERSION
-        );
-
-        // Localize script
-        wp_localize_script(
-            'digicommerce-reports',
-            'digicommerceReports',
-            array(
-                'nonce' => wp_create_nonce('digicommerce_reports_nonce'),
-                'ajaxurl' => admin_url('admin-ajax.php'),
-                'currency' => DigiCommerce()->get_option('currency', 'USD'),
-                'currency_position' => DigiCommerce()->get_option( 'currency_position', 'left' ),
-                'countries' => DigiCommerce()->get_countries(),
-                'i18n' => array(
-					'revenue' => esc_html__('Revenue', 'digicommerce'),
-					'sales' => esc_html__('Sales', 'digicommerce'),
-					'orders' => esc_html__('Orders', 'digicommerce'),
-					'customers' => esc_html__('Customers', 'digicommerce'),
-					'loading' => esc_html__('Loading...', 'digicommerce'),
-					'error_loading' => esc_html__('Error loading report data. Please try again.', 'digicommerce'),
-					'product' => esc_html__('Product', 'digicommerce'),
-					'orders_header' => esc_html__('Orders', 'digicommerce'),
-					'revenue_header' => esc_html__('Revenue', 'digicommerce'),
-					'country' => esc_html__('Country', 'digicommerce'),
-					'vat_rate' => esc_html__('VAT Rate', 'digicommerce'),
-					'vat_amount' => esc_html__('VAT Amount', 'digicommerce'),
-					'total_amount' => esc_html__('Total Amount', 'digicommerce'),
-					'customer' => esc_html__('Customer', 'digicommerce'),
-					'total_spent' => esc_html__('Total Spent', 'digicommerce'),
-					'last_order' => esc_html__('Last Order', 'digicommerce'),
-					'customer_lifetime' => esc_html__('Customer Lifetime Value', 'digicommerce'),
-					'avg_lifetime' => esc_html__('Average Lifetime Value', 'digicommerce'),
-					'max_lifetime' => esc_html__('Maximum Lifetime Value', 'digicommerce'),
-					'coupon_code' => esc_html__('Coupon Code', 'digicommerce'),
-					'usage_count' => esc_html__('Usage Count', 'digicommerce'),
-					'total_discount' => esc_html__('Total Discount', 'digicommerce'),
-					'subscription_status' => esc_html__('Status', 'digicommerce'),
-					'subscription_count' => esc_html__('Subscriptions', 'digicommerce'),
-					'mrr' => esc_html__('Monthly Recurring Revenue', 'digicommerce'),
-					'churn_rate' => esc_html__('Churn Rate', 'digicommerce'),
-					'no_data' => esc_html__('No data available', 'digicommerce'),
-					'active_subscriptions' => esc_html__('Active Subscriptions', 'digicommerce'),
-					'total_abandoned' => esc_html__('Total Abandoned', 'digicommerce'),
-					'total_recovered' => esc_html__('Total Recovered', 'digicommerce'),  
-					'recovery_rate' => esc_html__('Recovery Rate', 'digicommerce'),
-					'customer_email' => esc_html__('Customer Email', 'digicommerce'),
-					'recovered_date' => esc_html__('Recovery Date', 'digicommerce'),
-					'order_id' => esc_html__('Order ID', 'digicommerce'),  
-					'revenue' => esc_html__('Revenue', 'digicommerce'),
-					'coupon_used' => esc_html__('Coupon Used', 'digicommerce'),
-				)
-            )
-        );
-    }
-
-    /**
-     * AJAX handler for overview data
-     */
-    public function get_overview_data() {
-		check_ajax_referer('digicommerce_reports_nonce', 'nonce');
-		
-		if (!current_user_can('manage_options')) {
-			wp_send_json_error('Insufficient permissions');
+	/**
+	 * Enqueue scripts and styles
+	 *
+	 * @param string $hook Current admin page.
+	 */
+	public function enqueue_scripts( $hook ) {
+		if ( 'digicommerce_page_digicommerce-reports' !== $hook ) {
+			return;
 		}
-	
-		$range = isset($_POST['range']) ? sanitize_text_field($_POST['range']) : 'this_month';
-		
+
+		// Enqueue Chart.js
+		wp_enqueue_script(
+			'chartjs',
+			'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+			array(),
+			'4.4.1',
+			true
+		);
+
+		// Enqueue our reports script
+		wp_enqueue_script(
+			'digicommerce-reports',
+			DIGICOMMERCE_PLUGIN_URL . 'assets/js/admin/reports.js',
+			array( 'chartjs' ),
+			DIGICOMMERCE_VERSION,
+			true
+		);
+
+		// Enqueue our reports styles
+		wp_enqueue_style(
+			'digicommerce-reports',
+			DIGICOMMERCE_PLUGIN_URL . 'assets/css/admin/reports.css',
+			array(),
+			DIGICOMMERCE_VERSION
+		);
+
+		// Localize script
+		wp_localize_script(
+			'digicommerce-reports',
+			'digicommerceReports',
+			array(
+				'nonce'             => wp_create_nonce( 'digicommerce_reports_nonce' ),
+				'ajaxurl'           => admin_url( 'admin-ajax.php' ),
+				'currency'          => DigiCommerce()->get_option( 'currency', 'USD' ),
+				'currency_position' => DigiCommerce()->get_option( 'currency_position', 'left' ),
+				'countries'         => DigiCommerce()->get_countries(),
+				'i18n'              => array(
+					'revenue'              => esc_html__( 'Revenue', 'digicommerce' ),
+					'sales'                => esc_html__( 'Sales', 'digicommerce' ),
+					'orders'               => esc_html__( 'Orders', 'digicommerce' ),
+					'customers'            => esc_html__( 'Customers', 'digicommerce' ),
+					'loading'              => esc_html__( 'Loading...', 'digicommerce' ),
+					'error_loading'        => esc_html__( 'Error loading report data. Please try again.', 'digicommerce' ),
+					'product'              => esc_html__( 'Product', 'digicommerce' ),
+					'orders_header'        => esc_html__( 'Orders', 'digicommerce' ),
+					'revenue_header'       => esc_html__( 'Revenue', 'digicommerce' ),
+					'country'              => esc_html__( 'Country', 'digicommerce' ),
+					'vat_rate'             => esc_html__( 'VAT Rate', 'digicommerce' ),
+					'vat_amount'           => esc_html__( 'VAT Amount', 'digicommerce' ),
+					'total_amount'         => esc_html__( 'Total Amount', 'digicommerce' ),
+					'customer'             => esc_html__( 'Customer', 'digicommerce' ),
+					'total_spent'          => esc_html__( 'Total Spent', 'digicommerce' ),
+					'last_order'           => esc_html__( 'Last Order', 'digicommerce' ),
+					'customer_lifetime'    => esc_html__( 'Customer Lifetime Value', 'digicommerce' ),
+					'avg_lifetime'         => esc_html__( 'Average Lifetime Value', 'digicommerce' ),
+					'max_lifetime'         => esc_html__( 'Maximum Lifetime Value', 'digicommerce' ),
+					'coupon_code'          => esc_html__( 'Coupon Code', 'digicommerce' ),
+					'usage_count'          => esc_html__( 'Usage Count', 'digicommerce' ),
+					'total_discount'       => esc_html__( 'Total Discount', 'digicommerce' ),
+					'subscription_status'  => esc_html__( 'Status', 'digicommerce' ),
+					'subscription_count'   => esc_html__( 'Subscriptions', 'digicommerce' ),
+					'mrr'                  => esc_html__( 'Monthly Recurring Revenue', 'digicommerce' ),
+					'churn_rate'           => esc_html__( 'Churn Rate', 'digicommerce' ),
+					'no_data'              => esc_html__( 'No data available', 'digicommerce' ),
+					'active_subscriptions' => esc_html__( 'Active Subscriptions', 'digicommerce' ),
+					'total_abandoned'      => esc_html__( 'Total Abandoned', 'digicommerce' ),
+					'total_recovered'      => esc_html__( 'Total Recovered', 'digicommerce' ),
+					'recovery_rate'        => esc_html__( 'Recovery Rate', 'digicommerce' ),
+					'customer_email'       => esc_html__( 'Customer Email', 'digicommerce' ),
+					'recovered_date'       => esc_html__( 'Recovery Date', 'digicommerce' ),
+					'order_id'             => esc_html__( 'Order ID', 'digicommerce' ),
+					'coupon_used'          => esc_html__( 'Coupon Used', 'digicommerce' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler for overview data
+	 */
+	public function get_overview_data() {
+		check_ajax_referer( 'digicommerce_reports_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
+		}
+
+		$range = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
+
 		// Enhanced date validation
 		$start_date = null;
-		$end_date = null;
-		
-		if ($range === 'custom') {
+		$end_date   = null;
+
+		if ( 'custom' === $range ) {
 			// Validate start date
-			if (isset($_POST['start_date']) && $this->validate_date($_POST['start_date'])) {
-				$start_date = sanitize_text_field($_POST['start_date']);
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
+				$start_date = sanitize_text_field( $_POST['start_date'] );
 			} else {
-				wp_send_json_error('Invalid start date format');
+				wp_send_json_error( 'Invalid start date format' );
 			}
-			
+
 			// Validate end date
-			if (isset($_POST['end_date']) && $this->validate_date($_POST['end_date'])) {
-				$end_date = sanitize_text_field($_POST['end_date']);
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
+				$end_date = sanitize_text_field( $_POST['end_date'] );
 			} else {
-				wp_send_json_error('Invalid end date format');
+				wp_send_json_error( 'Invalid end date format' );
 			}
-			
+
 			// Additional validation for date range
-			$start = new DateTime($start_date);
-			$end = new DateTime($end_date);
-			
-			if ($end < $start) {
-				wp_send_json_error('End date must be after start date');
+			$start = new DateTime( $start_date );
+			$end   = new DateTime( $end_date );
+
+			if ( $end < $start ) {
+				wp_send_json_error( 'End date must be after start date' );
 			}
 		}
-	
+
 		$data = array(
-			'summary' => $this->get_reports_data($range, $start_date, $end_date),
-			'top_products' => $this->get_top_products(),
+			'summary'         => $this->get_reports_data( $range, $start_date, $end_date ),
+			'top_products'    => $this->get_top_products(),
 			'payment_methods' => $this->get_revenue_by_payment_method(),
-			'refund_stats' => $this->get_refund_stats()
+			'refund_stats'    => $this->get_refund_stats(),
 		);
-	
+
 		// Add subscription data if Pro is active
-		if (class_exists('DigiCommerce_Pro')) {
+		if ( class_exists( 'DigiCommerce_Pro' ) ) {
 			$data['subscription_stats'] = $this->get_subscription_analytics();
 		}
-	
-		wp_send_json_success($data);
+
+		wp_send_json_success( $data );
 	}
 
 	/**
 	 * Validate date format
+	 *
+	 * @param string $date Date string.
 	 */
-	private function validate_date($date) {
-		$d = DateTime::createFromFormat('Y-m-d', $date);
-		return $d && $d->format('Y-m-d') === $date;
+	private function validate_date( $date ) {
+		$d = DateTime::createFromFormat( 'Y-m-d', $date );
+		return $d && $d->format( 'Y-m-d' ) === $date;
 	}
 
-    /**
-     * AJAX handler for products data
-     */
-    public function get_products_data() {
-        check_ajax_referer('digicommerce_reports_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error('Insufficient permissions');
-        }
+	/**
+	 * AJAX handler for products data
+	 */
+	public function get_products_data() {
+		check_ajax_referer( 'digicommerce_reports_nonce', 'nonce' );
 
-        $range = isset($_POST['range']) ? sanitize_text_field($_POST['range']) : 'this_month';
-        $start_date = null;
-        $end_date = null;
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
+		}
 
-        if ($range === 'custom') {
-            if (isset($_POST['start_date']) && $this->validate_date($_POST['start_date'])) {
-                $start_date = sanitize_text_field($_POST['start_date']);
-            } else {
-                wp_send_json_error('Invalid start date format');
-            }
-            
-            if (isset($_POST['end_date']) && $this->validate_date($_POST['end_date'])) {
-                $end_date = sanitize_text_field($_POST['end_date']);
-            } else {
-                wp_send_json_error('Invalid end date format');
-            }
-        }
+		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
+		$start_date = null;
+		$end_date   = null;
 
-        $dates = $this->get_date_range($range, $start_date, $end_date);
-        $data = $this->get_top_products(-1, $dates['start'], $dates['end']);
-        wp_send_json_success($data);
-    }
+		if ( 'custom' === $range ) {
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
+				$start_date = sanitize_text_field( $_POST['start_date'] );
+			} else {
+				wp_send_json_error( 'Invalid start date format' );
+			}
 
-    /**
-     * AJAX handler for customers data
-     */
-    public function get_customers_data() {
-        check_ajax_referer('digicommerce_reports_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error('Insufficient permissions');
-        }
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
+				$end_date = sanitize_text_field( $_POST['end_date'] );
+			} else {
+				wp_send_json_error( 'Invalid end date format' );
+			}
+		}
 
-        $range = isset($_POST['range']) ? sanitize_text_field($_POST['range']) : 'this_month';
-        $start_date = null;
-        $end_date = null;
+		$dates = $this->get_date_range( $range, $start_date, $end_date );
+		$data  = $this->get_top_products( -1, $dates['start'], $dates['end'] );
+		wp_send_json_success( $data );
+	}
 
-        if ($range === 'custom') {
-            if (isset($_POST['start_date']) && $this->validate_date($_POST['start_date'])) {
-                $start_date = sanitize_text_field($_POST['start_date']);
-            } else {
-                wp_send_json_error('Invalid start date format');
-            }
-            
-            if (isset($_POST['end_date']) && $this->validate_date($_POST['end_date'])) {
-                $end_date = sanitize_text_field($_POST['end_date']);
-            } else {
-                wp_send_json_error('Invalid end date format');
-            }
-        }
+	/**
+	 * AJAX handler for customers data
+	 */
+	public function get_customers_data() {
+		check_ajax_referer( 'digicommerce_reports_nonce', 'nonce' );
 
-        $dates = $this->get_date_range($range, $start_date, $end_date);
-        $data = array(
-            'top_customers' => $this->get_top_customers(-1, $dates['start'], $dates['end']),
-            'lifetime_value' => $this->get_customer_lifetime_value($dates['start'], $dates['end'])
-        );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
+		}
 
-        wp_send_json_success($data);
-    }
+		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
+		$start_date = null;
+		$end_date   = null;
 
-    /**
-     * AJAX handler for taxes data
-     */
-    public function get_taxes_data() {
-        check_ajax_referer('digicommerce_reports_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error('Insufficient permissions');
-        }
+		if ( 'custom' === $range ) {
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
+				$start_date = sanitize_text_field( $_POST['start_date'] );
+			} else {
+				wp_send_json_error( 'Invalid start date format' );
+			}
 
-        $range = isset($_POST['range']) ? sanitize_text_field($_POST['range']) : 'this_month';
-        $start_date = null;
-        $end_date = null;
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
+				$end_date = sanitize_text_field( $_POST['end_date'] );
+			} else {
+				wp_send_json_error( 'Invalid end date format' );
+			}
+		}
 
-        if ($range === 'custom') {
-            if (isset($_POST['start_date']) && $this->validate_date($_POST['start_date'])) {
-                $start_date = sanitize_text_field($_POST['start_date']);
-            } else {
-                wp_send_json_error('Invalid start date format');
-            }
-            
-            if (isset($_POST['end_date']) && $this->validate_date($_POST['end_date'])) {
-                $end_date = sanitize_text_field($_POST['end_date']);
-            } else {
-                wp_send_json_error('Invalid end date format');
-            }
-        }
+		$dates = $this->get_date_range( $range, $start_date, $end_date );
+		$data  = array(
+			'top_customers'  => $this->get_top_customers( -1, $dates['start'], $dates['end'] ),
+			'lifetime_value' => $this->get_customer_lifetime_value( $dates['start'], $dates['end'] ),
+		);
 
-        $dates = $this->get_date_range($range, $start_date, $end_date);
-        $data = array(
-            'vat_totals' => $this->get_vat_totals($dates['start'], $dates['end'])
-        );
+		wp_send_json_success( $data );
+	}
 
-        wp_send_json_success($data);
-    }
+	/**
+	 * AJAX handler for taxes data
+	 */
+	public function get_taxes_data() {
+		check_ajax_referer( 'digicommerce_reports_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
+		}
+
+		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
+		$start_date = null;
+		$end_date   = null;
+
+		if ( 'custom' === $range ) {
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
+				$start_date = sanitize_text_field( $_POST['start_date'] );
+			} else {
+				wp_send_json_error( 'Invalid start date format' );
+			}
+
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
+				$end_date = sanitize_text_field( $_POST['end_date'] );
+			} else {
+				wp_send_json_error( 'Invalid end date format' );
+			}
+		}
+
+		$dates = $this->get_date_range( $range, $start_date, $end_date );
+		$data  = array(
+			'vat_totals' => $this->get_vat_totals( $dates['start'], $dates['end'] ),
+		);
+
+		wp_send_json_success( $data );
+	}
 
 	/**
 	 * AJAX handler for coupons data
 	 */
 	public function get_coupons_data() {
-		check_ajax_referer('digicommerce_reports_nonce', 'nonce');
-		
-		if (!current_user_can('manage_options')) {
-			wp_send_json_error('Insufficient permissions');
+		check_ajax_referer( 'digicommerce_reports_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		$range = isset($_POST['range']) ? sanitize_text_field($_POST['range']) : 'this_month';
+		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
 		$start_date = null;
-		$end_date = null;
+		$end_date   = null;
 
-		if ($range === 'custom') {
-			if (isset($_POST['start_date']) && $this->validate_date($_POST['start_date'])) {
-				$start_date = sanitize_text_field($_POST['start_date']);
+		if ( 'custom' === $range ) {
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
+				$start_date = sanitize_text_field( $_POST['start_date'] );
 			} else {
-				wp_send_json_error('Invalid start date format');
+				wp_send_json_error( 'Invalid start date format' );
 			}
-			
-			if (isset($_POST['end_date']) && $this->validate_date($_POST['end_date'])) {
-				$end_date = sanitize_text_field($_POST['end_date']);
+
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
+				$end_date = sanitize_text_field( $_POST['end_date'] );
 			} else {
-				wp_send_json_error('Invalid end date format');
+				wp_send_json_error( 'Invalid end date format' );
 			}
 		}
 
-		$dates = $this->get_date_range($range, $start_date, $end_date);
-		$stats = $this->get_coupon_usage_stats($dates['start'], $dates['end']);
+		$dates = $this->get_date_range( $range, $start_date, $end_date );
+		$stats = $this->get_coupon_usage_stats( $dates['start'], $dates['end'] );
 
-		wp_send_json_success(array('usage' => $stats));
+		wp_send_json_success( array( 'usage' => $stats ) );
 	}
 
 	/**
 	 * AJAX handler for subscriptions data
 	 */
 	public function get_subscriptions_data() {
-		check_ajax_referer('digicommerce_reports_nonce', 'nonce');
-		
-		if (!current_user_can('manage_options')) {
-			wp_send_json_error('Insufficient permissions');
+		check_ajax_referer( 'digicommerce_reports_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		$range = isset($_POST['range']) ? sanitize_text_field($_POST['range']) : 'this_month';
+		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
 		$start_date = null;
-		$end_date = null;
+		$end_date   = null;
 
-		if ($range === 'custom') {
-			if (isset($_POST['start_date']) && $this->validate_date($_POST['start_date'])) {
-				$start_date = sanitize_text_field($_POST['start_date']);
+		if ( 'custom' === $range ) {
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
+				$start_date = sanitize_text_field( $_POST['start_date'] );
 			} else {
-				wp_send_json_error('Invalid start date format');
+				wp_send_json_error( 'Invalid start date format' );
 			}
-			
-			if (isset($_POST['end_date']) && $this->validate_date($_POST['end_date'])) {
-				$end_date = sanitize_text_field($_POST['end_date']);
+
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
+				$end_date = sanitize_text_field( $_POST['end_date'] );
 			} else {
-				wp_send_json_error('Invalid end date format');
+				wp_send_json_error( 'Invalid end date format' );
 			}
 		}
 
-		$dates = $this->get_date_range($range, $start_date, $end_date);
-		$stats = $this->get_subscription_stats($dates['start'], $dates['end']);
+		$dates = $this->get_date_range( $range, $start_date, $end_date );
+		$stats = $this->get_subscription_stats( $dates['start'], $dates['end'] );
 
-		wp_send_json_success(array('stats' => $stats));
+		wp_send_json_success( array( 'stats' => $stats ) );
 	}
 
 	/**
 	 * AJAX handler for abandoned cart data
 	 */
 	public function get_abandoned_cart_data() {
-		check_ajax_referer('digicommerce_reports_nonce', 'nonce');
-		
-		if (!current_user_can('manage_options')) {
-			wp_send_json_error('Insufficient permissions');
+		check_ajax_referer( 'digicommerce_reports_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		$range = isset($_POST['range']) ? sanitize_text_field($_POST['range']) : 'this_month';
+		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
 		$start_date = null;
-		$end_date = null;
+		$end_date   = null;
 
-		if ($range === 'custom') {
-			if (isset($_POST['start_date']) && $this->validate_date($_POST['start_date'])) {
-				$start_date = sanitize_text_field($_POST['start_date']);
+		if ( 'custom' === $range ) {
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
+				$start_date = sanitize_text_field( $_POST['start_date'] );
 			} else {
-				wp_send_json_error('Invalid start date format');
+				wp_send_json_error( 'Invalid start date format' );
 			}
-			
-			if (isset($_POST['end_date']) && $this->validate_date($_POST['end_date'])) {
-				$end_date = sanitize_text_field($_POST['end_date']);
+
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
+				$end_date = sanitize_text_field( $_POST['end_date'] );
 			} else {
-				wp_send_json_error('Invalid end date format');
+				wp_send_json_error( 'Invalid end date format' );
 			}
 		}
 
-		$dates = $this->get_date_range($range, $start_date, $end_date);
-		$stats = $this->get_abandoned_cart_stats($dates['start'], $dates['end']);
+		$dates = $this->get_date_range( $range, $start_date, $end_date );
+		$stats = $this->get_abandoned_cart_stats( $dates['start'], $dates['end'] );
 
-		wp_send_json_success(array('stats' => $stats));
+		wp_send_json_success( array( 'stats' => $stats ) );
 	}
 
-    /**
-     * Get reports data
-     */
-    public function get_reports_data($range = 'this_month', $start_date = null, $end_date = null) {
+	/**
+	 * Get reports data
+	 *
+	 * @param string $range Date range.
+	 * @param string $start_date Start date.
+	 * @param string $end_date End date.
+	 */
+	public function get_reports_data( $range = 'this_month', $start_date = null, $end_date = null ) {
 		global $wpdb;
-	
+
 		// Get date range
-		$dates = $this->get_date_range($range, $start_date, $end_date);
-		
+		$dates = $this->get_date_range( $range, $start_date, $end_date );
+
 		// Get current period data
-		$current_data = $this->get_period_data($dates['start'], $dates['end']);
-	
+		$current_data = $this->get_period_data( $dates['start'], $dates['end'] );
+
 		// Get chart data
-		$chart_data = $this->get_chart_data($dates['start'], $dates['end']);
-	
+		$chart_data = $this->get_chart_data( $dates['start'], $dates['end'] );
+
 		return array(
 			'revenue' => $current_data['revenue'],
-			'net' => $current_data['net'],
-			'orders' => $current_data['orders'],
+			'net'     => $current_data['net'],
+			'orders'  => $current_data['orders'],
 			'average' => $current_data['average'],
-			'chart' => $chart_data
+			'chart'   => $chart_data,
 		);
 	}
 
-    /**
-     * Get period data
-     */
-    private function get_period_data($start_date, $end_date) {
+	/**
+	 * Get period data
+	 *
+	 * @param string $start_date Start date.
+	 * @param string $end_date End date.
+	 */
+	private function get_period_data( $start_date, $end_date ) {
 		global $wpdb;
-	
-		$results = $wpdb->get_row($wpdb->prepare(
-			"SELECT 
-				COUNT(*) as orders,
-				SUM(total) as revenue,
-				SUM(subtotal) as net,
-				CASE 
-					WHEN COUNT(*) > 0 THEN SUM(total) / COUNT(*)
-					ELSE 0 
-				END as average
-			FROM {$wpdb->prefix}digicommerce_orders
-			WHERE status IN ('completed')
-			AND date_created BETWEEN %s AND %s",
-			$start_date,
-			$end_date
-		));
-	
+
+		$results = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(*) as orders, SUM(total) as revenue, SUM(subtotal) as net, CASE  WHEN COUNT(*) > 0 THEN SUM(total) / COUNT(*) ELSE 0  END as average FROM {$wpdb->prefix}digicommerce_orders WHERE status IN ('completed') AND date_created BETWEEN %s AND %s", $start_date, $end_date ) ); // phpcs:ignore
+
 		return array(
-			'orders' => intval($results->orders),
-			'revenue' => floatval($results->revenue),
-			'net' => floatval($results->net),
-			'average' => floatval($results->average)
+			'orders'  => intval( $results->orders ),
+			'revenue' => floatval( $results->revenue ),
+			'net'     => floatval( $results->net ),
+			'average' => floatval( $results->average ),
 		);
 	}
 
-    /**
-     * Get chart data
-     */
-    private function get_chart_data($start_date, $end_date) {
-        global $wpdb;
-
-        $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT 
-                DATE(date_created) as date,
-                SUM(total) as revenue
-            FROM {$wpdb->prefix}digicommerce_orders
-            WHERE status IN ('completed')
-            AND date_created BETWEEN %s AND %s
-            GROUP BY DATE(date_created)
-            ORDER BY date_created ASC",
-            $start_date,
-            $end_date
-        ));
-
-        $labels = array();
-        $data = array();
-
-        $current = new DateTime($start_date);
-        $end = new DateTime($end_date);
-        $interval = new DateInterval('P1D');
-
-        // Create a lookup array for the results
-        $revenue_by_date = array();
-        foreach ($results as $row) {
-            $revenue_by_date[$row->date] = $row->revenue;
-        }
-
-        // Fill in all dates
-        while ($current <= $end) {
-            $date = $current->format('Y-m-d');
-            $labels[] = $current->format('M j');
-            $data[] = isset($revenue_by_date[$date]) ? floatval($revenue_by_date[$date]) : 0;
-            $current->add($interval);
-        }
-
-        return array(
-            'labels' => $labels,
-            'revenue' => $data
-        );
-    }
-
-    /**
-     * Get top products
-     */
-    private function get_top_products($limit = 5, $start_date = null, $end_date = null) {
-        global $wpdb;
-    
-        $query = "SELECT 
-            i.product_id,
-            i.name,
-            COUNT(DISTINCT i.order_id) as orders,
-            SUM(i.total) as revenue
-        FROM {$wpdb->prefix}digicommerce_order_items i
-        JOIN {$wpdb->prefix}digicommerce_orders o ON i.order_id = o.id
-        WHERE o.status IN ('completed')";
-
-        if ($start_date && $end_date) {
-            $query .= $wpdb->prepare(" AND o.date_created BETWEEN %s AND %s", $start_date, $end_date);
-        }
-
-        $query .= " GROUP BY i.product_id, i.name
-                   ORDER BY revenue DESC";
-
-        if ($limit > 0) {
-            $query .= $wpdb->prepare(" LIMIT %d", $limit);
-        }
-    
-        return $wpdb->get_results($query);
-    }
-
-    /**
-     * Get VAT totals by country
-     */
-    private function get_vat_totals($start_date = null, $end_date = null) {
-        global $wpdb;
-
-        $query = "SELECT 
-            b.country,
-            o.vat_rate,
-            COUNT(*) as orders,
-            SUM(o.vat) as vat_amount,
-            SUM(o.total) as total_amount
-        FROM {$wpdb->prefix}digicommerce_orders o
-        JOIN {$wpdb->prefix}digicommerce_order_billing b ON o.id = b.order_id
-        WHERE o.status IN ('completed')
-        AND o.vat > 0";
-
-        if ($start_date && $end_date) {
-            $query .= $wpdb->prepare(" AND o.date_created BETWEEN %s AND %s", $start_date, $end_date);
-        }
-
-        $query .= " GROUP BY b.country, o.vat_rate
-                   ORDER BY vat_amount DESC";
-
-        return $wpdb->get_results($query);
-    }
-
-    /**
-     * Get revenue by payment method
-     */
-    private function get_revenue_by_payment_method() {
+	/**
+	 * Get chart data
+	 *
+	 * @param string $start_date Start date.
+	 * @param string $end_date End date.
+	 */
+	private function get_chart_data( $start_date, $end_date ) {
 		global $wpdb;
-	
+
+		$results = $wpdb->get_results( $wpdb->prepare( "SELECT DATE(date_created) as date, SUM(total) as revenue FROM {$wpdb->prefix}digicommerce_orders WHERE status IN ('completed') AND date_created BETWEEN %s AND %s GROUP BY DATE(date_created) ORDER BY date_created ASC", $start_date, $end_date ) ); // phpcs:ignore
+
+		$labels = array();
+		$data   = array();
+
+		$current  = new DateTime( $start_date );
+		$end      = new DateTime( $end_date );
+		$interval = new DateInterval( 'P1D' );
+
+		// Create a lookup array for the results
+		$revenue_by_date = array();
+		foreach ( $results as $row ) {
+			$revenue_by_date[ $row->date ] = $row->revenue;
+		}
+
+		// Fill in all dates
+		while ( $current <= $end ) {
+			$date     = $current->format( 'Y-m-d' );
+			$labels[] = $current->format( 'M j' );
+			$data[]   = isset( $revenue_by_date[ $date ] ) ? floatval( $revenue_by_date[ $date ] ) : 0;
+			$current->add( $interval );
+		}
+
+		return array(
+			'labels'  => $labels,
+			'revenue' => $data,
+		);
+	}
+
+	/**
+	 * Get top products
+	 *
+	 * @param int    $limit Number of products to return.
+	 * @param string $start_date Start date.
+	 * @param string $end_date End date.
+	 */
+	private function get_top_products( $limit = 5, $start_date = null, $end_date = null ) {
+		global $wpdb;
+
+		$query = "SELECT 
+			i.product_id,
+			i.name,
+			COUNT(DISTINCT i.order_id) as orders,
+			SUM(i.total) as revenue
+		FROM {$wpdb->prefix}digicommerce_order_items i
+		JOIN {$wpdb->prefix}digicommerce_orders o ON i.order_id = o.id
+		WHERE o.status IN ('completed')";
+
+		if ( $start_date && $end_date ) {
+			$query .= $wpdb->prepare( " AND o.date_created BETWEEN %s AND %s", $start_date, $end_date ); // phpcs:ignore
+		}
+
+		$query .= ' GROUP BY i.product_id, i.name
+					ORDER BY revenue DESC';
+
+		if ( $limit > 0 ) {
+			$query .= $wpdb->prepare( ' LIMIT %d', $limit );
+		}
+
+		return $wpdb->get_results( $query ); // phpcs:ignore
+	}
+
+	/**
+	 * Get VAT totals by country
+	 *
+	 * @param string $start_date Start date.
+	 * @param string $end_date End date.
+	 */
+	private function get_vat_totals( $start_date = null, $end_date = null ) {
+		global $wpdb;
+
+		$query = "SELECT 
+			b.country,
+			o.vat_rate,
+			COUNT(*) as orders,
+			SUM(o.vat) as vat_amount,
+			SUM(o.total) as total_amount
+		FROM {$wpdb->prefix}digicommerce_orders o
+		JOIN {$wpdb->prefix}digicommerce_order_billing b ON o.id = b.order_id
+		WHERE o.status IN ('completed')
+		AND o.vat > 0";
+
+		if ( $start_date && $end_date ) {
+			$query .= $wpdb->prepare( ' AND o.date_created BETWEEN %s AND %s', $start_date, $end_date );
+		}
+
+		$query .= ' GROUP BY b.country, o.vat_rate
+					ORDER BY vat_amount DESC';
+
+		return $wpdb->get_results( $query ); // phpcs:ignore
+	}
+
+	/**
+	 * Get revenue by payment method
+	 */
+	private function get_revenue_by_payment_method() {
+		global $wpdb;
+
 		return $wpdb->get_results(
 			"SELECT 
 				payment_method,
@@ -597,121 +597,132 @@ class DigiCommerce_Reports {
 		);
 	}
 
-    /**
-     * Get refund stats
-     */
-    private function get_refund_stats() {
-        global $wpdb;
+	/**
+	 * Get refund stats
+	 */
+	private function get_refund_stats() {
+		global $wpdb;
 
-        return $wpdb->get_row(
-            "SELECT 
-                COUNT(*) as total_refunds,
-                SUM(total) as refunded_amount,
-                AVG(total) as average_refund
-            FROM {$wpdb->prefix}digicommerce_orders
-            WHERE status = 'refunded'"
-        );
-    }
+		return $wpdb->get_row(
+			"SELECT 
+				COUNT(*) as total_refunds,
+				SUM(total) as refunded_amount,
+				AVG(total) as average_refund
+			FROM {$wpdb->prefix}digicommerce_orders
+			WHERE status = 'refunded'"
+		);
+	}
 
-    /**
-     * Get top customers
-     */
-    private function get_top_customers($limit = 5, $start_date = null, $end_date = null) {
-        global $wpdb;
+	/**
+	 * Get top customers
+	 *
+	 * @param int    $limit Number of customers to return.
+	 * @param string $start_date Start date.
+	 * @param string $end_date End date.
+	 */
+	private function get_top_customers( $limit = 5, $start_date = null, $end_date = null ) {
+		global $wpdb;
 
-        $query = "SELECT 
-            o.user_id,
-            u.display_name as name,
-            COUNT(*) as orders,
-            SUM(o.total) as total_spent,
-            MAX(o.date_created) as last_order
-        FROM {$wpdb->prefix}digicommerce_orders o
-        JOIN {$wpdb->users} u ON o.user_id = u.ID
-        WHERE o.status IN ('completed')";
+		$query = "SELECT 
+			o.user_id,
+			u.display_name as name,
+			COUNT(*) as orders,
+			SUM(o.total) as total_spent,
+			MAX(o.date_created) as last_order
+		FROM {$wpdb->prefix}digicommerce_orders o
+		JOIN {$wpdb->users} u ON o.user_id = u.ID
+		WHERE o.status IN ('completed')";
 
-        if ($start_date && $end_date) {
-            $query .= $wpdb->prepare(" AND o.date_created BETWEEN %s AND %s", $start_date, $end_date);
-        }
+		if ( $start_date && $end_date ) {
+			$query .= $wpdb->prepare( ' AND o.date_created BETWEEN %s AND %s', $start_date, $end_date );
+		}
 
-        $query .= " GROUP BY o.user_id, u.display_name
-                   ORDER BY total_spent DESC";
+		$query .= ' GROUP BY o.user_id, u.display_name
+					ORDER BY total_spent DESC';
 
-        if ($limit > 0) {
-            $query .= $wpdb->prepare(" LIMIT %d", $limit);
-        }
+		if ( $limit > 0 ) {
+			$query .= $wpdb->prepare( ' LIMIT %d', $limit );
+		}
 
-        return $wpdb->get_results($query);
-    }
+		return $wpdb->get_results( $query ); // phpcs:ignore
+	}
 
-    /**
-     * Get customer lifetime value
-     */
-    private function get_customer_lifetime_value($start_date = null, $end_date = null) {
-        global $wpdb;
+	/**
+	 * Get customer lifetime value
+	 *
+	 * @param string $start_date Start date.
+	 * @param string $end_date End date.
+	 */
+	private function get_customer_lifetime_value( $start_date = null, $end_date = null ) {
+		global $wpdb;
 
-        $subquery = "SELECT 
-            user_id,
-            SUM(total) as total_spent
-        FROM {$wpdb->prefix}digicommerce_orders
-        WHERE status IN ('completed')";
+		$subquery = "SELECT 
+			user_id,
+			SUM(total) as total_spent
+		FROM {$wpdb->prefix}digicommerce_orders
+		WHERE status IN ('completed')";
 
-        if ($start_date && $end_date) {
-            $subquery .= $wpdb->prepare(" AND date_created BETWEEN %s AND %s", $start_date, $end_date);
-        }
+		if ( $start_date && $end_date ) {
+			$subquery .= $wpdb->prepare( ' AND date_created BETWEEN %s AND %s', $start_date, $end_date );
+		}
 
-        $subquery .= " GROUP BY user_id";
+		$subquery .= ' GROUP BY user_id';
 
-        return $wpdb->get_row("
-            SELECT 
-                AVG(total_spent) as avg_lifetime_value,
-                MAX(total_spent) as max_lifetime_value
-            FROM ($subquery) as customer_totals
-        ");
-    }
+		return $wpdb->get_row( "SELECT AVG(total_spent) as avg_lifetime_value, MAX(total_spent) as max_lifetime_value FROM ($subquery) as customer_totals" ); // phpcs:ignore
+	}
 
 	/**
 	 * Get coupon usage statistics
+	 *
+	 * @param string $start_date Start date.
+	 * @param string $end_date End date.
 	 */
-	public function get_coupon_usage_stats($start_date = null, $end_date = null) {
+	public function get_coupon_usage_stats( $start_date = null, $end_date = null ) {
 		// Use Pro Coupons class instance
-		if (class_exists('DigiCommerce_Pro') && DigiCommerce()->get_option('enable_coupon_code', false)) {
-			return DigiCommerce_Pro_Coupons::instance()->get_coupon_usage_stats($start_date, $end_date);
+		if ( class_exists( 'DigiCommerce_Pro' ) && DigiCommerce()->get_option( 'enable_coupon_code', false ) ) {
+			return DigiCommerce_Pro_Coupons::instance()->get_coupon_usage_stats( $start_date, $end_date );
 		}
 		return array();
 	}
 
 	/**
 	 * Get subscription statistics
+	 *
+	 * @param string $start_date Start date.
+	 * @param string $end_date End date.
 	 */
-	public function get_subscription_stats($start_date = null, $end_date = null) {
-		// Use Pro Subscriptions class instance 
-		if (class_exists('DigiCommerce_Pro') && DigiCommerce()->get_option('enable_subscriptions', false)) {
-			return DigiCommerce_Pro_Subscriptions::instance()->get_subscription_stats($start_date, $end_date);
+	public function get_subscription_stats( $start_date = null, $end_date = null ) {
+		// Use Pro Subscriptions class instance
+		if ( class_exists( 'DigiCommerce_Pro' ) && DigiCommerce()->get_option( 'enable_subscriptions', false ) ) {
+			return DigiCommerce_Pro_Subscriptions::instance()->get_subscription_stats( $start_date, $end_date );
 		}
 		return array();
 	}
 
 	/**
 	 * Get abandoned cart statistics
+	 *
+	 * @param string $start_date Start date.
+	 * @param string $end_date End date.
 	 */
-	public function get_abandoned_cart_stats($start_date = null, $end_date = null) {
+	public function get_abandoned_cart_stats( $start_date = null, $end_date = null ) {
 		// Use Pro Coupons class instance
-		if (class_exists('DigiCommerce_Pro') && DigiCommerce()->get_option('enable_abandoned_cart', false)) {
-			return DigiCommerce_Pro_Abandoned_Cart::instance()->get_abandoned_cart_stats($start_date, $end_date);
+		if ( class_exists( 'DigiCommerce_Pro' ) && DigiCommerce()->get_option( 'enable_abandoned_cart', false ) ) {
+			return DigiCommerce_Pro_Abandoned_Cart::instance()->get_abandoned_cart_stats( $start_date, $end_date );
 		}
 		return array();
 	}
 
-    /**
-     * Get subscription analytics if Pro version is active
-     */
-    private function get_subscription_analytics() {
-		if (!class_exists('DigiCommerce_Pro')) {
+	/**
+	 * Get subscription analytics if Pro version is active
+	 */
+	private function get_subscription_analytics() {
+		if ( ! class_exists( 'DigiCommerce_Pro' ) ) {
 			return false;
 		}
-	
+
 		global $wpdb;
-	
+
 		return $wpdb->get_row(
 			"SELECT 
 				COUNT(*) as total_subscriptions,
@@ -721,192 +732,197 @@ class DigiCommerce_Reports {
 		);
 	}
 
-    /**
-     * Get date range
-     */
-    private function get_date_range($range, $start_date = null, $end_date = null) {
-        $now = new DateTime();
-        $now->setTime(23, 59, 59);
+	/**
+	 * Get date range
+	 *
+	 * @param string $range Date range.
+	 * @param string $start_date Start date.
+	 * @param string $end_date End date.
+	 * @throws Exception If invalid date format.
+	 */
+	private function get_date_range( $range, $start_date = null, $end_date = null ) {
+		$now = new DateTime();
+		$now->setTime( 23, 59, 59 );
 
-        switch ($range) {
+		switch ( $range ) {
 			case 'today':
 				$start = new DateTime();
-				$start->setTime(0, 0, 0);
+				$start->setTime( 0, 0, 0 );
 				return array(
-					'start' => $start->format('Y-m-d H:i:s'),
-					'end' => $now->format('Y-m-d H:i:s')
+					'start' => $start->format( 'Y-m-d H:i:s' ),
+					'end'   => $now->format( 'Y-m-d H:i:s' ),
 				);
 
 			case 'yesterday':
-				$start = new DateTime('yesterday');
-				$start->setTime(0, 0, 0);
-				$end = new DateTime('yesterday');
-				$end->setTime(23, 59, 59);
+				$start = new DateTime( 'yesterday' );
+				$start->setTime( 0, 0, 0 );
+				$end = new DateTime( 'yesterday' );
+				$end->setTime( 23, 59, 59 );
 				return array(
-					'start' => $start->format('Y-m-d H:i:s'),
-					'end' => $end->format('Y-m-d H:i:s')
+					'start' => $start->format( 'Y-m-d H:i:s' ),
+					'end'   => $end->format( 'Y-m-d H:i:s' ),
 				);
 
 			case 'this_week':
 				$start = new DateTime();
-				$start->modify('this week monday');
-				$start->setTime(0, 0, 0);
+				$start->modify( 'this week monday' );
+				$start->setTime( 0, 0, 0 );
 				return array(
-					'start' => $start->format('Y-m-d H:i:s'),
-					'end' => $now->format('Y-m-d H:i:s')
+					'start' => $start->format( 'Y-m-d H:i:s' ),
+					'end'   => $now->format( 'Y-m-d H:i:s' ),
 				);
 
 			case 'last_week':
 				$start = new DateTime();
-				$start->modify('last week monday');
-				$start->setTime(0, 0, 0);
+				$start->modify( 'last week monday' );
+				$start->setTime( 0, 0, 0 );
 				$end = clone $start;
-				$end->modify('sunday');
-				$end->setTime(23, 59, 59);
+				$end->modify( 'sunday' );
+				$end->setTime( 23, 59, 59 );
 				return array(
-					'start' => $start->format('Y-m-d H:i:s'),
-					'end' => $end->format('Y-m-d H:i:s')
+					'start' => $start->format( 'Y-m-d H:i:s' ),
+					'end'   => $end->format( 'Y-m-d H:i:s' ),
 				);
 
 			case 'this_month':
-				$start = new DateTime('first day of this month');
-				$start->setTime(0, 0, 0);
+				$start = new DateTime( 'first day of this month' );
+				$start->setTime( 0, 0, 0 );
 				return array(
-					'start' => $start->format('Y-m-d H:i:s'),
-					'end' => $now->format('Y-m-d H:i:s')
+					'start' => $start->format( 'Y-m-d H:i:s' ),
+					'end'   => $now->format( 'Y-m-d H:i:s' ),
 				);
 
 			case 'last_month':
-				$start = new DateTime('first day of last month');
-				$start->setTime(0, 0, 0);
-				$end = new DateTime('last day of last month');
-				$end->setTime(23, 59, 59);
+				$start = new DateTime( 'first day of last month' );
+				$start->setTime( 0, 0, 0 );
+				$end = new DateTime( 'last day of last month' );
+				$end->setTime( 23, 59, 59 );
 				return array(
-					'start' => $start->format('Y-m-d H:i:s'),
-					'end' => $end->format('Y-m-d H:i:s')
+					'start' => $start->format( 'Y-m-d H:i:s' ),
+					'end'   => $end->format( 'Y-m-d H:i:s' ),
 				);
 
 			case 'this_quarter':
 				$start = new DateTime();
-				$start->setTime(0, 0, 0);
-				$start->setDate($start->format('Y'), ceil($start->format('n') / 3) * 3 - 2, 1);
+				$start->setTime( 0, 0, 0 );
+				$start->setDate( $start->format( 'Y' ), ceil( $start->format( 'n' ) / 3 ) * 3 - 2, 1 );
 				return array(
-					'start' => $start->format('Y-m-d H:i:s'),
-					'end' => $now->format('Y-m-d H:i:s')
+					'start' => $start->format( 'Y-m-d H:i:s' ),
+					'end'   => $now->format( 'Y-m-d H:i:s' ),
 				);
 
 			case 'last_quarter':
 				$start = new DateTime();
-				$start->setTime(0, 0, 0);
-				$start->modify('-3 months');
-				$start->setDate($start->format('Y'), ceil($start->format('n') / 3) * 3 - 2, 1);
+				$start->setTime( 0, 0, 0 );
+				$start->modify( '-3 months' );
+				$start->setDate( $start->format( 'Y' ), ceil( $start->format( 'n' ) / 3 ) * 3 - 2, 1 );
 				$end = clone $start;
-				$end->modify('+2 months');
-				$end->modify('last day of this month');
-				$end->setTime(23, 59, 59);
+				$end->modify( '+2 months' );
+				$end->modify( 'last day of this month' );
+				$end->setTime( 23, 59, 59 );
 				return array(
-					'start' => $start->format('Y-m-d H:i:s'),
-					'end' => $end->format('Y-m-d H:i:s')
+					'start' => $start->format( 'Y-m-d H:i:s' ),
+					'end'   => $end->format( 'Y-m-d H:i:s' ),
 				);
 
 			case 'this_year':
-				$start = new DateTime('first day of January ' . date('Y'));
-				$start->setTime(0, 0, 0);
+				$start = new DateTime( 'first day of January ' . date( 'Y' ) ); // phpcs:ignore
+				$start->setTime( 0, 0, 0 );
 				return array(
-					'start' => $start->format('Y-m-d H:i:s'),
-					'end' => $now->format('Y-m-d H:i:s')
+					'start' => $start->format( 'Y-m-d H:i:s' ),
+					'end'   => $now->format( 'Y-m-d H:i:s' ),
 				);
 
 			case 'last_year':
-				$start = new DateTime('first day of January ' . (date('Y') - 1));
-				$start->setTime(0, 0, 0);
-				$end = new DateTime('last day of December ' . (date('Y') - 1));
-				$end->setTime(23, 59, 59);
+				$start = new DateTime( 'first day of January ' . ( date( 'Y' ) - 1 ) ); // phpcs:ignore
+				$start->setTime( 0, 0, 0 );
+				$end = new DateTime( 'last day of December ' . ( date( 'Y' ) - 1 ) ); // phpcs:ignore
+				$end->setTime( 23, 59, 59 );
 				return array(
-					'start' => $start->format('Y-m-d H:i:s'),
-					'end' => $end->format('Y-m-d H:i:s')
+					'start' => $start->format( 'Y-m-d H:i:s' ),
+					'end'   => $end->format( 'Y-m-d H:i:s' ),
 				);
 
 			case 'custom':
 				try {
 					// Validate date format and existence
-					if (!$start_date || !$end_date) {
-						throw new Exception('Both start and end dates are required for custom range');
+					if ( ! $start_date || ! $end_date ) {
+						throw new Exception( 'Both start and end dates are required for custom range' );
 					}
-	
+
 					// Create DateTime objects and validate dates
-					$start = new DateTime($start_date);
-					$end = new DateTime($end_date);
-	
+					$start = new DateTime( $start_date );
+					$end   = new DateTime( $end_date );
+
 					// Validate date range
-					if ($end < $start) {
-						throw new Exception('End date must be after start date');
+					if ( $end < $start ) {
+						throw new Exception( 'End date must be after start date' );
 					}
-	
+
 					// Set proper time bounds
-					$start->setTime(0, 0, 0);
-					$end->setTime(23, 59, 59);
-	
+					$start->setTime( 0, 0, 0 );
+					$end->setTime( 23, 59, 59 );
+
 					return array(
-						'start' => $start->format('Y-m-d H:i:s'),
-						'end' => $end->format('Y-m-d H:i:s')
+						'start' => $start->format( 'Y-m-d H:i:s' ),
+						'end'   => $end->format( 'Y-m-d H:i:s' ),
 					);
-				} catch (Exception $e) {					
+				} catch ( Exception $e ) {
 					// Fall back to current month only if there's an error
-					$start = new DateTime('first day of this month');
-					$start->setTime(0, 0, 0);
+					$start = new DateTime( 'first day of this month' );
+					$start->setTime( 0, 0, 0 );
 					return array(
-						'start' => $start->format('Y-m-d H:i:s'),
-						'end' => $now->format('Y-m-d H:i:s')
+						'start' => $start->format( 'Y-m-d H:i:s' ),
+						'end'   => $now->format( 'Y-m-d H:i:s' ),
 					);
 				}
 				break;
 		}
 
 		// Default to this month if no valid range specified
-		$start = new DateTime('first day of this month');
-		$start->setTime(0, 0, 0);
+		$start = new DateTime( 'first day of this month' );
+		$start->setTime( 0, 0, 0 );
 		return array(
-			'start' => $start->format('Y-m-d H:i:s'),
-			'end' => $now->format('Y-m-d H:i:s')
+			'start' => $start->format( 'Y-m-d H:i:s' ),
+			'end'   => $now->format( 'Y-m-d H:i:s' ),
 		);
 	}
 
-    /**
-     * Render reports page
-     */
-    public function render_reports_page() {
-        // Get current tab
-        $current_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'overview';
+	/**
+	 * Render reports page
+	 */
+	public function render_reports_page() {
+		// Get current tab
+		$current_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'overview';
 
-        // Define tabs
-        $tabs = array(
-            'overview' => esc_html__('Overview', 'digicommerce'),
-            'products' => esc_html__('Products', 'digicommerce'),
-            'customers' => esc_html__('Customers', 'digicommerce'),
-            'taxes' => esc_html__('Taxes', 'digicommerce'),
-        );
+		// Define tabs
+		$tabs = array(
+			'overview'  => esc_html__( 'Overview', 'digicommerce' ),
+			'products'  => esc_html__( 'Products', 'digicommerce' ),
+			'customers' => esc_html__( 'Customers', 'digicommerce' ),
+			'taxes'     => esc_html__( 'Taxes', 'digicommerce' ),
+		);
 
 		// If DigiCommerce Pro
-		if ( class_exists('DigiCommerce_Pro') ) {
+		if ( class_exists( 'DigiCommerce_Pro' ) ) {
 			// Add Coupons tab if enabled
 			if ( DigiCommerce()->get_option( 'enable_coupon_code', false ) ) {
 				$tabs['coupons'] = esc_html__( 'Coupons', 'digicommerce' );
 			}
-		
+
 			// Add Subscriptions tab if enabled
 			if ( DigiCommerce()->get_option( 'enable_subscriptions', false ) ) {
 				$tabs['subscriptions'] = esc_html__( 'Subscriptions', 'digicommerce' );
 			}
-		
+
 			// Add Abandoned Cart tab if enabled
 			if ( DigiCommerce()->get_option( 'enable_abandoned_cart', false ) ) {
 				$tabs['abandoned_cart'] = esc_html__( 'Abandoned Cart', 'digicommerce' );
 			}
 		}
 
-        // Allow filtering of tabs
-        $tabs = apply_filters('digicommerce_report_tabs', $tabs);
+		// Allow filtering of tabs
+		$tabs = apply_filters( 'digicommerce_report_tabs', $tabs );
 
 		$help = array();
 
@@ -915,20 +931,20 @@ class DigiCommerce_Reports {
 			$help['pro'] = array(
 				'title' => esc_html__( 'Upgrade to pro', 'digicommerce' ),
 				'svg'   => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="15" height="15" fill="#fff" class="default-transition"><path d="m2.8373 20.9773c-.6083-3.954-1.2166-7.9079-1.8249-11.8619-.1349-.8765.8624-1.4743 1.5718-.9422 1.8952 1.4214 3.7903 2.8427 5.6855 4.2641.624.468 1.513.3157 1.9456-.3333l4.7333-7.1c.5002-.7503 1.6026-.7503 2.1028 0l4.7333 7.1c.4326.649 1.3216.8012 1.9456.3333 1.8952-1.4214 3.7903-2.8427 5.6855-4.2641.7094-.5321 1.7067.0657 1.5719.9422-.6083 3.954-1.2166 7.9079-1.8249 11.8619z"></path><path d="m27.7902 27.5586h-23.5804c-.758 0-1.3725-.6145-1.3725-1.3725v-3.015h26.3255v3.015c-.0001.758-.6146 1.3725-1.3726 1.3725z"></path></svg>',
-				'url'   => 'https://digicommerce.me/pricing'
+				'url'   => 'https://digicommerce.me/pricing',
 			);
 		}
 
 		$help['support'] = array(
 			'title' => esc_html__( 'Support', 'digicommerce' ),
 			'svg'   => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="15" height="15" fill="#fff" class="default-transition"><path d="M256 448c141.4 0 256-93.1 256-208S397.4 32 256 32S0 125.1 0 240c0 45.1 17.7 86.8 47.7 120.9c-1.9 24.5-11.4 46.3-21.4 62.9c-5.5 9.2-11.1 16.6-15.2 21.6c-2.1 2.5-3.7 4.4-4.9 5.7c-.6 .6-1 1.1-1.3 1.4l-.3 .3c0 0 0 0 0 0c0 0 0 0 0 0s0 0 0 0s0 0 0 0c-4.6 4.6-5.9 11.4-3.4 17.4c2.5 6 8.3 9.9 14.8 9.9c28.7 0 57.6-8.9 81.6-19.3c22.9-10 42.4-21.9 54.3-30.6c31.8 11.5 67 17.9 104.1 17.9zM169.8 149.3c7.9-22.3 29.1-37.3 52.8-37.3l58.3 0c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 248.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24l0-13.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1l-58.3 0c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 336a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"/></svg>',
-			'url'   => 'https://digicommerce.me/my-account/'
+			'url'   => 'https://digicommerce.me/my-account/',
 		);
 
 		$help['documentation'] = array(
 			'title' => esc_html__( 'Documentation', 'digicommerce' ),
 			'svg'   => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="15" height="15" fill="#fff" class="default-transition"><path d="M0 32C0 14.3 14.3 0 32 0L96 0c17.7 0 32 14.3 32 32l0 64L0 96 0 32zm0 96l128 0 0 256L0 384 0 128zM0 416l128 0 0 64c0 17.7-14.3 32-32 32l-64 0c-17.7 0-32-14.3-32-32l0-64zM160 32c0-17.7 14.3-32 32-32l64 0c17.7 0 32 14.3 32 32l0 64L160 96l0-64zm0 96l128 0 0 256-128 0 0-256zm0 288l128 0 0 64c0 17.7-14.3 32-32 32l-64 0c-17.7 0-32-14.3-32-32l0-64zm203.6-19.9L320 232.6l0-89.9 100.4-26.9 66 247.4L363.6 396.1zM412.2 85L320 109.6 320 11l36.9-9.9c16.9-4.6 34.4 5.5 38.9 22.6L412.2 85zM371.8 427l122.8-32.9 16.3 61.1c4.5 17-5.5 34.5-22.5 39.1l-61.4 16.5c-16.9 4.6-34.4-5.5-38.9-22.6L371.8 427z"/></svg>',
-			'url'   => 'https://docs.digicommerce.me/'
+			'url'   => 'https://docs.digicommerce.me/',
 		);
 
 		// Define allowed SVG tags
@@ -949,9 +965,9 @@ class DigiCommerce_Reports {
 
 		// UTM parameters
 		$utm_params = '?utm_source=WordPress&utm_medium=header&utm_campaign=digi';
-        ?>
-        <div class="digicommerce">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-dark-blue box-border -ml-5 px-8 py-6">
+		?>
+		<div class="digicommerce">
+			<div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-dark-blue box-border ltr:-ml-5 rtl:-mr-5 px-8 py-6">
 				<div class="digicommerce-logo flex items-center flex-col esm:flex-row gap-4">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2148.09 350" width="250" height="40.73">
 						<g>
@@ -977,7 +993,7 @@ class DigiCommerce_Reports {
 
 					<span class="flex gap-4 text-xl font-bold text-white">
 						<span>/</span>
-						<?php esc_html_e('Reports', 'digicommerce'); ?>
+						<?php esc_html_e( 'Reports', 'digicommerce' ); ?>
 					</span>
 				</div>
 
@@ -986,9 +1002,9 @@ class DigiCommerce_Reports {
 					foreach ( $help as $id => $array ) :
 						$url = $array['url'];
 						// Add UTM parameters appropriately
-						if ($id === 'support') {
+						if ( 'support' === $id ) {
 							// For support URL, check if there are existing parameters
-							$url .= (strpos($url, '?') !== false) ? '&' : '?';
+							$url .= ( strpos( $url, '?' ) !== false ) ? '&' : '?';
 							$url .= 'section=support';
 							$url .= '&utm_source=WordPress&utm_medium=header&utm_campaign=digi';
 						} else {
@@ -1009,86 +1025,88 @@ class DigiCommerce_Reports {
 				</div>
 			</div>
 
-            <div class="flex flex-col 2xl:grid 2xl:grid-cols-12 m-5 ml-0">
-                <!-- Left sidebar with tabs -->
-                <div class="digicommerce-tabs 2xl:col-span-2">
-                    <?php foreach ($tabs as $tab_id => $tab_label) : ?>
-                        <a href="#" data-tab="<?php echo esc_attr($tab_id); ?>" 
-                           class="digicommerce-tab cursor-pointer flex justify-start w-full no-underline text-dark-blue hover:text-dark-blue bg-light-blue hover:bg-[#f2f5ff] select-none text-center box-border p-4 text-medium border-0 border-b border-solid border-[rgba(0,0,0,0.05)] first:2xl:rounded-[.375rem_0_0] last:2xl:rounded-[0_0_0_.375rem] last:border-b-0 default-transition <?php echo $current_tab === $tab_id ? 'active' : ''; ?>">
-                            <?php echo esc_html($tab_label); ?>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
+			<div class="flex flex-col 2xl:grid 2xl:grid-cols-12 m-5 ltr:ml-0 rtl:mr-0">
+				<!-- Left sidebar with tabs -->
+				<div class="digicommerce-tabs 2xl:col-span-2">
+					<?php foreach ( $tabs as $tab_id => $tab_label ) : ?>
+						<a href="#" data-tab="<?php echo esc_attr( $tab_id ); ?>" 
+							class="digicommerce-tab cursor-pointer flex justify-start w-full no-underline text-dark-blue hover:text-dark-blue bg-light-blue hover:bg-[#f2f5ff] select-none text-center box-border p-4 text-medium border-0 border-b border-solid border-[rgba(0,0,0,0.05)] first:2xl:rounded-[.375rem_0_0] last:2xl:rounded-[0_0_0_.375rem] last:border-b-0 default-transition <?php echo $current_tab === $tab_id ? 'active' : ''; ?>">
+							<?php echo esc_html( $tab_label ); ?>
+						</a>
+					<?php endforeach; ?>
+				</div>
 
-                <!-- Main content area -->
-                <div class="flex flex-col gap-12 bg-white box-border p-6 2xl:rounded-[0_.375rem_.375rem_0] 2xl:col-span-10">
-                    <!-- Date Range Selector -->
-                    <div class="date-range-selector flex flex-wrap gap-4 items-center">
-                        <select class="digi-date-range">
-                            <option value="today"><?php esc_html_e('Today', 'digicommerce'); ?></option>
-                            <option value="yesterday"><?php esc_html_e('Yesterday', 'digicommerce'); ?></option>
-                            <option value="this_week"><?php esc_html_e('This Week', 'digicommerce'); ?></option>
-                            <option value="last_week"><?php esc_html_e('Last Week', 'digicommerce'); ?></option>
-                            <option value="this_month" selected><?php esc_html_e('This Month', 'digicommerce'); ?></option>
-                            <option value="last_month"><?php esc_html_e('Last Month', 'digicommerce'); ?></option>
-                            <option value="this_quarter"><?php esc_html_e('This Quarter', 'digicommerce'); ?></option>
-                            <option value="last_quarter"><?php esc_html_e('Last Quarter', 'digicommerce'); ?></option>
-                            <option value="this_year"><?php esc_html_e('This Year', 'digicommerce'); ?></option>
-                            <option value="last_year"><?php esc_html_e('Last Year', 'digicommerce'); ?></option>
-                            <option value="custom"><?php esc_html_e('Custom', 'digicommerce'); ?></option>
-                        </select>
+				<!-- Main content area -->
+				<div class="flex flex-col gap-12 bg-white box-border p-6 2xl:rounded-[0_.375rem_.375rem_0] 2xl:col-span-10">
+					<!-- Date Range Selector -->
+					<div class="date-range-selector flex flex-wrap gap-4 items-center">
+						<select class="digi-date-range">
+							<option value="today"><?php esc_html_e( 'Today', 'digicommerce' ); ?></option>
+							<option value="yesterday"><?php esc_html_e( 'Yesterday', 'digicommerce' ); ?></option>
+							<option value="this_week"><?php esc_html_e( 'This Week', 'digicommerce' ); ?></option>
+							<option value="last_week"><?php esc_html_e( 'Last Week', 'digicommerce' ); ?></option>
+							<option value="this_month" selected><?php esc_html_e( 'This Month', 'digicommerce' ); ?></option>
+							<option value="last_month"><?php esc_html_e( 'Last Month', 'digicommerce' ); ?></option>
+							<option value="this_quarter"><?php esc_html_e( 'This Quarter', 'digicommerce' ); ?></option>
+							<option value="last_quarter"><?php esc_html_e( 'Last Quarter', 'digicommerce' ); ?></option>
+							<option value="this_year"><?php esc_html_e( 'This Year', 'digicommerce' ); ?></option>
+							<option value="last_year"><?php esc_html_e( 'Last Year', 'digicommerce' ); ?></option>
+							<option value="custom"><?php esc_html_e( 'Custom', 'digicommerce' ); ?></option>
+						</select>
 
-                        <div class="custom-date-range masked">
-                            <input type="date" class="start-date" />
-                            <input type="date" class="end-date" />
-                            <button type="button" class="apply-custom-range flex items-center justify-center gap-2 bg-dark-blue hover:bg-[#6c698a] text-white hover:text-white py-2 px-4 rounded default-transition">
-                                <?php esc_html_e('Apply', 'digicommerce'); ?>
-                            </button>
-                        </div>
-                    </div>
+						<div class="custom-date-range masked">
+							<input type="date" class="start-date" />
+							<input type="date" class="end-date" />
+							<button type="button" class="apply-custom-range flex items-center justify-center gap-2 bg-dark-blue hover:bg-[#6c698a] text-white hover:text-white py-2 px-4 rounded default-transition">
+								<?php esc_html_e( 'Apply', 'digicommerce' ); ?>
+							</button>
+						</div>
+					</div>
 
-                    <!-- Stats Cards -->
-                    <div class="stats-overview grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <!-- Gross Revenue -->
-                        <div class="stat-card bg-light-blue p-4 rounded-lg">
-                            <h3 class="text-dark-blue mb-2"><?php esc_html_e('Gross Revenue', 'digicommerce'); ?></h3>
-                            <p class="text-2xl font-bold revenue-amount">0</p>
-                        </div>
+					<!-- Stats Cards -->
+					<div class="stats-overview grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+						<!-- Gross Revenue -->
+						<div class="stat-card bg-light-blue p-4 rounded-lg">
+							<h3 class="text-dark-blue mb-2"><?php esc_html_e( 'Gross Revenue', 'digicommerce' ); ?></h3>
+							<p class="text-2xl font-bold revenue-amount">0</p>
+						</div>
 
-                        <!-- Net Revenue -->
-                        <div class="stat-card bg-light-blue p-4 rounded-lg">
-                            <h3 class="text-dark-blue mb-2"><?php esc_html_e('Net Revenue', 'digicommerce'); ?></h3>
-                            <p class="text-2xl font-bold net-amount">0</p>
-                        </div>
+						<!-- Net Revenue -->
+						<div class="stat-card bg-light-blue p-4 rounded-lg">
+							<h3 class="text-dark-blue mb-2"><?php esc_html_e( 'Net Revenue', 'digicommerce' ); ?></h3>
+							<p class="text-2xl font-bold net-amount">0</p>
+						</div>
 
-                        <!-- Orders -->
-                        <div class="stat-card bg-light-blue p-4 rounded-lg">
-                            <h3 class="text-dark-blue mb-2"><?php esc_html_e('Orders', 'digicommerce'); ?></h3>
-                            <p class="text-2xl font-bold orders-amount">0</p>
-                        </div>
+						<!-- Orders -->
+						<div class="stat-card bg-light-blue p-4 rounded-lg">
+							<h3 class="text-dark-blue mb-2"><?php esc_html_e( 'Orders', 'digicommerce' ); ?></h3>
+							<p class="text-2xl font-bold orders-amount">0</p>
+						</div>
 
-                        <!-- Average Order Value -->
-                        <div class="stat-card bg-light-blue p-4 rounded-lg">
-                            <h3 class="text-dark-blue mb-2"><?php esc_html_e('Average Order', 'digicommerce'); ?></h3>
-                            <p class="text-2xl font-bold average-amount">0</p>
-                        </div>
-                    </div>
+						<!-- Average Order Value -->
+						<div class="stat-card bg-light-blue p-4 rounded-lg">
+							<h3 class="text-dark-blue mb-2"><?php esc_html_e( 'Average Order', 'digicommerce' ); ?></h3>
+							<p class="text-2xl font-bold average-amount">0</p>
+						</div>
+					</div>
 
-                    <!-- Charts -->
-                    <div class="charts-container" style="height: 400px;">
-                        <canvas id="revenueChart"></canvas>
-                    </div>
+					<!-- Charts -->
+					<div class="charts-container" style="height: 400px;">
+						<canvas id="revenueChart"></canvas>
+					</div>
 
-                    <!-- Tab specific content will be loaded here via AJAX -->
-                    <div class="tab-content"></div>
-                </div>
-            </div>
-        </div>
-        <?php
-    }
-	
+					<!-- Tab specific content will be loaded here via AJAX -->
+					<div class="tab-content"></div>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
 	/**
 	 * Customize admin footer
+	 *
+	 * @param string $text Footer text.
 	 */
 	public function footer_text( $text ) {
 		$screen = get_current_screen();
@@ -1112,6 +1130,8 @@ class DigiCommerce_Reports {
 
 	/**
 	 * Customize admin footer version
+	 *
+	 * @param string $version Footer version.
 	 */
 	public function update_footer( $version ) {
 		$screen = get_current_screen();
@@ -1123,6 +1143,20 @@ class DigiCommerce_Reports {
 		}
 
 		return $version;
+	}
+
+	/**
+	 * Add dir attr to HTML for LTR direction for compatibility with Tailwind
+	 *
+	 * @param string $lang_attr HTML lang attribute.
+	 */
+	public function attribute_to_html( $lang_attr ) {
+		if ( ! is_rtl() ) {
+			// Only add dir="ltr" when the site is NOT in RTL mode
+			return $lang_attr . ' dir="ltr"';
+		}
+
+		return $lang_attr;
 	}
 }
 

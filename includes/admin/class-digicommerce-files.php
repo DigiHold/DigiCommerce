@@ -5,15 +5,65 @@
  * Handles secure file uploads, downloads, and management for digital products
  */
 class DigiCommerce_Files {
+	/**
+	 * Singleton instance
+	 *
+	 * @var DigiCommerce_Files
+	 */
 	private static $instance = null;
+
+	/**
+	 * Upload directory path
+	 *
+	 * @var string
+	 */
 	private $upload_dir;
-	private $token_expiry              = 3600; // 1 hour token validity
-	private $chunk_size                = 1024 * 1024; // 1MB chunks for better memory management
-	private $cache_group               = 'digicommerce_files';
+
+	/**
+	 * Token expiry time in seconds
+	 *
+	 * @var int
+	 */
+	private $token_expiry = 3600; // 1 hour token validity
+
+	/**
+	 * Chunk size for file streaming
+	 *
+	 * @var int
+	 */
+	private $chunk_size = 1024 * 1024; // 1MB chunks for better memory management
+
+	/**
+	 * Cache group for file-related data
+	 *
+	 * @var string
+	 */
+	private $cache_group = 'digicommerce_files';
+
+	/**
+	 * S3 handler instance
+	 *
+	 * @var DigiCommerce_Pro_S3
+	 */
 	private static $product_file_cache = array();
+
+	/**
+	 * S3 handler instance
+	 *
+	 * @var DigiCommerce_Pro_S3
+	 */
 	private $s3;
+
+	/**
+	 * Pro status
+	 *
+	 * @var bool
+	 */
 	private $pro;
 
+	/**
+	 * Constructor
+	 */
 	private function __construct() {
 		$wp_upload_dir    = wp_upload_dir();
 		$this->upload_dir = trailingslashit( $wp_upload_dir['basedir'] ) . 'digicommerce-files';
@@ -36,8 +86,13 @@ class DigiCommerce_Files {
 		add_action( 'plugins_loaded', array( $this, 'init_s3' ), 20 );
 	}
 
+	/**
+	 * Get an instance of this class
+	 *
+	 * @return DigiCommerce_Files
+	 */
 	public static function instance() {
-		if ( self::$instance === null ) {
+		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
@@ -77,6 +132,8 @@ class DigiCommerce_Files {
 
 	/**
 	 * Add custom query vars
+	 *
+	 * @param array $vars Query vars.
 	 */
 	public function add_query_vars( $vars ) {
 		$vars[] = 'digicommerce_download';
@@ -117,13 +174,13 @@ Options -Indexes
     Header set X-XSS-Protection "1; mode=block"
 </IfModule>';
 
-			file_put_contents( $htaccess_path, $htaccess_content );
+			file_put_contents( $htaccess_path, $htaccess_content ); // phpcs:ignore
 		}
 
 		// Create index.php
 		$index_path = $this->upload_dir . '/index.php';
 		if ( ! file_exists( $index_path ) ) {
-			file_put_contents( $index_path, "<?php\n// Silence is golden." );
+			file_put_contents( $index_path, "<?php\n// Silence is golden." ); // phpcs:ignore
 		}
 	}
 
@@ -131,112 +188,116 @@ Options -Indexes
 	 * AJAX handler for download token generation
 	 */
 	public function download_token() {
-        check_ajax_referer('digicommerce_download_nonce', 'nonce');
+		check_ajax_referer( 'digicommerce_download_nonce', 'nonce' );
 
-        $file_id = isset($_POST['file_id']) ? sanitize_text_field($_POST['file_id']) : '';
-        $order_id = isset($_POST['order_id']) ? intval($_POST['order_id']) : 0;
-        $order_token = isset($_POST['order_token']) ? sanitize_text_field($_POST['order_token']) : '';
+		$file_id     = isset( $_POST['file_id'] ) ? sanitize_text_field( $_POST['file_id'] ) : '';
+		$order_id    = isset( $_POST['order_id'] ) ? intval( $_POST['order_id'] ) : 0;
+		$order_token = isset( $_POST['order_token'] ) ? sanitize_text_field( $_POST['order_token'] ) : '';
 
-        // Generate fresh download URL with new token
-        $download_url = $this->generate_secure_download_url($file_id, $order_id, false, $order_token);
+		// Generate fresh download URL with new token
+		$download_url = $this->generate_secure_download_url( $file_id, $order_id, false, $order_token );
 
-        if (!$download_url) {
-            wp_send_json_error(array(
-                'message' => esc_html__('Failed to generate download URL', 'digicommerce'),
-            ));
-            return;
-        }
+		if ( ! $download_url ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'Failed to generate download URL', 'digicommerce' ),
+				)
+			);
+			return;
+		}
 
-        wp_send_json_success(array(
-            'download_url' => $download_url,
-            'message' => esc_html__('Download starting...', 'digicommerce'),
-        ));
-    }
+		wp_send_json_success(
+			array(
+				'download_url' => $download_url,
+				'message'      => esc_html__( 'Download starting...', 'digicommerce' ),
+			)
+		);
+	}
 
 	/**
-     * Handle download requests
-     */
-    public function handle_download_request() {
-        if (!get_query_var('digicommerce_download')) {
-            return;
-        }
+	 * Handle download requests
+	 */
+	public function handle_download_request() {
+		if ( ! get_query_var( 'digicommerce_download' ) ) {
+			return;
+		}
 
-        try {
-            $token = get_query_var('digicommerce_download');
+		try {
+			$token = get_query_var( 'digicommerce_download' );
 
-            if (!$token) {
-                wp_die(__('Unable to process download request.', 'digicommerce'));
-                return;
-            }
+			if ( ! $token ) {
+				wp_die( esc_html__( 'Unable to process download request.', 'digicommerce' ) );
+				return;
+			}
 
-            // Get and validate token data
-            $token_data = get_transient('digi_download_' . $token);
+			// Get and validate token data
+			$token_data = get_transient( 'digi_download_' . $token );
 
-            if (!$token_data || !is_array($token_data)) {
-                wp_die(__('Download link has expired. Please click the download button again.', 'digicommerce'));
-                return;
-            }
+			if ( ! $token_data || ! is_array( $token_data ) ) {
+				wp_die( esc_html__( 'Download link has expired. Please click the download button again.', 'digicommerce' ) );
+				return;
+			}
 
-            // Check expiration
-            if (time() > $token_data['expires']) {
-                delete_transient('digi_download_' . $token);
-                wp_die(__('Download link has expired. Please click the download button again.', 'digicommerce'));
-                return;
-            }
+			// Check expiration
+			if ( time() > $token_data['expires'] ) {
+				delete_transient( 'digi_download_' . $token );
+				wp_die( esc_html__( 'Download link has expired. Please click the download button again.', 'digicommerce' ) );
+				return;
+			}
 
-            // Check access based on context
-            if (!empty($token_data['license_key'])) {
-                // License update context
-                $license = DigiCommerce_Pro_License::instance()->get_license_by_key($token_data['license_key']);
-                if (!$license || $license['status'] !== 'active') {
-                    wp_die(__('Invalid or inactive license.', 'digicommerce'));
-                    return;
-                }
-            } elseif (!empty($token_data['order_token'])) {
-                // Thank you page context
-                if (!DigiCommerce_Orders::instance()->verify_order_token($token_data['order_id'], $token_data['order_token'])) {
-                    wp_die(__('Invalid order access.', 'digicommerce'));
-                    return;
-                }
-            } elseif (empty($token_data['is_email'])) {
-                // Regular account page context
-                if (!is_user_logged_in() || !DigiCommerce_Orders::instance()->verify_order_access($token_data['order_id'])) {
-                    wp_die(__('Please log in to download your files.', 'digicommerce'));
-                    return;
-                }
-            }
+			// Check access based on context
+			if ( ! empty( $token_data['license_key'] ) ) {
+				// License update context
+				$license = DigiCommerce_Pro_License::instance()->get_license_by_key( $token_data['license_key'] );
+				if ( ! $license || 'active' !== $license['status'] ) {
+					wp_die( esc_html__( 'Invalid or inactive license.', 'digicommerce' ) );
+					return;
+				}
+			} elseif ( ! empty( $token_data['order_token'] ) ) {
+				// Thank you page context
+				if ( ! DigiCommerce_Orders::instance()->verify_order_token( $token_data['order_id'], $token_data['order_token'] ) ) {
+					wp_die( esc_html__( 'Invalid order access.', 'digicommerce' ) );
+					return;
+				}
+			} elseif ( empty( $token_data['is_email'] ) ) {
+				// Regular account page context
+				if ( ! is_user_logged_in() || ! DigiCommerce_Orders::instance()->verify_order_access( $token_data['order_id'] ) ) {
+					wp_die( esc_html__( 'Please log in to download your files.', 'digicommerce' ) );
+					return;
+				}
+			}
 
-            // Get and validate file path
-            $file_path = $this->get_file_path($token_data['file_id']);
+			// Get and validate file path
+			$file_path = $this->get_file_path( $token_data['file_id'] );
 
-            if (!$file_path) {
-                delete_transient('digi_download_' . $token);
-                wp_die(__('File not available. Please contact support.', 'digicommerce'));
-                return;
-            }
+			if ( ! $file_path ) {
+				delete_transient( 'digi_download_' . $token );
+				wp_die( esc_html__( 'File not available. Please contact support.', 'digicommerce' ) );
+				return;
+			}
 
-            // Handle the file download
-            if ($this->pro && $this->s3 && DigiCommerce()->get_option('enable_s3')) {
-                if (!$this->send_file($file_path, true)) {
-                    wp_die(__('Unable to download file. Please try again.', 'digicommerce'));
-                    return;
-                }
-            } else {
-                if (!$this->send_file($file_path, false)) {
-                    wp_die(__('File not available. Please contact support.', 'digicommerce'));
-                    return;
-                }
-            }
+			// Handle the file download
+			if ( $this->pro && $this->s3 && DigiCommerce()->get_option( 'enable_s3' ) ) {
+				if ( ! $this->send_file( $file_path, true ) ) {
+					wp_die( esc_html__( 'Unable to download file. Please try again.', 'digicommerce' ) );
+					return;
+				}
+			} else { // phpcs:ignore
+				if ( ! $this->send_file( $file_path, false ) ) {
+					wp_die( esc_html__( 'File not available. Please contact support.', 'digicommerce' ) );
+					return;
+				}
+			}
 
-            // Log and cleanup after successful download
-            $this->log_download($token_data['file_id'], $token_data['order_id'], $token_data['user_id'] ?? 0);
-            delete_transient('digi_download_' . $token);
-            exit;
+			// Log and cleanup after successful download
+			$this->log_download( $token_data['file_id'], $token_data['order_id'], $token_data['user_id'] ?? 0 );
+			delete_transient( 'digi_download_' . $token );
+			exit;
 
-        } catch (Exception $e) {
-            wp_die(__('An error occurred. Please try again.', 'digicommerce'));
-        }
-    }
+		} catch ( Exception $e ) {
+			wp_die( esc_html__( 'An error occurred. Please try again.', 'digicommerce' ) );
+		}
+	}
 
 	/**
 	 * Function to manually flush rewrite rules
@@ -249,6 +310,8 @@ Options -Indexes
 
 	/**
 	 * Get file path with caching
+	 *
+	 * @param string $file_id File ID.
 	 */
 	private function get_file_path( $file_id ) {
 		try {
@@ -303,34 +366,35 @@ Options -Indexes
 
 	/**
 	 * Serve the update file directly
+	 *
+	 * @param string $license_key License key.
 	 */
-	public function serve_update_file($license_key) {
-		if ( ! class_exists('DigiCommerce_Pro_License') ) {
-			return new WP_Error('missing_license_class', __('License class not found.', 'digicommerce-pro'));
+	public function serve_update_file( $license_key ) {
+		if ( ! class_exists( 'DigiCommerce_Pro_License' ) ) {
+			return new WP_Error( 'missing_license_class', esc_html__( 'License class not found.', 'digicommerce' ) );
 		}
 
-
 		// Get license
-		$license = DigiCommerce_Pro_License::instance()->get_license_by_key($license_key);
-		if (!$license || $license['status'] !== 'active') {
-			return new WP_Error('invalid_license', __('Invalid or inactive license.', 'digicommerce-pro'));
+		$license = DigiCommerce_Pro_License::instance()->get_license_by_key( $license_key );
+		if ( ! $license || 'active' !== $license['status'] ) {
+			return new WP_Error( 'invalid_license', esc_html__( 'Invalid or inactive license.', 'digicommerce' ) );
 		}
 
 		// Get latest file
-		$latest_file = null;
+		$latest_file    = null;
 		$latest_version = '1.0.0';
 
 		// Check variations first
-		$variations = get_post_meta($license['product_id'], 'digi_price_variations', true);
-		if (!empty($variations) && is_array($variations)) {
-			foreach ($variations as $variation) {
-				if (!empty($variation['files']) && is_array($variation['files'])) {
-					foreach ($variation['files'] as $file) {
-						if (!empty($file['versions']) && is_array($file['versions'])) {
-							foreach ($file['versions'] as $version_info) {
-								if (version_compare($version_info['version'], $latest_version, '>')) {
+		$variations = get_post_meta( $license['product_id'], 'digi_price_variations', true );
+		if ( ! empty( $variations ) && is_array( $variations ) ) {
+			foreach ( $variations as $variation ) {
+				if ( ! empty( $variation['files'] ) && is_array( $variation['files'] ) ) {
+					foreach ( $variation['files'] as $file ) {
+						if ( ! empty( $file['versions'] ) && is_array( $file['versions'] ) ) {
+							foreach ( $file['versions'] as $version_info ) {
+								if ( version_compare( $version_info['version'], $latest_version, '>' ) ) {
 									$latest_version = $version_info['version'];
-									$latest_file = $file;
+									$latest_file    = $file;
 								}
 							}
 						}
@@ -340,69 +404,69 @@ Options -Indexes
 		}
 
 		// Then check regular files
-		$files = get_post_meta($license['product_id'], 'digi_files', true);
-		if (!empty($files) && is_array($files)) {
-			foreach ($files as $file) {
-				if (!empty($file['versions']) && is_array($file['versions'])) {
-					foreach ($file['versions'] as $version_info) {
-						if (version_compare($version_info['version'], $latest_version, '>')) {
+		$files = get_post_meta( $license['product_id'], 'digi_files', true );
+		if ( ! empty( $files ) && is_array( $files ) ) {
+			foreach ( $files as $file ) {
+				if ( ! empty( $file['versions'] ) && is_array( $file['versions'] ) ) {
+					foreach ( $file['versions'] as $version_info ) {
+						if ( version_compare( $version_info['version'], $latest_version, '>' ) ) {
 							$latest_version = $version_info['version'];
-							$latest_file = $file;
+							$latest_file    = $file;
 						}
 					}
 				}
 			}
 		}
 
-		if (!$latest_file) {
-			return new WP_Error('no_update', __('No update file available.', 'digicommerce-pro'));
+		if ( ! $latest_file ) {
+			return new WP_Error( 'no_update', esc_html__( 'No update file available.', 'digicommerce' ) );
 		}
 
 		// Get file path using DigiCommerce_Files class
-		$file_path = $this->get_file_path($latest_file['id']);
-		if (!$file_path) {
-			return new WP_Error('file_not_found', __('Update file not found.', 'digicommerce-pro'));
+		$file_path = $this->get_file_path( $latest_file['id'] );
+		if ( ! $file_path ) {
+			return new WP_Error( 'file_not_found', esc_html__( 'Update file not found.', 'digicommerce' ) );
 		}
 
 		// Make sure file exists
-		if (!file_exists($file_path)) {
-			return new WP_Error('file_not_found', __('Update file not found.', 'digicommerce-pro'));
+		if ( ! file_exists( $file_path ) ) {
+			return new WP_Error( 'file_not_found', esc_html__( 'Update file not found.', 'digicommerce' ) );
 		}
 
 		// Get file size
-		$size = filesize($file_path);
-		$filename = basename($file_path);
+		$size     = filesize( $file_path );
+		$filename = basename( $file_path );
 
 		// Send headers
 		nocache_headers();
-		header('Content-Type: application/zip');
-		header('Content-Disposition: attachment; filename="' . $filename . '"');
-		header('Content-Length: ' . $size);
-		header('X-Content-Type-Options: nosniff');
+		header( 'Content-Type: application/zip' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+		header( 'Content-Length: ' . $size );
+		header( 'X-Content-Type-Options: nosniff' );
 
 		// Clear any output buffers
-		while (ob_get_level()) {
+		while ( ob_get_level() ) {
 			ob_end_clean();
 		}
 
 		// Open file and send it in chunks
-		$fp = fopen($file_path, 'rb');
-		
+		$fp = fopen( $file_path, 'rb' );
+
 		// Make sure file was opened successfully
-		if ($fp === false) {
-			return new WP_Error('file_error', __('Unable to read update file.', 'digicommerce-pro'));
+		if ( false === $fp ) {
+			return new WP_Error( 'file_error', esc_html__( 'Unable to read update file.', 'digicommerce' ) );
 		}
 
 		// Disable max execution time
-		set_time_limit(0);
-		
+		set_time_limit( 0 );
+
 		// Send file contents
-		while (!feof($fp)) {
-			echo fread($fp, 8192);
+		while ( ! feof( $fp ) ) {
+			echo fread( $fp, 8192 ); // phpcs:ignore
 			flush();
 		}
-		
-		fclose($fp);
+
+		fclose( $fp ); // phpcs:ignore
 		exit();
 	}
 
@@ -441,10 +505,12 @@ Options -Indexes
 
 	/**
 	 * Handle file upload
+	 *
+	 * @param array $file File data.
 	 */
 	public function handle_upload( $file ) {
-		if ( ! isset( $file['tmp_name'] ) || $file['error'] !== UPLOAD_ERR_OK ) {
-			return new WP_Error( 'upload_error', __( 'File upload failed', 'digicommerce' ) );
+		if ( ! isset( $file['tmp_name'] ) || UPLOAD_ERR_OK !== $file['error'] ) {
+			return new WP_Error( 'upload_error', esc_html__( 'File upload failed', 'digicommerce' ) );
 		}
 
 		// Basic security checks
@@ -470,13 +536,13 @@ Options -Indexes
 
 		$file_ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
 		if ( ! in_array( $file_ext, $allowed_types ) ) {
-			return new WP_Error( 'invalid_type', __( 'Invalid file type', 'digicommerce' ) );
+			return new WP_Error( 'invalid_type', esc_html__( 'Invalid file type', 'digicommerce' ) );
 		}
 
 		// Generate unique ID and filename
 		$file_id = wp_generate_uuid4();
-		$year    = date( 'Y' );
-		$month   = date( 'm' );
+		$year    = date( 'Y' ); // phpcs:ignore
+		$month   = date( 'm' ); // phpcs:ignore
 
 		// Create year/month directories if they don't exist
 		$year_dir  = $this->upload_dir . '/' . $year;
@@ -509,7 +575,7 @@ Options -Indexes
 			}
 
 			// Delete local file and cleanup empty directories
-			@unlink( $full_path );
+			@unlink( $full_path ); // phpcs:ignore
 			$this->cleanup_empty_directories( $month_dir );
 			$this->cleanup_empty_directories( $year_dir );
 
@@ -540,12 +606,14 @@ Options -Indexes
 
 	/**
 	 * Clean up empty directories
+	 *
+	 * @param string $dir Directory path.
 	 */
 	private function cleanup_empty_directories( $dir ) {
 		if ( is_dir( $dir ) ) {
 			$files = array_diff( scandir( $dir ), array( '.', '..' ) );
 			if ( empty( $files ) ) {
-				@rmdir( $dir );
+				@rmdir( $dir ); // phpcs:ignore
 				return true;
 			}
 		}
@@ -554,122 +622,128 @@ Options -Indexes
 
 	/**
 	 * Optimized file serving with memory management
+	 *
+	 * @param string $file_path File path.
+	 * @param bool   $is_s3     Is file on S3.
 	 */
-	private function send_file($file_path, $is_s3 = false) {
-        if ($is_s3) {
-            try {
-                $s3_result = $this->s3->get_object($file_path);
+	private function send_file( $file_path, $is_s3 = false ) {
+		if ( $is_s3 ) {
+			try {
+				$s3_result = $this->s3->get_object( $file_path );
 
-                if (!$s3_result || !isset($s3_result['Body'])) {
-                    return false;
-                }
+				if ( ! $s3_result || ! isset( $s3_result['Body'] ) ) {
+					return false;
+				}
 
-                // Get file info and send headers
-                $filename = basename($file_path);
-                $mime_type = $s3_result['ContentType'] ?? 'application/octet-stream';
+				// Get file info and send headers
+				$filename  = basename( $file_path );
+				$mime_type = $s3_result['ContentType'] ?? 'application/octet-stream';
 
-                // Clean output buffer
-                if (ob_get_level()) {
-                    ob_end_clean();
-                }
+				// Clean output buffer
+				if ( ob_get_level() ) {
+					ob_end_clean();
+				}
 
-                // Send headers
-                nocache_headers();
-                header('Content-Type: ' . $mime_type);
-                header('Content-Disposition: attachment; filename="' . rawurlencode($filename) . '"');
-                if (isset($s3_result['ContentLength'])) {
-                    header('Content-Length: ' . $s3_result['ContentLength']);
-                }
-                header('X-Content-Type-Options: nosniff');
+				// Send headers
+				nocache_headers();
+				header( 'Content-Type: ' . $mime_type );
+				header( 'Content-Disposition: attachment; filename="' . rawurlencode( $filename ) . '"' );
+				if ( isset( $s3_result['ContentLength'] ) ) {
+					header( 'Content-Length: ' . $s3_result['ContentLength'] );
+				}
+				header( 'X-Content-Type-Options: nosniff' );
 
-                // Stream the file
-                $body = $s3_result['Body'];
-                if ($body) {
-                    $totalRead = 0;
-                    while (!$body->eof()) {
-                        $chunk = $body->read(8192);
-                        $chunkLength = strlen($chunk);
-                        $totalRead += $chunkLength;
-                        echo $chunk;
-                        flush();
-                    }
-                }
+				// Stream the file
+				$body = $s3_result['Body'];
+				if ( $body ) {
+					$total_read = 0;
+					while ( ! $body->eof() ) {
+						$chunk       = $body->read( 8192 );
+						$chunk_length = strlen( $chunk );
+						$total_read   += $chunk_length;
+						echo $chunk; // phpcs:ignore
+						flush();
+					}
+				}
 
-                return true;
+				return true;
 
-            } catch (Exception $e) {
-                return false;
-            }
-        }
+			} catch ( Exception $e ) {
+				return false;
+			}
+		}
 
-        // Regular local file delivery
-        if (!file_exists($file_path)) {
-            return false;
-        }
+		// Regular local file delivery
+		if ( ! file_exists( $file_path ) ) {
+			return false;
+		}
 
-        $size = filesize($file_path);
-        $mime_type = $this->get_mime_type($file_path);
-        $filename = basename($file_path);
+		$size      = filesize( $file_path );
+		$mime_type = $this->get_mime_type( $file_path );
+		$filename  = basename( $file_path );
 
-        // Support for range requests (resumable downloads)
-        $range = isset($_SERVER['HTTP_RANGE']) ? $this->get_range_header($_SERVER['HTTP_RANGE'], $size) : null;
+		// Support for range requests (resumable downloads)
+		$range = isset( $_SERVER['HTTP_RANGE'] ) ? $this->get_range_header( $_SERVER['HTTP_RANGE'], $size ) : null;
 
-        // Clean output buffer
-        if (ob_get_level()) {
-            ob_end_clean();
-        }
+		// Clean output buffer
+		if ( ob_get_level() ) {
+			ob_end_clean();
+		}
 
-        // Set headers
-        nocache_headers();
-        header('Content-Type: ' . $mime_type);
-        header('Content-Disposition: attachment; filename="' . rawurlencode($filename) . '"');
-        header('Accept-Ranges: bytes');
+		// Set headers
+		nocache_headers();
+		header( 'Content-Type: ' . $mime_type );
+		header( 'Content-Disposition: attachment; filename="' . rawurlencode( $filename ) . '"' );
+		header( 'Accept-Ranges: bytes' );
 
-        if ($range) {
-            header('HTTP/1.1 206 Partial Content');
-            header('Content-Length: ' . ($range['end'] - $range['start'] + 1));
-            header('Content-Range: bytes ' . $range['start'] . '-' . $range['end'] . '/' . $size);
-        } else {
-            header('Content-Length: ' . $size);
-        }
+		if ( $range ) {
+			header( 'HTTP/1.1 206 Partial Content' );
+			header( 'Content-Length: ' . ( $range['end'] - $range['start'] + 1 ) );
+			header( 'Content-Range: bytes ' . $range['start'] . '-' . $range['end'] . '/' . $size );
+		} else {
+			header( 'Content-Length: ' . $size );
+		}
 
-        // Security headers
-        header('X-Content-Type-Options: nosniff');
-        header('X-Frame-Options: DENY');
+		// Security headers
+		header( 'X-Content-Type-Options: nosniff' );
+		header( 'X-Frame-Options: DENY' );
 
-        // Open file in binary mode
-        $handle = fopen($file_path, 'rb');
+		// Open file in binary mode
+		$handle = fopen( $file_path, 'rb' );
 
-        if ($handle === false) {
-            return false;
-        }
+		if ( false === $handle ) {
+			return false;
+		}
 
-        // Set time limit to 0 for large files
-        set_time_limit(0);
+		// Set time limit to 0 for large files
+		set_time_limit( 0 );
 
-        // Set initial position for range requests
-        if ($range) {
-            fseek($handle, $range['start']);
-        }
+		// Set initial position for range requests
+		if ( $range ) {
+			fseek( $handle, $range['start'] );
+		}
 
-        // Send file in chunks
-        while (!feof($handle)) {
-            $buffer = fread($handle, $this->chunk_size);
-            echo $buffer;
-            flush();
+		// Send file in chunks
+		while ( ! feof( $handle ) ) {
+			$buffer = fread( $handle, $this->chunk_size );
+			echo $buffer; // phpcs:ignore
+			flush();
 
-            if (connection_status() != CONNECTION_NORMAL) {
-                fclose($handle);
-                return false;
-            }
-        }
+			if ( connection_status() != CONNECTION_NORMAL ) {
+				fclose( $handle );
+				return false;
+			}
+		}
 
-        fclose($handle);
-        return true;
-    }
+		fclose( $handle );
+		return true;
+	}
 
 	/**
 	 * Parse range header
+	 *
+	 * @param string $range_header Range header.
+	 * @param int    $file_size    File size.
 	 */
 	private function get_range_header( $range_header, $file_size ) {
 		$range       = array();
@@ -695,12 +769,14 @@ Options -Indexes
 
 	/**
 	 * Cached mime type detection
+	 *
+	 * @param string $file_path File path.
 	 */
 	private function get_mime_type( $file_path ) {
 		$cache_key = 'mime_' . md5( $file_path );
 
 		$mime_type = wp_cache_get( $cache_key, $this->cache_group );
-		if ( $mime_type === false ) {
+		if ( false === $mime_type ) {
 			$mime_type = mime_content_type( $file_path );
 			wp_cache_set( $cache_key, $mime_type, $this->cache_group, 3600 );
 		}
@@ -710,6 +786,8 @@ Options -Indexes
 
 	/**
 	 * Optimized product query (continued)
+	 *
+	 * @param string $file_id File ID.
 	 */
 	private function get_product_by_file_id( $file_id ) {
 		global $wpdb;
@@ -718,7 +796,7 @@ Options -Indexes
 
 		// Check cache first
 		$product_id = wp_cache_get( $cache_key, $this->cache_group );
-		if ( $product_id !== false ) {
+		if ( false !== $product_id ) {
 			return $product_id;
 		}
 
@@ -743,6 +821,10 @@ Options -Indexes
 
 	/**
 	 * Log download attempt with rate limiting
+	 *
+	 * @param string $file_id  File ID.
+	 * @param int    $order_id Order ID.
+	 * @param int    $user_id  User ID.
 	 */
 	private function log_download( $file_id, $order_id, $user_id ) {
 		$log = array(
@@ -758,7 +840,7 @@ Options -Indexes
 		$rate_limit_key = 'download_rate_' . $user_id . '_' . $file_id;
 		$download_count = get_transient( $rate_limit_key );
 
-		if ( $download_count === false ) {
+		if ( false === $download_count ) {
 			set_transient( $rate_limit_key, 1, HOUR_IN_SECONDS );
 		} else {
 			set_transient( $rate_limit_key, $download_count + 1, HOUR_IN_SECONDS );
@@ -768,7 +850,7 @@ Options -Indexes
 		$cache_key     = 'download_logs_' . $order_id;
 		$download_logs = wp_cache_get( $cache_key, $this->cache_group );
 
-		if ( $download_logs === false ) {
+		if ( false === $download_logs ) {
 			$download_logs = get_post_meta( $order_id, '_download_logs', true );
 			if ( ! is_array( $download_logs ) ) {
 				$download_logs = array();
@@ -792,12 +874,14 @@ Options -Indexes
 
 	/**
 	 * Increment download count with caching
+	 *
+	 * @param string $file_id File ID.
 	 */
 	private function increment_download_count( $file_id ) {
 		$cache_key = 'download_count_' . $file_id;
 		$count     = wp_cache_get( $cache_key, $this->cache_group );
 
-		if ( $count === false ) {
+		if ( false === $count ) {
 			$count = get_option( 'digi_download_count_' . $file_id, 0 );
 		}
 
@@ -837,6 +921,9 @@ Options -Indexes
 
 	/**
 	 * Delete physical file with cleanup
+	 *
+	 * @param bool  $result Result of previous deletion.
+	 * @param array $file   File data.
 	 */
 	public function delete_physical_file( $result, $file ) {
 		// If S3 is enabled, use S3 methods for deletion
@@ -868,7 +955,7 @@ Options -Indexes
 		$file_path = trailingslashit( $this->upload_dir ) . $file['file'];
 
 		if ( file_exists( $file_path ) && is_file( $file_path ) ) {
-			$deleted = @unlink( $file_path );
+			$deleted = @unlink( $file_path ); // phpcs:ignore
 
 			if ( $deleted ) {
 				// Clear related caches
@@ -881,7 +968,7 @@ Options -Indexes
 				while ( $dir !== $base_dir && is_dir( $dir ) ) {
 					$files = array_diff( scandir( $dir ), array( '.', '..' ) );
 					if ( count( $files ) === 0 ) {
-						@rmdir( $dir );
+						@rmdir( $dir ); // phpcs:ignore
 						$dir = dirname( $dir );
 					} else {
 						break;
@@ -897,6 +984,8 @@ Options -Indexes
 
 	/**
 	 * Clear all caches related to a file
+	 *
+	 * @param string $file_id File ID.
 	 */
 	private function clear_file_caches( $file_id ) {
 		wp_cache_delete( 'file_path_' . $file_id, $this->cache_group );
@@ -907,6 +996,8 @@ Options -Indexes
 
 	/**
 	 * Add SVG to allowed MIME types
+	 *
+	 * @param array $mimes Allowed MIME types.
 	 */
 	public function add_svg_mime_type( $mimes ) {
 		$mimes['svg'] = 'image/svg+xml';
@@ -915,27 +1006,32 @@ Options -Indexes
 
 	/**
 	 * Generate secure download URL
+	 *
+	 * @param string $file_id     File ID.
+	 * @param int    $order_id    Order ID.
+	 * @param bool   $is_email    Is email context.
+	 * @param string $order_token Order token.
 	 */
-	public function generate_secure_download_url($file_id, $order_id, $is_email = false, $order_token = null) {        
-        // Generate token
-        $token = bin2hex(random_bytes(32));
-        
-        // Prepare token data
-        $token_data = array(
-            'file_id' => $file_id,
-            'order_id' => $order_id,
-            'user_id' => get_current_user_id(),
-            'expires' => time() + $this->token_expiry,
-            'is_email' => $is_email,
-            'order_token' => $order_token
-        );
+	public function generate_secure_download_url( $file_id, $order_id, $is_email = false, $order_token = null ) {
+		// Generate token
+		$token = bin2hex( random_bytes( 32 ) );
 
-        // Store token
-        $stored = set_transient('digi_download_' . $token, $token_data, $this->token_expiry);
+		// Prepare token data
+		$token_data = array(
+			'file_id'     => $file_id,
+			'order_id'    => $order_id,
+			'user_id'     => get_current_user_id(),
+			'expires'     => time() + $this->token_expiry,
+			'is_email'    => $is_email,
+			'order_token' => $order_token,
+		);
 
-        $url = home_url("download/{$token}");
-        
-        return $url;
-    }
+		// Store token
+		$stored = set_transient( 'digi_download_' . $token, $token_data, $this->token_expiry );
+
+		$url = home_url( "download/{$token}" );
+
+		return $url;
+	}
 }
 DigiCommerce_Files::instance();

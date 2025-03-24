@@ -20,7 +20,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-// Define constants first
+// Define constants first.
 if ( ! defined( 'DIGICOMMERCE_VERSION' ) ) {
 	define( 'DIGICOMMERCE_VERSION', '1.0.0' );
 }
@@ -35,6 +35,9 @@ if ( ! defined( 'DIGICOMMERCE_PLUGIN_BASENAME' ) ) {
 }
 
 if ( ! class_exists( 'DigiCommerce' ) ) {
+	/**
+	 * Main DigiCommerce class
+	 */
 	final class DigiCommerce {
 
 		/**
@@ -55,70 +58,70 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		 * Private constructor
 		 */
 		private function __construct() {
-			// Security
+			// Security.
 			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/class-digicommerce-security.php';
 
 			if ( is_admin() ) {
-				// Plugin settings
+				// Plugin settings.
 				require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-settings.php';
 
-				// Reports
+				// Reports.
 				require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-reports.php';
 
-				// Dashboard widget reports
+				// Dashboard widget reports.
 				require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-dashboard.php';
 			}
 
-			// Blocks
+			// Blocks.
 			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-blocks.php';
 
-			// Orders post type
+			// Orders post type.
 			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/class-digicommerce-orders.php';
 
-			// Shortcodes
+			// Shortcodes.
 			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/class-digicommerce-shortcodes.php';
 
-			// Product post type
+			// Product post type.
 			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-product.php';
 
-			// Login and account
+			// Login and account.
 			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/front/class-digicommerce-account.php';
 
-			// Login handler
+			// Login handler.
 			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/front/class-digicommerce-login-handler.php';
 
-			// Checkout
+			// Checkout.
 			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/class-digicommerce-checkout.php';
 
-			// Download items
+			// Download items.
 			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-files.php';
 
-			// Emails
+			// Emails.
 			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/class-digicommerce-emails.php';
 
-			// Installation
+			// Installation.
 			register_activation_hook( __FILE__, array( $this, 'install' ) );
 
-			// Clean up sessions are deactivation
+			// Clean up sessions are deactivation.
 			register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
 
-			// Internationalization
+			// Internationalization.
 			add_action( 'plugins_loaded', array( $this, 'load_plugin_textdomain' ) );
 
-			// Scripts and styles
+			// Scripts and styles.
 			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
-			// Load base Tailwinds CSS without priorit to prevent theme conflicts
+			// Load base Tailwinds CSS without priorit to prevent theme conflicts.
 			add_action( 'wp_enqueue_scripts', array( $this, 'base_css' ) );
 
-			// Admin protection if enabled and setup wizard
+			// Admin protection if enabled and setup wizard.
 			add_action( 'admin_init', array( $this, 'admin_init' ) );
 			add_filter( 'show_admin_bar', array( $this, 'handle_admin_bar' ), 20, 1 );
 
-			// Initialize shortcodes
+			// Initialize shortcodes.
 			add_action( 'init', array( $this, 'init' ) );
 
-			// Add page state labels in admin
+			// Add page state labels in admin.
 			add_filter( 'display_post_states', array( $this, 'add_page_state_labels' ), 10, 2 );
 
 			// Loads options.
@@ -127,11 +130,14 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			// Add theme compatibility.
 			$this->themes_compatibility();
 
-			// Add body class
+			// Add body class.
 			add_action( 'template_redirect', array( $this, 'maybe_add_recaptcha_class' ) );
 
 			// Add custom color in head.
 			add_action( 'wp_head', array( $this, 'custom_colors' ), 10 );
+
+			// Add dir attribute for LTR/RTL support
+			add_filter( 'language_attributes', array( $this, 'attribute_to_html' ) );
 		}
 
 		/**
@@ -141,6 +147,8 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 
 		/**
 		 * Prevents deserialization of the instance
+		 *
+		 * @throws Exception When attempting to unserialize the singleton instance.
 		 */
 		public function __wakeup() {
 			throw new Exception( 'Cannot unserialize a singleton.' );
@@ -167,7 +175,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			$table_name      = $wpdb->prefix . 'digicommerce';
 			$charset_collate = $wpdb->get_charset_collate();
 
-			// Ensure table exists
+			// Ensure table exists.
 			$sql = "CREATE TABLE IF NOT EXISTS $table_name (
                 id mediumint(9) NOT NULL AUTO_INCREMENT,
                 option_name varchar(191) NOT NULL,
@@ -181,10 +189,10 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 			dbDelta( $sql );
 
-			// Check if the flag exists in the custom table
+			// Check if the flag exists in the custom table.
 			if ( ! $this->get_flag( 'digicommerce_pages_created' ) ) {
-				$this->create_pages(); // Create pages only if not already created
-				$this->set_flag( 'digicommerce_pages_created', true ); // Set the flag in the custom table
+				$this->create_pages(); // Create pages only if not already created.
+				$this->set_flag( 'digicommerce_pages_created', true ); // Set the flag in the custom table.
 			}
 
 			// Call orders table installation
@@ -214,7 +222,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			);
 
 			if ( $table_exists === $table_name ) {
-				$wpdb->query( "TRUNCATE TABLE $table_name" );
+				$wpdb->query( "TRUNCATE TABLE $table_name" ); // phpcs:ignore
 			}
 		}
 
@@ -248,18 +256,29 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			}
 		}
 
+		/**
+		 * Adds page state labels
+		 *
+		 * @param string $flag_name Flag name.
+		 */
 		private function get_flag( $flag_name ) {
 			global $wpdb;
 			$table_name = $wpdb->prefix . 'digicommerce';
 
 			// Query the custom table for the flag
 			$result = $wpdb->get_var(
-				$wpdb->prepare( "SELECT option_value FROM $table_name WHERE option_name = %s", $flag_name )
+				$wpdb->prepare( "SELECT option_value FROM $table_name WHERE option_name = %s", $flag_name ) // phpcs:ignore
 			);
 
 			return $result ? maybe_unserialize( $result ) : false;
 		}
 
+		/**
+		 * Sets a flag
+		 *
+		 * @param string $flag_name Flag name.
+		 * @param mixed  $value Flag value.
+		 */
 		public function set_flag( $flag_name, $value ) {
 			global $wpdb;
 			$table_name = $wpdb->prefix . 'digicommerce';
@@ -286,7 +305,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			$table_name = $wpdb->prefix . 'digicommerce';
 
 			$row = $wpdb->get_row(
-				$wpdb->prepare( "SELECT option_value FROM $table_name WHERE option_name = %s", 'digicommerce_options' )
+				$wpdb->prepare( "SELECT option_value FROM $table_name WHERE option_name = %s", 'digicommerce_options' ) // phpcs:ignore
 			);
 
 			if ( $row ) {
@@ -328,13 +347,19 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 
 		/**
 		 * Gets an option
+		 *
+		 * @param string $key Option key.
+		 * @param mixed  $default Default value.
 		 */
-		public function get_option( $key, $default = false ) {
+		public function get_option( $key, $default = false ) { // phpcs:ignore
 			return isset( $this->options[ $key ] ) ? $this->options[ $key ] : $default;
 		}
 
 		/**
 		 * Sets an option
+		 *
+		 * @param string $key Option key.
+		 * @param mixed  $value Option value.
 		 */
 		public function set_option( $key, $value ) {
 			global $wpdb;
@@ -350,7 +375,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				// First check if the record exists
 				$exists = $wpdb->get_var(
 					$wpdb->prepare(
-						"SELECT COUNT(*) FROM {$table_name} WHERE option_name = %s",
+						"SELECT COUNT(*) FROM {$table_name} WHERE option_name = %s", // phpcs:ignore
 						'digicommerce_options'
 					)
 				);
@@ -381,29 +406,29 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 					);
 				}
 
-				return $result !== false;
-			} else {
-				// If the value is empty, remove it from options array
-				if ( isset( $this->options[ $key ] ) ) {
-					unset( $this->options[ $key ] );
+				return $result !== false; // phpcs:ignore
+			}
 
-					$serialized_options = maybe_serialize( $this->options );
+			// If the value is empty, remove it from options array
+			if ( isset( $this->options[ $key ] ) ) {
+				unset( $this->options[ $key ] );
 
-					// Update the database with the modified options array
-					$result = $wpdb->replace(
-						$table_name,
-						array(
-							'option_name'  => 'digicommerce_options',
-							'option_value' => $serialized_options,
-						),
-						array(
-							'%s',
-							'%s',
-						)
-					);
+				$serialized_options = maybe_serialize( $this->options );
 
-					return $result !== false;
-				}
+				// Update the database with the modified options array
+				$result = $wpdb->replace(
+					$table_name,
+					array(
+						'option_name'  => 'digicommerce_options',
+						'option_value' => $serialized_options,
+					),
+					array(
+						'%s',
+						'%s',
+					)
+				);
+
+				return $result !== false; // phpcs:ignore
 			}
 
 			return true;
@@ -451,14 +476,14 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				// Initialize variables array.
 				$localized_vars = array();
 
-				if ( 
-					( 
-						$this->is_account_page() || 
-						$this->is_reset_password_page() || 
+				if (
+					(
+						$this->is_account_page() ||
+						$this->is_reset_password_page() ||
 						( $this->is_checkout_page() && $this->get_option( 'login_during_checkout' ) ) ||
-						( is_singular('digi_product') && DigiCommerce()->get_option( 'enable_reviews' ) )
-					) && 
-					! is_user_logged_in() 
+						( is_singular( 'digi_product' ) && DigiCommerce()->get_option( 'enable_reviews' ) )
+					) &&
+					! is_user_logged_in()
 				) {
 					// reCAPTCHA if set.
 					$recaptcha_site_key = $this->get_option( 'recaptcha_site_key' );
@@ -467,7 +492,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 							'google-recaptcha',
 							'https://www.google.com/recaptcha/api.js?render=' . esc_attr( $recaptcha_site_key ),
 							array(),
-							null,
+							'1.0.0',
 							true
 						);
 
@@ -522,7 +547,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				// Stripe.
 				if ( $this->is_checkout_page() || ( $this->is_account_page() && is_user_logged_in() ) ) {
 					if ( $this->is_stripe_enabled() ) {
-						wp_enqueue_script( 'stripe-js', 'https://js.stripe.com/v3/', array(), null, true );
+						wp_enqueue_script( 'stripe-js', 'https://js.stripe.com/v3/', array(), null, true ); // phpcs:ignore
 
 						$is_test_mode           = $this->get_option( 'stripe_mode', 'test' ) === 'test';
 						$stripe_publishable_key = $is_test_mode ? $this->get_option( 'stripe_test_publishable_key', '' ) : $this->get_option( 'stripe_live_publishable_key', '' );
@@ -580,7 +605,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 							'paypal-sdk',
 							add_query_arg( $params, 'https://www.paypal.com/sdk/js' ),
 							array(),
-							null,
+							null, // phpcs:ignore
 							true
 						);
 
@@ -591,9 +616,9 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 						// Add PayPal specific vars
 						$localized_vars['paypalEnabled'] = true;
 						$localized_vars['currency']      = $params['currency'];
-						$localized_vars['cartItems']     = json_encode( $cart_items );
+						$localized_vars['cartItems']     = json_encode( $cart_items ); // phpcs:ignore
 						$localized_vars['countries']     = DigiCommerce()->get_countries();
-						$localized_vars['cartDiscount']  = isset( $session_data['discount'] ) ? json_encode( $session_data['discount'] ) : null;
+						$localized_vars['cartDiscount']  = isset( $session_data['discount'] ) ? json_encode( $session_data['discount'] ) : null; // phpcs:ignore
 					}
 
 					if ( ! DigiCommerce()->get_option( 'remove_taxes' ) ) {
@@ -650,7 +675,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 					$localized_vars['payment_success_page'] = get_permalink( $this->get_option( 'payment_success_page_id', '' ) );
 					$localized_vars['empty_cart_template']  = $this->get_rendered_template( 'checkout/empty-cart.php' );
 					$localized_vars['country_nonce']        = wp_create_nonce( 'digicommerce_country_nonce' );
-					$localized_vars['cartItems']            = json_encode( DigiCommerce_Checkout::instance()->get_cart_items() );
+					$localized_vars['cartItems']            = json_encode( DigiCommerce_Checkout::instance()->get_cart_items() ); // phpcs:ignore
 				}
 
 				// Download item script.
@@ -802,7 +827,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			}
 
 			$page_id = $this->get_option( 'account_page_id' );
-			return $page_id && $post->ID == $page_id;
+			return $page_id && $post->ID === $page_id;
 		}
 
 		/**
@@ -815,7 +840,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			}
 
 			$page_id = $this->get_option( 'reset_password_page_id' );
-			return $page_id && $post->ID == $page_id;
+			return $page_id && $post->ID === $page_id;
 		}
 
 		/**
@@ -828,7 +853,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			}
 
 			$page_id = $this->get_option( 'checkout_page_id' );
-			return $page_id && $post->ID == $page_id;
+			return $page_id && $post->ID === $page_id;
 		}
 
 		/**
@@ -841,7 +866,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			}
 
 			$page_id = $this->get_option( 'payment_success_page_id' );
-			return $page_id && $post->ID == $page_id;
+			return $page_id && $post->ID === $page_id;
 		}
 
 		/**
@@ -855,22 +880,24 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		 * Protects admin access if enabled and run wizard
 		 */
 		public function admin_init() {
-			if ( $this->get_option( 'block_admin' ) && ! current_user_can( 'administrator' ) && ! wp_doing_ajax() ) {
+			if ( $this->get_option( 'block_admin' ) && ! current_user_can( 'administrator' ) && ! wp_doing_ajax() ) { // phpcs:ignore
 				wp_safe_redirect( home_url() );
 				exit;
 			}
 
 			// Wizard
-			if (is_admin() && !$this->get_flag('digicommerce_setup_wizard_completed')) {
+			if ( is_admin() && ! $this->get_flag( 'digicommerce_setup_wizard_completed' ) ) {
 				require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-wizard.php';
 			}
 		}
 
 		/**
 		 * Manages the display of the admin bar
+		 *
+		 * @param bool $show Show admin bar.
 		 */
 		public function handle_admin_bar( $show ) {
-			if ( $this->get_option( 'block_admin' ) && ! current_user_can( 'administrator' ) ) {
+			if ( $this->get_option( 'block_admin' ) && ! current_user_can( 'administrator' ) ) { // phpcs:ignore
 				return false;
 			}
 			return $show;
@@ -910,7 +937,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 					$this->is_account_page() ||
 					$this->is_reset_password_page() ||
 					( $this->is_checkout_page() && $this->get_option( 'login_during_checkout' ) ) ||
-					( is_singular('digi_product') && DigiCommerce()->get_option( 'enable_reviews' ) )
+					( is_singular( 'digi_product' ) && DigiCommerce()->get_option( 'enable_reviews' ) )
 				) &&
 				! is_user_logged_in()
 			) {
@@ -954,9 +981,12 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 
 		/**
 		 * Add custom post states for DigiCommerce pages
+		 *
+		 * @param array   $post_states Post states.
+		 * @param WP_Post $post Post object.
 		 */
 		public function add_page_state_labels( $post_states, $post ) {
-			if ( $post->post_type === 'page' ) {
+			if ( 'page' === $post->post_type ) {
 				$page_mappings = array(
 					'account_page_id'         => esc_html__( 'Account Page', 'digicommerce' ),
 					'reset_password_page_id'  => esc_html__( 'Password Reset Page', 'digicommerce' ),
@@ -999,12 +1029,13 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		/**
 		 * Gets a template from the plugin
 		 *
-		 * @param string $template_name
-		 * @param array  $args
+		 * @param string $template_name Template name.
+		 * @param array  $args Arguments.
+		 * @param bool   $return_path Return path.
 		 */
 		public function get_template( $template_name, $args = array(), $return_path = false ) {
 			if ( $args && is_array( $args ) ) {
-				extract( $args );
+				extract( $args ); // phpcs:ignore
 			}
 
 			// Locate template in the theme or plugin directory
@@ -1035,8 +1066,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		/**
 		 * Gets rendered template, used to get template in JS
 		 *
-		 * @param string $template_name
-		 * @param array  $args
+		 * @param string $template_name Template name.
 		 */
 		public function get_rendered_template( $template_name ) {
 			// Start output buffering
@@ -1088,8 +1118,8 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		/**
 		 * Helper function to get value with fallback
 		 *
-		 * @param string $checkout_value
-		 * @param string $profile_value
+		 * @param string $checkout_value Checkout value.
+		 * @param string $profile_value Profile value.
 		 */
 		public function get_billing_value( $checkout_value, $profile_value ) {
 			if ( ! empty( $profile_value ) ) {
@@ -1102,8 +1132,6 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 
 		/**
 		 * Check if Stripe is enabled
-		 *
-		 * @return bool
 		 */
 		public function is_stripe_enabled() {
 			$is_test_mode           = $this->get_option( 'stripe_mode', 'test' ) === 'test';
@@ -1136,44 +1164,107 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		 */
 		public function custom_colors() {
 			$default_colors = array(
-				'color_gold' => '#ccb161',
-				'color_yellow' => '#ffe599',
-				'color_border' => '#caced9',
-				'color_light_blue' => '#e1e4ed',
+				'color_gold'          => '#ccb161',
+				'color_yellow'        => '#ffe599',
+				'color_border'        => '#caced9',
+				'color_light_blue'    => '#e1e4ed',
 				'color_light_blue_bg' => '#f6f7f9',
-				'color_dark_blue' => '#09053a',
-				'color_dark_blue_10' => '#E6E5EB',
-				'color_dark_blue_20' => '#BAB8C8',
-				'color_hover_blue' => '#362f85',
-				'color_grey' => '#646071',
-				'color_dark_grey' => '#5b5766'
+				'color_dark_blue'     => '#09053a',
+				'color_dark_blue_10'  => '#E6E5EB',
+				'color_dark_blue_20'  => '#BAB8C8',
+				'color_hover_blue'    => '#362f85',
+				'color_grey'          => '#646071',
+				'color_dark_grey'     => '#5b5766',
 			);
 
 			$custom_colors = array(
-				'color_gold' => '--dc-gold',
-				'color_yellow' => '--dc-yellow',
-				'color_border' => '--dc-border',
-				'color_light_blue' => '--dc-light-blue',
+				'color_gold'          => '--dc-gold',
+				'color_yellow'        => '--dc-yellow',
+				'color_border'        => '--dc-border',
+				'color_light_blue'    => '--dc-light-blue',
 				'color_light_blue_bg' => '--dc-light-blue-bg',
-				'color_dark_blue' => '--dc-dark-blue',
-				'color_dark_blue_10' => '--dc-dark-blue-10',
-				'color_dark_blue_20' => '--dc-dark-blue-20',
-				'color_hover_blue' => '--dc-hover-blue',
-				'color_grey' => '--dc-grey',
-				'color_dark_grey' => '--dc-dark-grey'
+				'color_dark_blue'     => '--dc-dark-blue',
+				'color_dark_blue_10'  => '--dc-dark-blue-10',
+				'color_dark_blue_20'  => '--dc-dark-blue-20',
+				'color_hover_blue'    => '--dc-hover-blue',
+				'color_grey'          => '--dc-grey',
+				'color_dark_grey'     => '--dc-dark-grey',
 			);
-		
+
 			$css = '';
-			foreach ($custom_colors as $option_name => $var_name) {
-				$color = $this->get_option($option_name);
-				if (!empty($color) && $color !== $default_colors[$option_name]) {
+			foreach ( $custom_colors as $option_name => $var_name ) {
+				$color = $this->get_option( $option_name );
+				if ( ! empty( $color ) && $color !== $default_colors[ $option_name ] ) {
 					$css .= $var_name . ': ' . $color . ';';
 				}
 			}
-		
-			if (!empty($css)) {
-				echo '<style>:root {' . esc_html($css) . '}</style>';
+
+			if ( ! empty( $css ) ) {
+				echo '<style>:root {' . esc_html( $css ) . '}</style>';
 			}
+		}
+
+		/**
+		 * Returns an array of allowed SVG elements and attributes.
+		 *
+		 * @return array
+		 */
+		public function allowed_svg_el() {
+			return array(
+				'svg'    => array(
+					'class'   => true,
+					'fill'    => true,
+					'stroke'  => true,
+					'viewbox' => true,
+					'width'   => true,
+					'height'  => true,
+					'xmlns'   => true,
+				),
+				'path'   => array(
+					'd'               => true,
+					'fill'            => true,
+					'stroke'          => true,
+					'stroke-linecap'  => true,
+					'stroke-linejoin' => true,
+					'stroke-width'    => true,
+				),
+				'circle' => array(
+					'cx'     => true,
+					'cy'     => true,
+					'r'      => true,
+					'fill'   => true,
+					'stroke' => true,
+				),
+				'line'   => array(
+					'x1' => true,
+					'y1' => true,
+					'x2' => true,
+					'y2' => true,
+				),
+				'rect'   => array(
+					'width'  => true,
+					'height' => true,
+					'x'      => true,
+					'y'      => true,
+					'rx'     => true,
+					'ry'     => true,
+				),
+			);
+		}
+
+		/**
+		 * Adds dir="ltr" attribute when site is not in RTL mode
+		 *
+		 * @param string $lang_attr Language attributes.
+		 * @return string Modified language attributes.
+		 */
+		public function attribute_to_html( $lang_attr ) {
+			if ( ! is_rtl() ) {
+				// Only add dir="ltr" when the site is NOT in RTL mode
+				return $lang_attr . ' dir="ltr"';
+			}
+
+			return $lang_attr;
 		}
 	}
 }
@@ -1181,7 +1272,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 /**
  * Returns the main instance of the plugin
  */
-function DigiCommerce() {
+function DigiCommerce() { // phpcs:ignore
 	return DigiCommerce::instance();
 }
 
@@ -1196,26 +1287,41 @@ function is_digicommerce_login() {
 	return method_exists( $instance, 'is_login_page' ) ? $instance->is_login_page() : false;
 }
 
+/**
+ * Check if we are on the account page
+ */
 function is_digicommerce_account() {
 	$instance = DigiCommerce::instance();
 	return method_exists( $instance, 'is_account_page' ) ? $instance->is_account_page() : false;
 }
 
+/**
+ * Check if we are on the password reset page
+ */
 function is_digicommerce_reset_pass() {
 	$instance = DigiCommerce::instance();
 	return method_exists( $instance, 'is_reset_password_page' ) ? $instance->is_reset_password_page() : false;
 }
 
+/**
+ * Check if we are on the checkout page
+ */
 function is_digicommerce_checkout() {
 	$instance = DigiCommerce::instance();
 	return method_exists( $instance, 'is_checkout_page' ) ? $instance->is_checkout_page() : false;
 }
 
+/**
+ * Check if we are on the payment success page
+ */
 function is_digicommerce_payment_success() {
 	$instance = DigiCommerce::instance();
 	return method_exists( $instance, 'is_payment_success_page' ) ? $instance->is_payment_success_page() : false;
 }
 
+/**
+ * Check if we are on the single product page
+ */
 function is_digicommerce_single_product() {
 	$instance = DigiCommerce::instance();
 	return method_exists( $instance, 'is_single_product' ) ? $instance->is_single_product() : false;

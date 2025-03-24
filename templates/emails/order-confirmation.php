@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$order = DigiCommerce_Orders::instance()->get_order( $order_id );
+$order = DigiCommerce_Orders::instance()->get_order( $order_id ); // phpcs:ignore
 if ( ! $order ) {
 	return;
 }
@@ -35,7 +35,7 @@ $billing_country_name = isset( $countries[ $billing_country ] ) ? $countries[ $b
 
 // Payment method
 $payment_method = $order['payment_method'];
-if ( $payment_method === 'stripe' ) {
+if ( 'stripe' === $payment_method ) {
 	$payment_method = esc_html__( 'Credit Card', 'digicommerce' );
 }
 
@@ -46,9 +46,17 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title><?php printf( esc_html__( 'Order Confirmation #%s', 'digicommerce' ), $order['order_number'] ); ?></title>
+	<title>
+		<?php
+		printf(
+			// translators: %s: order number
+			esc_html__( 'Order Confirmation %s', 'digicommerce' ),
+			esc_attr( $order['order_number'] )
+		);
+		?>
+	</title>
 	<style type="text/css">
-		<?php echo $styles; ?>
+		<?php echo $styles; // phpcs:ignore ?>
 	</style>
 </head>
 <body>
@@ -83,47 +91,52 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 					$licenses = DigiCommerce_Pro_License::instance()->get_user_licenses(
 						$order['user_id'],
 						array(
-							'status' => array('active', 'expired'),
+							'status'  => array( 'active', 'expired' ),
 							'orderby' => 'date_created',
-							'order' => 'DESC',
+							'order'   => 'DESC',
 						)
 					);
-					
-					// Filter licenses for this specific order
-					$order_licenses = array_filter($licenses, function($license) use ($order_id) {
-						return $license['order_id'] == $order_id;
-					});
 
-					if (!empty($order_licenses)) :
-						foreach ($order_licenses as $license) : ?>
+					// Filter licenses for this specific order
+					$order_licenses = array_filter(
+						$licenses,
+						function ( $license ) use ( $order_id ) {
+							return $license['order_id'] == $order_id;
+						}
+					);
+
+					if ( ! empty( $order_licenses ) ) :
+						foreach ( $order_licenses as $license ) :
+							?>
 							<div class="license-info">
-								<p><strong><?php echo esc_html($license['product_name']); ?></strong></p>
+								<p><strong><?php echo esc_html( $license['product_name'] ); ?></strong></p>
 								<p>
-									<strong><?php esc_html_e('License Key:', 'digicommerce-pro'); ?></strong> 
-									<span class="license-key"><?php echo esc_html($license['license_key']); ?></span>
+									<strong><?php esc_html_e( 'License Key:', 'digicommerce' ); ?></strong> 
+									<span class="license-key"><?php echo esc_html( $license['license_key'] ); ?></span>
 								</p>
-								<?php 
-								$account_page_id = DigiCommerce()->get_option('account_page_id');
-								if ($account_page_id) :
+								<?php
+								$account_page_id = DigiCommerce()->get_option( 'account_page_id' );
+								if ( $account_page_id ) :
 									$license_url = add_query_arg(
 										array(
-											'section' => 'licenses'
+											'section' => 'licenses',
 										),
-										get_permalink($account_page_id)
+										get_permalink( $account_page_id )
 									);
 									?>
 									<p>
-										<a href="<?php echo esc_url($license_url); ?>" style="color: #4f46e5; text-decoration: none;">
-											<?php esc_html_e('Manage Your Licenses', 'digicommerce-pro'); ?> →
+										<a href="<?php echo esc_url( $license_url ); ?>" style="color: #4f46e5; text-decoration: none;">
+											<?php esc_html_e( 'Manage Your Licenses', 'digicommerce' ); ?> →
 										</a>
 									</p>
 								<?php endif; ?>
 							</div>
-						<?php endforeach;
+							<?php
+						endforeach;
 						?>
 						<div style="margin-top: 15px;">
 							<p style="color: #4b5563; font-size: 14px;">
-								<?php esc_html_e('You can view and manage all your licenses from your account dashboard.', 'digicommerce-pro'); ?>
+								<?php esc_html_e( 'You can view and manage all your licenses from your account dashboard.', 'digicommerce' ); ?>
 							</p>
 						</div>
 						<?php
@@ -161,7 +174,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 										$regular_files        = array();
 
 										// First check for variation files if it's a variable product
-										if ( $price_mode === 'variations' && ! empty( $variation_name ) ) {
+										if ( 'variations' === $price_mode && ! empty( $variation_name ) ) {
 											$variations = get_post_meta( $product_id, 'digi_price_variations', true );
 
 											if ( ! empty( $variations ) && is_array( $variations ) ) {
@@ -196,25 +209,25 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 
 										if ( ! empty( $files_to_show ) && is_array( $files_to_show ) ) :
 											// Get only the latest file (last item in the array)
-											$latest_file = end($files_to_show);
-											
-											if ( !empty( $latest_file['id'] ) ) :
-											?>
-											<div style="margin-top: 10px;">
-												<div style="margin: 5px 0;">
-													<a href="<?php echo DigiCommerce_Files::instance()->generate_secure_download_url( $latest_file['id'], $order_id, true ); ?>" style="display: inline-block; padding: 8px 15px; background-color: #e5e7eb; color: #374151; text-decoration: none; border-radius: 4px; font-size: 14px;">
-														<?php esc_html_e( 'Download', 'digicommerce' ); ?>
-													</a>
+											$latest_file = end( $files_to_show );
+
+											if ( ! empty( $latest_file['id'] ) ) :
+												?>
+												<div style="margin-top: 10px;">
+													<div style="margin: 5px 0;">
+														<a href="<?php echo DigiCommerce_Files::instance()->generate_secure_download_url( $latest_file['id'], $order_id, true ); // phpcs:ignore ?>" style="display: inline-block; padding: 8px 15px; background-color: #e5e7eb; color: #374151; text-decoration: none; border-radius: 4px; font-size: 14px;">
+															<?php esc_html_e( 'Download', 'digicommerce' ); ?>
+														</a>
+													</div>
 												</div>
-											</div>
-											<?php
+												<?php
 											endif;
 										endif;
 									}
 									?>
 								</div>
 							</td>
-							<td><?php echo $product->format_price( $item['price'] ); ?></td>
+							<td><?php echo $product->format_price( $item['price'] ); // phpcs:ignore ?></td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>
@@ -223,7 +236,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 			<div class="order-total">
 				<p>
 					<strong><?php esc_html_e( 'Subtotal:', 'digicommerce' ); ?></strong>
-					<?php echo $product->format_price( $order['subtotal'] ); ?>
+					<?php echo $product->format_price( $order['subtotal'] ); // phpcs:ignore ?>
 				</p>
 				<p>
 					<strong>
@@ -235,17 +248,17 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 						);
 						?>
 					</strong>
-					<?php echo $product->format_price( $order['vat'] ); ?>
+					<?php echo $product->format_price( $order['vat'] ); // phpcs:ignore ?>
 				</p>
 				<?php if ( ! empty( $order['discount_code'] ) ) : ?>
 					<p>
 						<strong><?php esc_html_e( 'Discount:', 'digicommerce' ); ?></strong>
-						-<?php echo $product->format_price( $order['discount_amount'] ); ?>
+						-<?php echo $product->format_price( $order['discount_amount'] ); // phpcs:ignore ?>
 					</p>
 				<?php endif; ?>
 				<p>
 					<strong><?php esc_html_e( 'Total:', 'digicommerce' ); ?></strong>
-					<?php echo $product->format_price( $order['total'] ); ?>
+					<?php echo $product->format_price( $order['total'] ); // phpcs:ignore ?>
 				</p>
 			</div>
 

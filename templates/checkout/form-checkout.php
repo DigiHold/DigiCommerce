@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Checkout form template
  */
@@ -42,21 +41,21 @@ $allowed_html = array(
 );
 
 if ( ! $minimal_style ) {
-	$checkoutWrap    = 'digicommerce digicommerce-checkout max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12';
-	$wrapClasses     = 'lg:grid lg:grid-cols-12 lg:gap-x-12';
-	$checkoutClasses = 'lg:col-span-7';
-	$boxClasses      = 'bg-white shadow sm:rounded-lg';
-	$boxInnerClasses = 'px-4 py-5 sm:p-6';
+	$checkout_wrap     = 'digicommerce digicommerce-checkout max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12';
+	$wrap_classes      = 'lg:grid lg:grid-cols-12 lg:gap-x-12';
+	$checkout_classes  = 'lg:col-span-7';
+	$box_classes       = 'bg-white shadow sm:rounded-lg';
+	$box_inner_classes = 'px-4 py-5 sm:p-6';
 } else {
-	$checkoutWrap    = 'digicommerce digicommerce-checkout digicommerce-one-col max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12';
-	$wrapClasses     = 'flex flex-col';
-	$checkoutClasses = 'flex flex-col';
-	$boxClasses      = 'box';
-	$boxInnerClasses = 'box-inner';
+	$checkout_wrap     = 'digicommerce digicommerce-checkout digicommerce-one-col max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12';
+	$wrap_classes      = 'flex flex-col';
+	$checkout_classes  = 'flex flex-col';
+	$box_classes       = 'box';
+	$box_inner_classes = 'box-inner';
 }
 ?>
 
-<div class="<?php echo esc_attr( $checkoutWrap ); ?>">
+<div class="<?php echo esc_attr( $checkout_wrap ); ?>">
 	<?php do_action( 'digicommerce_before_checkout' ); ?>
 	<?php
 	if ( empty( $cart_items ) ) :
@@ -66,10 +65,10 @@ if ( ! $minimal_style ) {
 		<!-- Form Message -->
 		<div id="checkout-message" class="hidden rounded-md p-4 mb-6 mt-4"></div>
 
-		<div class="<?php echo esc_attr( $wrapClasses ); ?>">
+		<div class="<?php echo esc_attr( $wrap_classes ); ?>">
 
 			<!-- Checkout Form -->
-			<div class="<?php echo esc_attr( $checkoutClasses ); ?>">
+			<div class="<?php echo esc_attr( $checkout_classes ); ?>">
 				<?php if ( $login && ! is_user_logged_in() ) : ?>
 					<!-- Login Form -->
 					<div class="login-checkout-wrap bg-white shadow sm:rounded-lg mb-4 px-4 py-3 sm:p-6">
@@ -144,8 +143,8 @@ if ( ! $minimal_style ) {
 
 				<form id="digicommerce-checkout-form" class="digi__form w-full m-0" data-tax-rates="<?php echo esc_attr( json_encode( $tax_rates ) ); ?>">
 					<!-- Personal Information -->
-					<div class="<?php echo esc_attr( $boxClasses ); ?>">
-						<div class="<?php echo esc_attr( $boxInnerClasses ); ?>">
+					<div class="<?php echo esc_attr( $box_classes ); ?>">
+						<div class="<?php echo esc_attr( $box_inner_classes ); ?>">
 							<?php if ( ! $minimal_style ) : ?>
 								<h3 class="text-xl leading-6 font-medium text-dark-blue pb-6 m-0">
 									<?php esc_html_e( 'Personal Information', 'digicommerce' ); ?>
@@ -492,6 +491,7 @@ if ( ! $minimal_style ) {
 																					}
 
 																					printf(
+																						// translators: %s: subscription period
 																						esc_html__( 'Billed %s until cancellation', 'digicommerce' ),
 																						esc_html( $period_display )
 																					);
@@ -504,7 +504,8 @@ if ( ! $minimal_style ) {
 																					<div class="flex items-center gap-1">
 																						<?php
 																						printf(
-																							esc_html__( 'First payment of %1$s then %2$s', 'digicommerce-pro' ),
+																							// translators: 1: signup fee, 2: recurring price
+																							esc_html__( 'First payment of %1$s then %2$s', 'digicommerce' ),
 																							wp_kses(
 																								$product->format_price( $signup_fee, '' ),
 																								$allowed_html
@@ -524,7 +525,8 @@ if ( ! $minimal_style ) {
 																					<div class="flex items-center">
 																						<?php
 																						printf(
-																							esc_html__( '%1$d %2$s free trial', 'digicommerce-pro' ),
+																							// translators: 1: free trial duration, 2: free trial period
+																							esc_html__( '%1$d %2$s free trial', 'digicommerce' ),
 																							esc_html( $free_trial['duration'] ),
 																							esc_html( $free_trial['period'] )
 																						);
@@ -612,7 +614,7 @@ if ( ! $minimal_style ) {
 														<div id="vat_section" class="flex justify-between">
 															<div class="text-sm text-dark-blue">
 																<?php esc_html_e( 'VAT', 'digicommerce' ); ?>
-																<span id="vat_rate"><?php echo '(' . ( $tax_rate * 100 ) . '%)'; ?></span>
+																<span id="vat_rate"><?php echo esc_html( '(' . ( $tax_rate * 100 ) . '%)' ); ?></span>
 															</div>
 
 															<div class="text-sm text-green-600">
@@ -653,7 +655,7 @@ if ( ! $minimal_style ) {
 																)
 															);
 															?>
-															<span id="cart-total" data-current-total="<?php echo esc_attr($total); ?>">
+															<span id="cart-total" data-current-total="<?php echo esc_attr( $total ); ?>">
 																<?php
 																echo wp_kses(
 																	$product->format_price(
@@ -817,6 +819,7 @@ if ( ! $minimal_style ) {
 																	}
 
 																	printf(
+																		// translators: %s: subscription period
 																		esc_html__( 'Billed %s until cancellation', 'digicommerce' ),
 																		esc_html( $period_display )
 																	);
@@ -829,7 +832,8 @@ if ( ! $minimal_style ) {
 																	<div class="flex items-center gap-1">
 																		<?php
 																		printf(
-																			esc_html__( 'First payment of %1$s then %2$s', 'digicommerce-pro' ),
+																			// translators: 1: signup fee, 2: recurring price
+																			esc_html__( 'First payment of %1$s then %2$s', 'digicommerce' ),
 																			wp_kses(
 																				$product->format_price( $signup_fee, '' ),
 																				$allowed_html
@@ -849,7 +853,8 @@ if ( ! $minimal_style ) {
 																	<div class="flex items-center">
 																		<?php
 																		printf(
-																			esc_html__( '%1$d %2$s free trial', 'digicommerce-pro' ),
+																			// translators: 1: free trial duration, 2: free trial period
+																			esc_html__( '%1$d %2$s free trial', 'digicommerce' ),
 																			esc_html( $free_trial['duration'] ),
 																			esc_html( $free_trial['period'] )
 																		);
@@ -936,7 +941,7 @@ if ( ! $minimal_style ) {
 										<div id="vat_section" class="flex justify-between">
 											<div class="text-sm text-dark-blue">
 												<?php esc_html_e( 'VAT', 'digicommerce' ); ?>
-												<span id="vat_rate"><?php echo '(' . ( $tax_rate * 100 ) . '%)'; ?></span>
+												<span id="vat_rate"><?php echo esc_html( '(' . ( $tax_rate * 100 ) . '%)' ); ?></span>
 											</div>
 
 											<div class="text-sm text-green-600">
@@ -977,7 +982,7 @@ if ( ! $minimal_style ) {
 												)
 											);
 											?>
-											<span id="cart-total" data-current-total="<?php echo esc_attr($total); ?>">
+											<span id="cart-total" data-current-total="<?php echo esc_attr( $total ); ?>">
 												<?php
 												echo wp_kses(
 													$product->format_price(

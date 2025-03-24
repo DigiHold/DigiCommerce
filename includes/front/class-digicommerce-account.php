@@ -6,11 +6,15 @@ class DigiCommerce_Account {
 
 	/**
 	 * Instance of the class
+	 *
+	 * @var DigiCommerce_Account
 	 */
 	private static $instance = null;
 
 	/**
 	 * Security class instance
+	 *
+	 * @var DigiCommerce_Security
 	 */
 	private $security;
 
@@ -53,6 +57,8 @@ class DigiCommerce_Account {
 
 	/**
 	 * Handle login form submission with rate limiting
+	 *
+	 * @throws Exception If any error occurs.
 	 */
 	public function handle_login() {
 		try {
@@ -108,7 +114,7 @@ class DigiCommerce_Account {
 
 			// Determine redirect URL
 			$redirect_url = home_url();
-			if ( current_user_can( 'administrator' ) ) {
+			if ( current_user_can( 'administrator' ) ) { // phpcs:ignore
 				$redirect_url = admin_url();
 			} else {
 				$redirect_url = get_permalink( DigiCommerce()->get_option( 'account_page_id' ) );
@@ -132,6 +138,8 @@ class DigiCommerce_Account {
 
 	/**
 	 * Handle register form submission
+	 *
+	 * @throws Exception If any error occurs.
 	 */
 	public function handle_register() {
 		if ( ! DigiCommerce()->get_option( 'register_form' ) ) {
@@ -236,6 +244,8 @@ class DigiCommerce_Account {
 
 	/**
 	 * Handle lost password request with rate limiting
+	 *
+	 * @throws Exception If any error occurs.
 	 */
 	public function handle_lost_password() {
 		try {
@@ -305,6 +315,8 @@ class DigiCommerce_Account {
 
 	/**
 	 * Handle password reset with enhanced security
+	 *
+	 * @throws Exception If any error occurs.
 	 */
 	public function handle_reset_password() {
 		try {
@@ -363,6 +375,9 @@ class DigiCommerce_Account {
 
 	/**
 	 * Invalidate password reset key
+	 *
+	 * @param WP_User $user User object.
+	 * @param string  $key  Reset key.
 	 */
 	private function invalidate_reset_key( $user, $key ) {
 		global $wpdb;
@@ -376,6 +391,9 @@ class DigiCommerce_Account {
 
 	/**
 	 * Log security events
+	 *
+	 * @param string $event_type Event type.
+	 * @param int    $user_id    User ID.
 	 */
 	private function log_security_event( $event_type, $user_id ) {
 		$security_log = array(
@@ -391,6 +409,8 @@ class DigiCommerce_Account {
 
 	/**
 	 * Handle account information update
+	 *
+	 * @throws Exception If any error occurs.
 	 */
 	public function handle_update_profile() {
 		try {
@@ -438,7 +458,7 @@ class DigiCommerce_Account {
 
 			// Populate both arrays using the mapping
 			foreach ( $field_mapping as $meta_key => $order_key ) {
-				$sanitized_value = $meta_key === 'billing_email'
+				$sanitized_value = 'billing_email' === $meta_key
 					? sanitize_email( $_POST[ $meta_key ] )
 					: sanitize_text_field( $_POST[ $meta_key ] );
 
@@ -491,6 +511,8 @@ class DigiCommerce_Account {
 
 	/**
 	 * Handle password change for logged-in users
+	 *
+	 * @throws Exception If any error occurs.
 	 */
 	public function handle_change_password() {
 		try {
@@ -553,7 +575,7 @@ class DigiCommerce_Account {
 		// Handle wp-login.php access
 		if ( strpos( $current_url, 'wp-login.php' ) !== false ) {
 			// Don't interfere with logout
-			if ( isset( $_GET['action'] ) && $_GET['action'] === 'logout' ) {
+			if ( isset( $_GET['action'] ) && 'logout' === $_GET['action'] ) {
 				return;
 			}
 
@@ -563,7 +585,7 @@ class DigiCommerce_Account {
 		}
 
 		// Redirect non-admins from wp-admin
-		if ( strpos( $current_url, '/wp-admin' ) !== false && ! current_user_can( 'administrator' ) ) {
+		if ( strpos( $current_url, '/wp-admin' ) !== false && ! current_user_can( 'administrator' ) ) { // phpcs:ignore
 			wp_safe_redirect( home_url() );
 			exit;
 		}
@@ -593,7 +615,7 @@ class DigiCommerce_Account {
 		}
 
 		// Remove the WordPress logout confirmation
-		if ( $pagenow === 'wp-login.php' && isset( $_GET['action'] ) && $_GET['action'] === 'logout' ) {
+		if ( 'wp-login.php' === $pagenow && isset( $_GET['action'] ) && 'logout' === $_GET['action'] ) {
 			wp_safe_redirect( $redirect_url );
 			exit;
 		}
@@ -601,6 +623,9 @@ class DigiCommerce_Account {
 
 	/**
 	 * Customize login URL
+	 *
+	 * @param string $login_url Login URL.
+	 * @param string $redirect  Redirect URL.
 	 */
 	public function custom_login_url( $login_url, $redirect ) {
 		return get_permalink( DigiCommerce()->get_option( 'account_page_id' ) );
@@ -608,6 +633,9 @@ class DigiCommerce_Account {
 
 	/**
 	 * Customize lost password URL
+	 *
+	 * @param string $lostpassword_url Lost password URL.
+	 * @param string $redirect         Redirect URL.
 	 */
 	public function custom_lostpassword_url( $lostpassword_url, $redirect ) {
 		return get_permalink( DigiCommerce()->get_option( 'reset_password_page_id' ) );

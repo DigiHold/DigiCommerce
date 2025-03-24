@@ -18,9 +18,17 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title><?php printf( esc_html__( 'Welcome to %s', 'digicommerce' ), get_bloginfo( 'name' ) ); ?></title>
+	<title>
+		<?php
+		printf(
+			// translators: %s: website
+			esc_html__( 'Welcome to %s', 'digicommerce' ),
+			get_bloginfo( 'name' ) // phpcs:ignore
+		);
+		?>
+	</title>
 	<style type="text/css">
-		<?php echo $styles; ?>
+		<?php echo $styles; // phpcs:ignore ?>
 	</style>
 </head>
 <body>
@@ -28,15 +36,24 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 		<?php echo wp_kses_post( DigiCommerce_Emails::instance()->get_header() ); ?>
 
 		<div class="content">
-			<h2><?php printf( esc_html__( 'Welcome to %s', 'digicommerce' ), get_bloginfo( 'name' ) ); ?></h2>
+			<h2>
+				<?php
+				printf(
+					// translators: %s: Site title.
+					esc_html__( 'Welcome to %s', 'digicommerce' ),
+					get_bloginfo( 'name' ) // phpcs:ignore
+				);
+				?>
+			</h2>
 			
 			<p>
-			<?php
-			printf(
-				esc_html__( 'Thanks for creating an account on %s. Your account has been successfully created, and you can now log in using the following credentials:', 'digicommerce' ),
-				get_bloginfo( 'name' )
-			);
-			?>
+				<?php
+				printf(
+					// translators: %s: Site title.
+					esc_html__( 'Thanks for creating an account on %s. Your account has been successfully created, and you can now log in using the following credentials:', 'digicommerce' ),
+					get_bloginfo( 'name' ) // phpcs:ignore
+				);
+				?>
 			</p>
 
 			<div class="credentials-box">

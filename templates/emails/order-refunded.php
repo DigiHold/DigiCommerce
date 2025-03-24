@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$order = DigiCommerce_Orders::instance()->get_order( $order_id );
+$order = DigiCommerce_Orders::instance()->get_order( $order_id ); // phpcs:ignore
 if ( ! $order ) {
 	return;
 }
@@ -40,9 +40,17 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title><?php printf( esc_html__( 'Order %s Refunded', 'digicommerce' ), $order['order_number'] ); ?></title>
+	<title>
+		<?php
+		printf(
+			// translators: %s: order number
+			esc_html__( 'Order %s Refunded', 'digicommerce' ),
+			esc_attr( $order['order_number'] )
+		);
+		?>
+	</title>
 	<style type="text/css">
-		<?php echo $styles; ?>
+		<?php echo $styles; // phpcs:ignore ?>
 		.status-badge {
 			display: inline-block;
 			padding: 8px 16px;
@@ -119,7 +127,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 									?>
 								</div>
 							</td>
-							<td><?php echo $product->format_price( $item['price'] ); ?></td>
+							<td><?php echo $product->format_price( $item['price'] ); // phpcs:ignore ?></td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>
@@ -128,7 +136,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 			<div class="order-total">
 				<p>
 					<strong><?php esc_html_e( 'Subtotal:', 'digicommerce' ); ?></strong>
-					<?php echo $product->format_price( $order['subtotal'] ); ?>
+					<?php echo $product->format_price( $order['subtotal'] ); // phpcs:ignore ?>
 				</p>
 				<?php if ( ! empty( $order['vat'] ) ) : ?>
 					<p>
@@ -141,18 +149,18 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 							);
 							?>
 						</strong>
-						<?php echo $product->format_price( $order['vat'] ); ?>
+						<?php echo $product->format_price( $order['vat'] ); // phpcs:ignore ?>
 					</p>
 				<?php endif; ?>
 				<?php if ( ! empty( $order['discount_code'] ) ) : ?>
 					<p>
 						<strong><?php esc_html_e( 'Discount:', 'digicommerce' ); ?></strong>
-						-<?php echo $product->format_price( $order['discount_amount'] ); ?>
+						-<?php echo $product->format_price( $order['discount_amount'] ); // phpcs:ignore ?>
 					</p>
 				<?php endif; ?>
 				<p>
 					<strong><?php esc_html_e( 'Total:', 'digicommerce' ); ?></strong>
-					<?php echo $product->format_price( $order['total'] ); ?>
+					<?php echo $product->format_price( $order['total'] ); // phpcs:ignore ?>
 				</p>
 			</div>
 

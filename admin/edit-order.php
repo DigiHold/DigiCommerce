@@ -1,7 +1,7 @@
 <?php
 $orders  = DigiCommerce_Orders::instance();
 $product = DigiCommerce_Product::instance();
-$order   = $orders->get_order( $order_id );
+
 if ( ! $order ) {
 	wp_die( esc_html__( 'Order not found.', 'digicommerce' ) );
 }
@@ -18,7 +18,7 @@ $subscription_data = $orders->get_order_subscription_data( $order_id );
 $billing = $order['billing_details'] ?? array();
 
 // Show update message if order was just updated
-if ( isset( $_GET['updated'] ) && $_GET['updated'] == '1' ) {
+if ( isset( $_GET['updated'] ) && '1' === trim( sanitize_text_field( $_GET['updated'] ) ) ) {
 	?>
 	<div class="notice notice-success">
 		<p><?php esc_html_e( 'Order updated successfully.', 'digicommerce' ); ?></p>
@@ -77,15 +77,15 @@ if ( isset( $_GET['updated'] ) && $_GET['updated'] == '1' ) {
 									<tr>
 										<td><?php echo esc_html( $item['name'] ); ?></td>
 										<td><?php echo esc_html( $item['variation_name'] ?? '—' ); ?></td>
-										<td><?php echo $product->format_price( $base_price, 'price' ); ?></td>
+										<td><?php echo $product->format_price( $base_price, 'price' ); // phpcs:ignore ?></td>
 										<?php
 										if ( ! DigiCommerce()->get_option( 'remove_taxes' ) ) {
 											?>
-											<td><?php echo $product->format_price( $vat_amount, 'vat' ); ?></td>
+											<td><?php echo $product->format_price( $vat_amount, 'vat' ); // phpcs:ignore ?></td>
 											<?php
 										}
 										?>
-										<td><?php echo $product->format_price( $base_price + $vat_amount, 'total' ); ?></td>
+										<td><?php echo $product->format_price( $base_price + $vat_amount, 'total' ); // phpcs:ignore ?></td>
 									</tr>
 									<?php
 									// Show subscription info if needed
@@ -115,11 +115,16 @@ if ( isset( $_GET['updated'] ) && $_GET['updated'] == '1' ) {
 													default:
 														$period_display = $period . 'ly';
 												}
-												$info_parts[] = sprintf( esc_html__( 'Billed %s', 'digicommerce' ), $period_display );
+												$info_parts[] = sprintf(
+													// translators: %s: subscription period
+													esc_html__( 'Billed %s', 'digicommerce' ),
+													$period_display
+												);
 
 												// Add signup fee info if exists
 												if ( ! empty( $item['subscription_signup_fee'] ) && floatval( $item['subscription_signup_fee'] ) > 0 ) {
 													$info_parts[] = sprintf(
+														// translators: %s: signup fee
 														esc_html__( 'One-time signup fee of %s', 'digicommerce' ),
 														$product->format_price( $item['subscription_signup_fee'] )
 													);
@@ -130,13 +135,14 @@ if ( isset( $_GET['updated'] ) && $_GET['updated'] == '1' ) {
 													! empty( $item['subscription_free_trial']['duration'] ) &&
 													intval( $item['subscription_free_trial']['duration'] ) > 0 ) {
 													$info_parts[] = sprintf(
+														// translators: %1$d: free trial duration, %2$s: free trial period
 														esc_html__( '%1$d %2$s free trial', 'digicommerce' ),
 														intval( $item['subscription_free_trial']['duration'] ),
 														esc_html( $item['subscription_free_trial']['period'] )
 													);
 												}
 
-												echo implode( ' - ', $info_parts );
+												echo implode( ' - ', $info_parts ); // phpcs:ignore
 												?>
 											</td>
 										</tr>
@@ -150,34 +156,43 @@ if ( isset( $_GET['updated'] ) && $_GET['updated'] == '1' ) {
 							</tbody>
 							<tfoot>
 								<tr>
-									<th colspan="2"><?php printf( esc_html__( 'Total (%d items)', 'digicommerce' ), count( $order['items'] ) ); ?></th>
-									<th><?php echo $product->format_price( $total_base_price, 'price' ); ?></th>
+									<th colspan="2">
+										<?php
+										printf(
+											// translators: %d: total items
+											esc_html__( 'Total (%d items)', 'digicommerce' ),
+											count( $order['items'] )
+										);
+										?>
+									</th>
+									<th><?php echo $product->format_price( $total_base_price, 'price' ); // phpcs:ignore ?></th>
 									<?php
 									if ( ! DigiCommerce()->get_option( 'remove_taxes' ) ) {
 										?>
-										<th><?php echo $product->format_price( $total_vat, 'vat' ); ?></th>
+										<th><?php echo $product->format_price( $total_vat, 'vat' ); // phpcs:ignore ?></th>
 										<?php
 									}
 									?>
-									<th><?php echo $product->format_price( $total_with_vat, 'total' ); ?></th>
+									<th><?php echo $product->format_price( $total_with_vat, 'total' ); // phpcs:ignore ?></th>
 								</tr>
 								<?php if ( ! empty( $order['discount_amount'] ) && $order['discount_amount'] > 0 ) : ?>
 								<tr>
 									<th colspan="4">
 										<?php
 										printf(
+											// translators: %1$s: discount code, %2$s: discount amount
 											esc_html__( 'Coupon (%1$s%2$s)', 'digicommerce' ),
 											esc_html( $order['discount_code'] ),
-											$order['discount_type'] === 'percentage' ? ' - ' . $order['discount_amount'] . '%' : ''
+											'percentage' === $order['discount_type'] ? ' - ' . esc_attr( $order['discount_amount'] ) . '%' : ''
 										);
 										?>
 									</th>
-									<th>-<?php echo $product->format_price( $order['discount_amount'], 'discount' ); ?></th>
+									<th>-<?php echo $product->format_price( $order['discount_amount'], 'discount' ); // phpcs:ignore ?></th>
 								</tr>
 								<tr>
 									<th colspan="2"><?php esc_html_e( 'Final Total', 'digicommerce' ); ?></th>
-									<th colspan="2"><?php echo $product->format_price( $total_base_price, 'price' ); ?></th>
-									<th><?php echo $product->format_price( $total_with_vat - $order['discount_amount'], 'total' ); ?></th>
+									<th colspan="2"><?php echo $product->format_price( $total_base_price, 'price' ); // phpcs:ignore ?></th>
+									<th><?php echo $product->format_price( $total_with_vat - $order['discount_amount'], 'total' ); // phpcs:ignore ?></th>
 								</tr>
 								<?php endif; ?>
 							</tfoot>
@@ -281,13 +296,13 @@ if ( isset( $_GET['updated'] ) && $_GET['updated'] == '1' ) {
 									<td>
 										<?php
 										$billing_period = $subscription_data['billing_period'];
-										if ( $billing_period === 'day' ) {
+										if ( 'day' === $billing_period ) {
 											esc_html_e( 'Daily', 'digicommerce' );
-										} elseif ( $billing_period === 'week' ) {
+										} elseif ( 'week' === $billing_period ) {
 											esc_html_e( 'Weekly', 'digicommerce' );
-										} elseif ( $billing_period === 'month' ) {
+										} elseif ( 'month' === $billing_period ) {
 											esc_html_e( 'Monthly', 'digicommerce' );
-										} elseif ( $billing_period === 'year' ) {
+										} elseif ( 'year' === $billing_period ) {
 											esc_html_e( 'Yearly', 'digicommerce' );
 										}
 										?>
@@ -383,9 +398,10 @@ if ( isset( $_GET['updated'] ) && $_GET['updated'] == '1' ) {
 													<strong>
 														<?php
 														printf(
+															// translators: %1$s: author name, %2$s: note date
 															esc_html__( 'By %1$s on %2$s', 'digicommerce' ),
 															esc_html( $note['author'] ),
-															date_i18n( get_option( 'date_format' ), strtotime( $note['date'] ) )
+															esc_html( date_i18n( get_option( 'date_format' ), strtotime( $note['date'] ) ) )
 														);
 														?>
 													</strong>

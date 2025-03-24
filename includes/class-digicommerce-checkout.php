@@ -3,11 +3,39 @@
  * Checkout class for DigiCommerce
  */
 class DigiCommerce_Checkout {
+	/**
+	 * The single instance of the class
+	 *
+	 * @var DigiCommerce_Checkout
+	 */
 	private static $instance = null;
-	private $cart_items      = array();
+
+	/**
+	 * Cart items
+	 *
+	 * @var array
+	 */
+	private $cart_items = array();
+
+	/**
+	 * Session cookie name
+	 *
+	 * @var string
+	 */
 	private $_cookie;
+
+	/**
+	 * Flag to indicate if a session cookie is set
+	 *
+	 * @var bool
+	 */
 	private $_has_cookie = false;
 
+	/**
+	 * Instance
+	 *
+	 * @return DigiCommerce_Checkout - Main instance
+	 */
 	public static function instance() {
 		if ( is_null( self::$instance ) ) {
 			self::$instance = new self();
@@ -15,6 +43,9 @@ class DigiCommerce_Checkout {
 		return self::$instance;
 	}
 
+	/**
+	 * Constructor
+	 */
 	private function __construct() {
 		$this->_cookie = 'digicommerce_session_' . COOKIEHASH;
 
@@ -57,6 +88,11 @@ class DigiCommerce_Checkout {
 		add_action( 'digicommerce_cleanup_sessions', array( $this, 'cleanup_expired_sessions' ) );
 	}
 
+	/**
+	 * Start session if necessary
+	 *
+	 * @return array
+	 */
 	private function should_start_session() {
 		// Always start session for AJAX requests
 		if ( wp_doing_ajax() ) {
@@ -91,6 +127,9 @@ class DigiCommerce_Checkout {
 		return false;
 	}
 
+	/**
+	 * Initialize session
+	 */
 	public function init_session() {
 		$session_key = $this->get_current_session_key();
 
@@ -112,6 +151,9 @@ class DigiCommerce_Checkout {
 		add_filter( 'digicommerce_cart_items', array( $this, 'get_cart_items' ) );
 	}
 
+	/**
+	 * Initialize
+	 */
 	public function init() {
 		if ( isset( $_GET['add-to-cart'] ) ) {
 			$this->add_to_cart( $_GET['add-to-cart'] );
@@ -122,6 +164,9 @@ class DigiCommerce_Checkout {
 		$this->maybe_handle_direct_checkout();
 	}
 
+	/**
+	 * Install tables
+	 */
 	public function install_tables() {
 		global $wpdb;
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -141,10 +186,19 @@ class DigiCommerce_Checkout {
 		dbDelta( $sql );
 	}
 
+	/**
+	 * Get session cookie
+	 */
 	private function get_session_cookie() {
 		return isset( $_COOKIE[ $this->_cookie ] ) ? sanitize_text_field( $_COOKIE[ $this->_cookie ] ) : false;
 	}
 
+	/**
+	 * Set session cookie
+	 *
+	 * @param bool   $force - Force setting the cookie.
+	 * @param string $session_key - Session key.
+	 */
 	private function set_session_cookie( $force = false, $session_key = null ) {
 		if ( headers_sent() ) {
 			return;
@@ -156,7 +210,7 @@ class DigiCommerce_Checkout {
 		}
 
 		if ( $force || ! $this->get_session_cookie() ) {
-			$key_to_use = $session_key ?: $this->generate_session_key();
+			$key_to_use = $session_key ? $session_key : $this->generate_session_key();
 
 			$secure = apply_filters( 'digicommerce_cookie_secure', is_ssl() );
 
@@ -178,12 +232,18 @@ class DigiCommerce_Checkout {
 		}
 	}
 
+	/**
+	 * Generate session key
+	 */
 	private function generate_session_key() {
 		require_once ABSPATH . 'wp-includes/class-phpass.php';
 		$hasher = new PasswordHash( 8, false );
 		return 't_' . substr( md5( $hasher->get_random_bytes( 32 ) ), 2 );
 	}
 
+	/**
+	 * Set cart cookie if necessary
+	 */
 	public function maybe_set_cart_cookies() {
 		if ( ! headers_sent() && did_action( 'wp_loaded' ) ) {
 			if ( empty( $this->cart_items ) && isset( $_COOKIE[ $this->_cookie ] ) ) {
@@ -192,6 +252,9 @@ class DigiCommerce_Checkout {
 		}
 	}
 
+	/**
+	 * Clear session cookie
+	 */
 	private function clear_session_cookie() {
 		if ( headers_sent() ) {
 			return;
@@ -214,6 +277,9 @@ class DigiCommerce_Checkout {
 		$this->_has_cookie = false;
 	}
 
+	/**
+	 * Get current session key
+	 */
 	public function get_current_session_key() {
 		// For logged-in users, always use user ID
 		if ( is_user_logged_in() ) {
@@ -236,15 +302,17 @@ class DigiCommerce_Checkout {
 		return $new_key;
 	}
 
+	/**
+	 * Get session
+	 *
+	 * @param string $session_key - Session key.
+	 */
 	public function get_session( $session_key ) {
 		global $wpdb;
 
 		$table_name   = $wpdb->prefix . 'digicommerce_sessions';
 		$session_data = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT session_value, session_expiry FROM $table_name WHERE session_key = %s",
-				$session_key
-			)
+			$wpdb->prepare( "SELECT session_value, session_expiry FROM $table_name WHERE session_key = %s", $session_key ) // phpcs:ignore
 		);
 
 		if ( $session_data ) {
@@ -257,6 +325,12 @@ class DigiCommerce_Checkout {
 		return null;
 	}
 
+	/**
+	 * Save session
+	 *
+	 * @param string $session_key - Session key.
+	 * @param array  $session_value - Session value.
+	 */
 	public function save_session( $session_key, $session_value ) {
 		global $wpdb;
 
@@ -276,6 +350,11 @@ class DigiCommerce_Checkout {
 		return $result;
 	}
 
+	/**
+	 * Delete session
+	 *
+	 * @param string $session_key - Session key.
+	 */
 	private function delete_session( $session_key ) {
 		global $wpdb;
 
@@ -283,27 +362,25 @@ class DigiCommerce_Checkout {
 		$wpdb->delete( $table_name, array( 'session_key' => $session_key ), array( '%s' ) );
 	}
 
+	/**
+	 * Cleanup expired sessions
+	 */
 	public function cleanup_expired_sessions() {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'digicommerce_sessions';
 
 		// Delete expired sessions and empty carts
 		$wpdb->query(
-			$wpdb->prepare(
-				"
-            DELETE FROM $table_name 
-            WHERE session_expiry < %d 
-            OR (
-                session_value LIKE %s 
-                AND session_key NOT LIKE %s
-            )",
-				time(),
-				'%' . $wpdb->esc_like( serialize( array( 'cart' => array() ) ) ) . '%',
-				'user_%'  // Keep empty user sessions
-			)
+			$wpdb->prepare( 'DELETE FROM $table_name WHERE session_expiry < %d OR ( session_value LIKE %s AND session_key NOT LIKE %s )', time(), '%' . $wpdb->esc_like( serialize( array( 'cart' => array() ) ) ) . '%', 'user_%' ) // phpcs:ignore
 		);
 	}
 
+	/**
+	 * Handle user login
+	 *
+	 * @param string $user_login - User login.
+	 * @param object $user - User object.
+	 */
 	public function handle_user_login( $user_login, $user ) {
 		if ( isset( $_COOKIE[ $this->_cookie ] ) ) {
 			$guest_session_key = sanitize_text_field( $_COOKIE[ $this->_cookie ] );
@@ -320,6 +397,9 @@ class DigiCommerce_Checkout {
 		}
 	}
 
+	/**
+	 * Handle user logout
+	 */
 	public function handle_user_logout() {
 		if ( ! empty( $this->cart_items ) ) {
 			$session_key = $this->generate_session_key();
@@ -328,73 +408,78 @@ class DigiCommerce_Checkout {
 		}
 	}
 
+	/**
+	 * Add to cart
+	 *
+	 * @throws Exception - Exception.
+	 */
 	public function add_to_cart() {
 		try {
-			// Verify nonce
-			check_ajax_referer('digicommerce_add_to_cart', 'nonce');
-	
-			// Validate and sanitize inputs
-			$product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
-			$variation_name = isset($_POST['variation_name']) ? sanitize_text_field($_POST['variation_name']) : '';
-			$variation_price = isset($_POST['variation_price']) ? floatval($_POST['variation_price']) : 0;
-	
+			check_ajax_referer( 'digicommerce_add_to_cart', 'nonce' );
+
+			$product_id      = isset( $_POST['product_id'] ) ? intval( $_POST['product_id'] ) : 0;
+			$variation_name  = isset( $_POST['variation_name'] ) ? sanitize_text_field( $_POST['variation_name'] ) : '';
+			$variation_price = isset( $_POST['variation_price'] ) ? floatval( $_POST['variation_price'] ) : 0;
+
 			// Get the product details
-			$product = get_post($product_id);
-			if (!$product || $product->post_type !== 'digi_product') {
-				throw new Exception(esc_html__('Invalid product.', 'digicommerce'));
+			$product = get_post( $product_id );
+			if ( ! $product || 'digi_product' !== $product->post_type ) {
+				throw new Exception( esc_html__( 'Invalid product.', 'digicommerce' ) );
 			}
-	
+
 			// Determine price
-			$price = isset($_POST['product_price']) ? floatval($_POST['product_price']) : 0;
-			if ($variation_price) {
+			$price = isset( $_POST['product_price'] ) ? floatval( $_POST['product_price'] ) : 0;
+			if ( $variation_price ) {
 				$price = $variation_price;
 			}
-	
+
 			// Get current session and cart data
-			$session_key = $this->get_current_session_key();
-			$session_data = $this->get_session($session_key);
-	
-			if (!$session_data) {
-				$session_data = array('cart' => array());
+			$session_key  = $this->get_current_session_key();
+			$session_data = $this->get_session( $session_key );
+
+			if ( ! $session_data ) {
+				$session_data = array( 'cart' => array() );
 			}
-	
-			$cart_items = array();
-			$has_variations = !empty($variation_name);
-	
+
+			$cart_items     = array();
+			$has_variations = ! empty( $variation_name );
+
 			// Process existing cart items
-			foreach ($session_data['cart'] as $cart_item) {
-				if ($cart_item['product_id'] === $product_id) {
-					if ($has_variations) {
+			foreach ( $session_data['cart'] as $cart_item ) {
+				if ( $cart_item['product_id'] === $product_id ) {
+					if ( $has_variations ) {
 						// Skip this product entirely - we'll add the new variation
 						continue;
 					} else {
 						// For non-variation products, if it exists, don't add it again
-						wp_send_json_success(array(
-							'message' => esc_html__('Product already in cart.', 'digicommerce'),
-							'cart' => $this->cart_items,
-							'redirect' => get_permalink(DigiCommerce()->get_option('checkout_page_id', ''))
-						));
+						wp_send_json_success(
+							array(
+								'message'  => esc_html__( 'Product already in cart.', 'digicommerce' ),
+								'cart'     => $this->cart_items,
+								'redirect' => get_permalink( DigiCommerce()->get_option( 'checkout_page_id', '' ) ),
+							)
+						);
 						return;
 					}
 				}
 				// Keep all other products
 				$cart_items[] = $cart_item;
 			}
-	
+
 			// Get subscription details
 			$subscription_data = array();
-			if ($has_variations) {
+			if ( $has_variations ) {
 				// Get variation subscription settings from price variations
-				$price_variations = get_post_meta($product_id, 'digi_price_variations', true);
-				if (!empty($price_variations)) {
-					foreach ($price_variations as $variation) {
-						if ($variation['name'] === $variation_name) {
+				$price_variations = get_post_meta( $product_id, 'digi_price_variations', true );
+				if ( ! empty( $price_variations ) ) {
+					foreach ( $price_variations as $variation ) {
+						if ( $variation['name'] === $variation_name ) {
 							$subscription_data = array(
-								'subscription_enabled' => !empty($variation['subscription_enabled']),
-								'subscription_period' => $variation['subscription_period'] ?? 'month',
+								'subscription_enabled'    => ! empty( $variation['subscription_enabled'] ),
+								'subscription_period'     => $variation['subscription_period'] ?? 'month',
 								'subscription_free_trial' => $variation['subscription_free_trial'] ?? array(
 									'duration' => 0,
-									'period' => 'days',
+									'period'   => 'days',
 								),
 								'subscription_signup_fee' => $variation['subscription_signup_fee'] ?? 0,
 							);
@@ -405,64 +490,73 @@ class DigiCommerce_Checkout {
 			} else {
 				// Get regular product subscription settings
 				$subscription_data = array(
-					'subscription_enabled' => get_post_meta($product_id, 'digi_subscription_enabled', true),
-					'subscription_period' => get_post_meta($product_id, 'digi_subscription_period', true),
-					'subscription_free_trial' => get_post_meta($product_id, 'digi_subscription_free_trial', true),
-					'subscription_signup_fee' => get_post_meta($product_id, 'digi_subscription_signup_fee', true),
+					'subscription_enabled'    => get_post_meta( $product_id, 'digi_subscription_enabled', true ),
+					'subscription_period'     => get_post_meta( $product_id, 'digi_subscription_period', true ),
+					'subscription_free_trial' => get_post_meta( $product_id, 'digi_subscription_free_trial', true ),
+					'subscription_signup_fee' => get_post_meta( $product_id, 'digi_subscription_signup_fee', true ),
 				);
 			}
-	
+
 			// Create new cart item
 			$new_item = array(
-				'product_id' => $product_id,
-				'name' => $product->post_title,
-				'price' => $price,
+				'product_id'     => $product_id,
+				'name'           => $product->post_title,
+				'price'          => $price,
 				'variation_name' => $variation_name,
 			);
-	
+
 			// Add subscription data if enabled
-			if (!empty($subscription_data) && !empty($subscription_data['subscription_enabled'])) {
-				$new_item['subscription_enabled'] = $subscription_data['subscription_enabled'];
-				$new_item['subscription_period'] = $subscription_data['subscription_period'];
+			if ( ! empty( $subscription_data ) && ! empty( $subscription_data['subscription_enabled'] ) ) {
+				$new_item['subscription_enabled']    = $subscription_data['subscription_enabled'];
+				$new_item['subscription_period']     = $subscription_data['subscription_period'];
 				$new_item['subscription_free_trial'] = $subscription_data['subscription_free_trial'];
 				$new_item['subscription_signup_fee'] = $subscription_data['subscription_signup_fee'];
-	
-				if (DigiCommerce()->is_paypal_enabled()) {
+
+				if ( DigiCommerce()->is_paypal_enabled() ) {
 					$new_item['needs_paypal_plan'] = true;
 				}
 			}
-	
+
 			// Add new item to cart
 			$cart_items[] = $new_item;
-	
+
 			// Update session data
 			$session_data['cart'] = $cart_items;
-			$this->cart_items = $cart_items;
-	
+			$this->cart_items     = $cart_items;
+
 			// Save to session
-			$this->save_session($session_key, $session_data);
-	
+			$this->save_session( $session_key, $session_data );
+
 			// Get checkout page URL
-			$checkout_url = get_permalink(DigiCommerce()->get_option('checkout_page_id', ''));
-	
+			$checkout_url = get_permalink( DigiCommerce()->get_option( 'checkout_page_id', '' ) );
+
 			// Determine appropriate success message
-			$message = $has_variations ? 
-				esc_html__('Product variation updated in cart.', 'digicommerce') : 
-				esc_html__('Product added to cart.', 'digicommerce');
-	
-			wp_send_json_success(array(
-				'message' => $message,
-				'cart' => $this->cart_items,
-				'redirect' => $checkout_url,
-			));
-	
-		} catch (Exception $e) {
-			wp_send_json_error(array(
-				'message' => $e->getMessage(),
-			));
+			$message = $has_variations ?
+				esc_html__( 'Product variation updated in cart.', 'digicommerce' ) :
+				esc_html__( 'Product added to cart.', 'digicommerce' );
+
+			wp_send_json_success(
+				array(
+					'message'  => $message,
+					'cart'     => $this->cart_items,
+					'redirect' => $checkout_url,
+				)
+			);
+
+		} catch ( Exception $e ) {
+			wp_send_json_error(
+				array(
+					'message' => $e->getMessage(),
+				)
+			);
 		}
 	}
 
+	/**
+	 * Log in during checkout
+	 *
+	 * @throws Exception - Exception.
+	 */
 	public function login_checkout() {
 		try {
 			// Verify nonce
@@ -544,7 +638,7 @@ class DigiCommerce_Checkout {
 
 			// Determine redirect URL
 			$redirect_url = home_url();
-			if ( current_user_can( 'administrator' ) ) {
+			if ( current_user_can( 'administrator' ) ) { // phpcs:ignore
 				$redirect_url = admin_url();
 			} else {
 				$redirect_url = get_permalink( DigiCommerce()->get_option( 'checkout_page_id' ) );
@@ -566,6 +660,12 @@ class DigiCommerce_Checkout {
 		}
 	}
 
+	/**
+	 * Merge guest and user carts
+	 *
+	 * @param array $guest_cart - Guest cart.
+	 * @param array $user_cart - User cart.
+	 */
 	private function merge_carts( $guest_cart, $user_cart ) {
 		$merged_cart = $user_cart;
 
@@ -593,6 +693,9 @@ class DigiCommerce_Checkout {
 		return $merged_cart;
 	}
 
+	/**
+	 * Remove cart item
+	 */
 	public function remove_cart_item() {
 		try {
 			// Verify nonce
@@ -643,7 +746,7 @@ class DigiCommerce_Checkout {
 			$discount_amount = 0;
 			if ( ! empty( $session_data['discount'] ) ) {
 				$discount_data = $session_data['discount'];
-				if ( $discount_data['type'] === 'percentage' ) {
+				if ( 'percentage' === $discount_data['type'] ) {
 					$discount_amount = round( ( $total_with_vat * $discount_data['amount'] ) / 100, 2 );
 				} else {
 					$discount_amount = min( $discount_data['amount'], $total_with_vat );
@@ -684,215 +787,203 @@ class DigiCommerce_Checkout {
 		}
 	}
 
+	/**
+	 * Direct checkout handler
+	 */
 	private function maybe_handle_direct_checkout() {
 		// Check for POST upgrade request first
-		if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upgrade_license']) && isset($_POST['upgrade_path'])) {
+		if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['upgrade_license'] ) && isset( $_POST['upgrade_path'] ) ) {
 			// Verify nonce
-			if (!isset($_POST['upgrade_nonce']) || !wp_verify_nonce($_POST['upgrade_nonce'], 'digicommerce_upgrade_license')) {
-				wp_die('Security check failed', 'Security Error', array('response' => 403));
+			if ( ! isset( $_POST['upgrade_nonce'] ) || ! wp_verify_nonce( $_POST['upgrade_nonce'], 'digicommerce_upgrade_license' ) ) {
+				wp_die( 'Security check failed', 'Security Error', array( 'response' => 403 ) );
 				return;
 			}
-			
-			$license_id = intval($_POST['upgrade_license']);
-			$upgrade_variation_id = sanitize_text_field($_POST['upgrade_path']);
-		
+
+			$license_id           = intval( $_POST['upgrade_license'] );
+			$upgrade_variation_id = sanitize_text_field( $_POST['upgrade_path'] );
+
 			// Get license details
-			$license = DigiCommerce_Pro_License::instance()->get_license_by_id($license_id);
-			
-			if (!$license || $license['status'] !== 'active') {
-				wp_die('Invalid license');
+			$license = DigiCommerce_Pro_License::instance()->get_license_by_id( $license_id );
+
+			if ( ! $license || 'active' !== $license['status'] ) {
+				wp_die( 'Invalid license' );
 				return;
 			}
-		
+
 			// Get upgrade paths and price variations
-			$upgrade_paths = get_post_meta($license['product_id'], 'digi_upgrade_paths', true) ?: array();
-			$price_variations = get_post_meta($license['product_id'], 'digi_price_variations', true) ?: array();
-			
+			$upgrade_paths_value = get_post_meta( $license['product_id'], 'digi_upgrade_paths', true );
+			$upgrade_paths       = $upgrade_paths_value ? $upgrade_paths_value : array();
+
+			$price_variations_value = get_post_meta( $license['product_id'], 'digi_price_variations', true );
+			$price_variations       = $price_variations_value ? $price_variations_value : array();
+
 			// Find selected upgrade path
 			$selected_path = null;
-			foreach ($upgrade_paths as $path) {
-				if ($path['variation_id'] === $upgrade_variation_id) {
+			foreach ( $upgrade_paths as $path ) {
+				if ( $path['variation_id'] === $upgrade_variation_id ) {
 					$selected_path = $path;
 					break;
 				}
 			}
-		
-			if (!$selected_path) {
+
+			if ( ! $selected_path ) {
 				return;
 			}
-		
+
 			// Find current and target variations
 			$current_variation = null;
-			$target_variation = null;
-		
-			foreach ($price_variations as $variation) {
-				if (strpos($variation['id'], $license['variation_id']) === 0) {
+			$target_variation  = null;
+
+			foreach ( $price_variations as $variation ) {
+				if ( strpos( $variation['id'], $license['variation_id'] ) === 0 ) {
 					$current_variation = $variation;
 				}
-				
-				if ($variation['id'] === $upgrade_variation_id) {
+
+				if ( $variation['id'] === $upgrade_variation_id ) {
 					$target_variation = $variation;
 				}
 			}
-		
-			if (!$current_variation || !$target_variation) {
+
+			if ( ! $current_variation || ! $target_variation ) {
 				return;
 			}
-		
+
 			global $wpdb;
-		
+
 			// Get the original order amount from completed order
-			$original_payment = $wpdb->get_var($wpdb->prepare(
-				"SELECT subtotal 
-				FROM {$wpdb->prefix}digicommerce_orders 
-				WHERE id = %d AND status = 'completed'",
-				$license['order_id']  // Use the original order_id from license
-			));
+			$original_payment = $wpdb->get_var( $wpdb->prepare( "SELECT subtotal FROM {$wpdb->prefix}digicommerce_orders WHERE id = %d AND status = 'completed'", $license['order_id'] ) ); // phpcs:ignore
 
 			// Get upgrade order IDs from the upgrade_orders column
-			$upgrade_orders = !empty($license['upgrade_orders']) ? json_decode($license['upgrade_orders'], true) : array();
+			$upgrade_orders = ! empty( $license['upgrade_orders'] ) ? json_decode( $license['upgrade_orders'], true ) : array();
 
 			// Get all completed upgrade payments using the upgrade_orders IDs
 			$upgrade_payments = array();
-			if (!empty($upgrade_orders)) {
-				$upgrade_payments = $wpdb->get_col(
-					"SELECT subtotal 
-					FROM {$wpdb->prefix}digicommerce_orders 
-					WHERE id IN (" . implode(',', array_map('intval', $upgrade_orders)) . ")
-					AND status = 'completed'"
-				);
+			if ( ! empty( $upgrade_orders ) ) {
+				$upgrade_payments = $wpdb->get_col( "SELECT subtotal FROM {$wpdb->prefix}digicommerce_orders WHERE id IN ( " . implode(',', array_map( 'intval', $upgrade_orders ) ) . " ) AND status = 'completed'" ); // phpcs:ignore
 			}
 
-			$all_payments = array_merge([$original_payment], $upgrade_payments);
+			$all_payments = array_merge( [ $original_payment ], $upgrade_payments ); // phpcs:ignore
 
 			// Calculate total amount paid from completed orders
-			$total_paid = array_sum(array_map('floatval', $all_payments));
+			$total_paid = array_sum( array_map( 'floatval', $all_payments ) );
 
 			// Get target variation price
-			$upgrade_price = !empty($target_variation['salePrice']) ? 
-				floatval($target_variation['salePrice']) : 
-				floatval($target_variation['price']);
+			$upgrade_price = ! empty( $target_variation['salePrice'] ) ?
+				floatval( $target_variation['salePrice'] ) :
+				floatval( $target_variation['price'] );
 
 			// Calculate final price with proration considering total paid
-			$final_price = $selected_path['prorate'] ? 
-				($upgrade_price - $total_paid) : 
+			$final_price = $selected_path['prorate'] ?
+				( $upgrade_price - $total_paid ) :
 				$upgrade_price;
-		
+
 			// Apply configured discount
-			if (!empty($selected_path['include_coupon'])) {
-				if ($selected_path['discount_type'] === 'percentage') {
-					$final_price *= (1 - (floatval($selected_path['discount_amount']) / 100));
+			if ( ! empty( $selected_path['include_coupon'] ) ) {
+				if ( 'percentage' === $selected_path['discount_type'] ) {
+					$final_price *= ( 1 - ( floatval( $selected_path['discount_amount'] ) / 100 ) );
 				} else {
-					$final_price -= floatval($selected_path['discount_amount']);
+					$final_price -= floatval( $selected_path['discount_amount'] );
 				}
 			}
-		
+
 			// Get target variation subscription details
-			$is_subscription = !empty($target_variation['subscription_enabled']);
+			$is_subscription = ! empty( $target_variation['subscription_enabled'] );
 
 			// Get the subscription ID for the original order if this is a subscription upgrade
 			$original_subscription_id = null;
-			if ($is_subscription) {
+			if ( $is_subscription ) {
 				// Get subscription ID from the original order
-				$original_subscription_id = $wpdb->get_var($wpdb->prepare(
-					"SELECT si.subscription_id 
-					FROM {$wpdb->prefix}digicommerce_subscription_items si
-					JOIN {$wpdb->prefix}digicommerce_orders o ON si.order_id = o.id
-					WHERE o.id = %d",
-					$license['order_id']
-				));
-				
-				error_log('Found original subscription ID for license ' . $license_id . ': ' . 
-					($original_subscription_id ? $original_subscription_id : 'none'));
+				$original_subscription_id = $wpdb->get_var($wpdb->prepare( "SELECT si.subscription_id FROM {$wpdb->prefix}digicommerce_subscription_items si JOIN {$wpdb->prefix}digicommerce_orders o ON si.order_id = o.id WHERE o.id = %d", $license['order_id'] ) ); // phpcs:ignore
 			}
 
 			// Create cart item
 			$cart_item = array(
-				'product_id' => $license['product_id'],
-				'name' => get_the_title($license['product_id']),
-				'price' => $final_price,  // This is the prorated price for immediate payment
+				'product_id'     => $license['product_id'],
+				'name'           => get_the_title( $license['product_id'] ),
+				'price'          => $final_price,  // This is the prorated price for immediate payment
 				'variation_name' => $target_variation['name'],
-				'meta' => array(
-					'upgrade_from_license' => $license_id,
-					'upgrade_path_id' => $upgrade_variation_id,
-					'variation_price' => $upgrade_price,  // Full price for new subscription
-					'total_paid' => $total_paid,
-					'subscription_upgrade' => $is_subscription,
-					'original_subscription_id' => $original_subscription_id
-				)
+				'meta'           => array(
+					'upgrade_from_license'     => $license_id,
+					'upgrade_path_id'          => $upgrade_variation_id,
+					'variation_price'          => $upgrade_price,  // Full price for new subscription
+					'total_paid'               => $total_paid,
+					'subscription_upgrade'     => $is_subscription,
+					'original_subscription_id' => $original_subscription_id,
+				),
 			);
 
 			// Add subscription data if target variation is a subscription
-			if ($is_subscription) {
-				$cart_item['subscription_enabled'] = true;
-				$cart_item['subscription_period'] = $target_variation['subscription_period'];
+			if ( $is_subscription ) {
+				$cart_item['subscription_enabled']    = true;
+				$cart_item['subscription_period']     = $target_variation['subscription_period'];
 				$cart_item['subscription_free_trial'] = array(
 					'duration' => 0,
-					'period' => 'days'
+					'period'   => 'days',
 				);
 				$cart_item['subscription_signup_fee'] = 0;
 				// Note: The actual subscription will be created at full_price
 			}
-		
+
 			// Initialize session with upgrade item
-			$session_key = $this->get_current_session_key();
-			$session_data = $this->get_session($session_key) ?: array('cart' => array());
-			$session_data['cart'] = array($cart_item);
-			
+			$session_key          = $this->get_current_session_key();
+			$session_data_value   = $this->get_session( $session_key );
+			$session_data         = $session_data_value ? $session_data_value : array( 'cart' => array() );
+			$session_data['cart'] = array( $cart_item );
+
 			// Save session and update cart items
-			$this->save_session($session_key, $session_data);
+			$this->save_session( $session_key, $session_data );
 			$this->cart_items = $session_data['cart'];
-		
+
 			// Redirect to checkout
-			wp_redirect(get_permalink(DigiCommerce()->get_option('checkout_page_id')));
+			wp_redirect( get_permalink( DigiCommerce()->get_option( 'checkout_page_id' ) ) );
 			exit;
 		}
 
 		// Get product ID, variation index, and coupon code from the URL parameters.
-		$product_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-		$variation_index = isset($_GET['variation']) ? (intval($_GET['variation']) - 1) : -1;
-	
-		if (!$product_id) {
+		$product_id      = isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0;
+		$variation_index = isset( $_GET['variation'] ) ? ( intval( $_GET['variation'] ) - 1 ) : -1;
+
+		if ( ! $product_id ) {
 			return; // Exit if no product ID is provided.
 		}
-	
-		$product = get_post($product_id);
-	
-		if (!$product || $product->post_type !== 'digi_product') {
+
+		$product = get_post( $product_id );
+
+		if ( ! $product || 'digi_product' !== $product->post_type ) {
 			return; // Exit if the product is invalid.
 		}
-	
+
 		// Determine price and variation details.
-		$price_mode = get_post_meta($product_id, 'digi_price_mode', true);
-		$price = 0;
-		$variation_name = '';
+		$price_mode        = get_post_meta( $product_id, 'digi_price_mode', true );
+		$price             = 0;
+		$variation_name    = '';
 		$subscription_data = array();
-		$has_variations = false;
-	
+		$has_variations    = false;
+
 		// Handle variations.
-		if ('variations' === $price_mode && $variation_index >= 0) {
+		if ( 'variations' === $price_mode && $variation_index >= 0 ) {
 			$has_variations = true;
-			$variations = get_post_meta($product_id, 'digi_price_variations', true);
-	
-			if (isset($variations[$variation_index])) {
-				$variation = $variations[$variation_index];
-				$regular_price = floatval($variation['price']);
-				$sale_price = isset($variation['salePrice']) ? floatval($variation['salePrice']) : 0;
-				$variation_name = sanitize_text_field($variation['name']);
-	
+			$variations     = get_post_meta( $product_id, 'digi_price_variations', true );
+
+			if ( isset( $variations[ $variation_index ] ) ) {
+				$variation      = $variations[ $variation_index ];
+				$regular_price  = floatval( $variation['price'] );
+				$sale_price     = isset( $variation['salePrice'] ) ? floatval( $variation['salePrice'] ) : 0;
+				$variation_name = sanitize_text_field( $variation['name'] );
+
 				// Get subscription data from variation
 				$subscription_data = array(
-					'subscription_enabled' => !empty($variation['subscription_enabled']),
-					'subscription_period' => $variation['subscription_period'] ?? 'month',
+					'subscription_enabled'    => ! empty( $variation['subscription_enabled'] ),
+					'subscription_period'     => $variation['subscription_period'] ?? 'month',
 					'subscription_free_trial' => $variation['subscription_free_trial'] ?? array(
 						'duration' => 0,
-						'period' => 'days'
+						'period'   => 'days',
 					),
-					'subscription_signup_fee' => $variation['subscription_signup_fee'] ?? 0
+					'subscription_signup_fee' => $variation['subscription_signup_fee'] ?? 0,
 				);
-	
+
 				// Use sale price if it exists and is greater than 0
-				if (!empty($sale_price) && $sale_price > 0) {
+				if ( ! empty( $sale_price ) && $sale_price > 0 ) {
 					$price = $sale_price;
 				} else {
 					$price = $regular_price;
@@ -902,41 +993,41 @@ class DigiCommerce_Checkout {
 			}
 		} else {
 			// Handle simple product.
-			$regular_price = floatval(get_post_meta($product_id, 'digi_price', true));
-			$sale_price = floatval(get_post_meta($product_id, 'digi_sale_price', true));
-	
+			$regular_price = floatval( get_post_meta( $product_id, 'digi_price', true ) );
+			$sale_price    = floatval( get_post_meta( $product_id, 'digi_sale_price', true ) );
+
 			// Get subscription data for simple product
 			$subscription_data = array(
-				'subscription_enabled' => get_post_meta($product_id, 'digi_subscription_enabled', true),
-				'subscription_period' => get_post_meta($product_id, 'digi_subscription_period', true),
-				'subscription_free_trial' => get_post_meta($product_id, 'digi_subscription_free_trial', true),
-				'subscription_signup_fee' => get_post_meta($product_id, 'digi_subscription_signup_fee', true)
+				'subscription_enabled'    => get_post_meta( $product_id, 'digi_subscription_enabled', true ),
+				'subscription_period'     => get_post_meta( $product_id, 'digi_subscription_period', true ),
+				'subscription_free_trial' => get_post_meta( $product_id, 'digi_subscription_free_trial', true ),
+				'subscription_signup_fee' => get_post_meta( $product_id, 'digi_subscription_signup_fee', true ),
 			);
-	
+
 			// Use sale price if it exists and is greater than 0
-			if (!empty($sale_price) && $sale_price > 0) {
+			if ( ! empty( $sale_price ) && $sale_price > 0 ) {
 				$price = $sale_price;
 			} else {
 				$price = $regular_price;
 			}
 		}
-	
-		if ($price <= 0) {
+
+		if ( $price <= 0 ) {
 			return;
 		}
-	
+
 		// Check if the product (and variation, if applicable) is already in the cart.
-		$session_key = $this->get_current_session_key();
-		$session_data = $this->get_session($session_key);
-	
-		if (!$session_data) {
-			$session_data = array('cart' => array());
+		$session_key  = $this->get_current_session_key();
+		$session_data = $this->get_session( $session_key );
+
+		if ( ! $session_data ) {
+			$session_data = array( 'cart' => array() );
 		}
-	
+
 		$cart_items = array();
-		foreach ($session_data['cart'] as $cart_item) {
-			if ($cart_item['product_id'] === $product_id) {
-				if ($has_variations) {
+		foreach ( $session_data['cart'] as $cart_item ) {
+			if ( $cart_item['product_id'] === $product_id ) {
+				if ( $has_variations ) {
 					// Skip this product entirely - we'll add the new variation
 					continue;
 				} else {
@@ -947,36 +1038,41 @@ class DigiCommerce_Checkout {
 			// Keep all other products
 			$cart_items[] = $cart_item;
 		}
-	
+
 		// Add product and variation to cart.
 		$cart_item = array(
-			'product_id' => $product_id,
-			'name' => $product->post_title,
-			'price' => $price,
+			'product_id'     => $product_id,
+			'name'           => $product->post_title,
+			'price'          => $price,
 			'variation_name' => $variation_name,
 		);
-	
+
 		// Add subscription data if subscription is enabled
-		if (!empty($subscription_data['subscription_enabled'])) {
-			$cart_item['subscription_enabled'] = $subscription_data['subscription_enabled'];
-			$cart_item['subscription_period'] = $subscription_data['subscription_period'];
+		if ( ! empty( $subscription_data['subscription_enabled'] ) ) {
+			$cart_item['subscription_enabled']    = $subscription_data['subscription_enabled'];
+			$cart_item['subscription_period']     = $subscription_data['subscription_period'];
 			$cart_item['subscription_free_trial'] = $subscription_data['subscription_free_trial'];
 			$cart_item['subscription_signup_fee'] = $subscription_data['subscription_signup_fee'];
-	
+
 			// Add PayPal plan flag if needed
-			if (DigiCommerce()->is_paypal_enabled()) {
+			if ( DigiCommerce()->is_paypal_enabled() ) {
 				$cart_item['needs_paypal_plan'] = true;
 			}
 		}
-	
-		$cart_items[] = $cart_item;
+
+		$cart_items[]         = $cart_item;
 		$session_data['cart'] = $cart_items;
-	
+
 		// Save updated session data.
-		$this->save_session($session_key, $session_data);
+		$this->save_session( $session_key, $session_data );
 		$this->cart_items = $cart_items;
 	}
 
+	/**
+	 * Process checkout
+	 *
+	 * @throws Exception - Exception.
+	 */
 	public function process_checkout() {
 		// Verify nonce
 		check_ajax_referer( 'digicommerce_process_checkout', 'checkout_nonce' );
@@ -1036,10 +1132,10 @@ class DigiCommerce_Checkout {
 				// Use value from $_POST if available, otherwise retain the existing profile value
 				$new_value = $data[ $key ] ?? '';
 				if ( is_null( $new_value ) ) {
-					$existing_value = ( $field === 'email' || $field === 'first_name' || $field === 'last_name' )
+					$existing_value = ( 'email' === $field || 'first_name' === $field || 'last_name' === $field )
 						? get_user_meta( $user_id, $field, true ) // Default WordPress fields
 						: get_user_meta( $user_id, $billing_key, true ); // Custom billing fields
-					$new_value      = $existing_value ?: ''; // Retain existing value or set to empty
+					$new_value      = $existing_value ? $existing_value : ''; // Retain existing value or set to empty
 				}
 
 				$mapped_data[ $billing_key ] = $new_value;
@@ -1064,7 +1160,7 @@ class DigiCommerce_Checkout {
 			$session_data = $this->get_session( $session_key );
 
 			// Get business country from settings
-			$business_country = DigiCommerce()->get_option('business_country');
+			$business_country = DigiCommerce()->get_option( 'business_country' );
 			$buyer_country    = $data['country'] ?? '';
 			$vat_number       = $data['vat_number'] ?? '';
 
@@ -1078,18 +1174,17 @@ class DigiCommerce_Checkout {
 			// Only calculate VAT if taxes are not disabled
 			if ( ! DigiCommerce()->get_option( 'remove_taxes' ) ) {
 				$countries = DigiCommerce()->get_countries();
-				
-				if ($buyer_country === $business_country) {
+
+				if ( $buyer_country === $business_country ) {
 					// Domestic sale: Always charge seller's country VAT
-					$tax_rate = $countries[$business_country]['tax_rate'] ?? 0;
-					$vat = $subtotal * $tax_rate;
-				} 
-				elseif (!empty($countries[$buyer_country]['eu']) && !empty($countries[$business_country]['eu'])) {
+					$tax_rate = $countries[ $business_country ]['tax_rate'] ?? 0;
+					$vat      = $subtotal * $tax_rate;
+				} elseif ( ! empty( $countries[ $buyer_country ]['eu'] ) && ! empty( $countries[ $business_country ]['eu'] ) ) {
 					// EU cross-border sale
-					if (empty($vat_number) || !DigiCommerce_Orders::instance()->validate_vat_number($vat_number, $buyer_country)) {
+					if ( empty( $vat_number ) || ! DigiCommerce_Orders::instance()->validate_vat_number( $vat_number, $buyer_country ) ) {
 						// No valid VAT number - charge buyer's country rate
-						$tax_rate = $countries[$buyer_country]['tax_rate'] ?? 0;
-						$vat = $subtotal * $tax_rate;
+						$tax_rate = $countries[ $buyer_country ]['tax_rate'] ?? 0;
+						$vat      = $subtotal * $tax_rate;
 					}
 					// With valid VAT number - no VAT (vat remains 0)
 				}
@@ -1106,7 +1201,7 @@ class DigiCommerce_Checkout {
 				$discount_data = $session_data['discount'];
 				$discount_type = $discount_data['type'];
 				$discount_code = $discount_data['code'];
-				if ( $discount_data['type'] === 'percentage' ) {
+				if ( 'percentage' === $discount_data['type'] ) {
 					$discount_amount = round( ( $total_with_vat * $discount_data['amount'] ) / 100, 2 );
 				} else {
 					$discount_amount = min( $discount_data['amount'], $total_with_vat );
@@ -1168,56 +1263,56 @@ class DigiCommerce_Checkout {
 			switch ( $payment_method ) {
 				case 'stripe':
 					// Get stripe payment data from form submission
-					$stripe_payment_data = isset($_POST['stripe_payment_data']) ? json_decode(stripslashes($_POST['stripe_payment_data']), true) : null;
+					$stripe_payment_data = isset( $_POST['stripe_payment_data'] ) ? json_decode( stripslashes( $_POST['stripe_payment_data'] ), true ) : null;
 
-					if (!$stripe_payment_data) {
-						throw new Exception(__('Payment data not found', 'digicommerce'));
+					if ( ! $stripe_payment_data ) {
+						throw new Exception( esc_html__( 'Payment data not found', 'digicommerce' ) );
 					}
 
 					// Validate required data
-					if (empty($stripe_payment_data['customer_id'])) {
-						throw new Exception(__('Customer data not found', 'digicommerce'));
+					if ( empty( $stripe_payment_data['customer_id'] ) ) {
+						throw new Exception( esc_html__( 'Customer data not found', 'digicommerce' ) );
 					}
 
 					// Array of payment data to store
 					$payment_meta = array();
 
 					// Always add customer ID if present
-					if (!empty($stripe_payment_data['customer_id'])) {
+					if ( ! empty( $stripe_payment_data['customer_id'] ) ) {
 						$payment_meta['_stripe_customer_id'] = $stripe_payment_data['customer_id'];
 					}
 
 					// Add payment intent ID if present
-					if (!empty($stripe_payment_data['payment_intent_id'])) {
+					if ( ! empty( $stripe_payment_data['payment_intent_id'] ) ) {
 						$payment_meta['_stripe_payment_intent_id'] = $stripe_payment_data['payment_intent_id'];
 					}
 
 					// Add setup intent ID if present
-					if (!empty($stripe_payment_data['setup_intent_id'])) {
+					if ( ! empty( $stripe_payment_data['setup_intent_id'] ) ) {
 						$payment_meta['_stripe_setup_intent_id'] = $stripe_payment_data['setup_intent_id'];
 					}
 
 					// Add payment method if present
-					if (!empty($stripe_payment_data['payment_method'])) {
+					if ( ! empty( $stripe_payment_data['payment_method'] ) ) {
 						$payment_meta['_stripe_payment_method'] = $stripe_payment_data['payment_method'];
 					}
 
 					// Add subscription ID if present
-					if (!empty($stripe_payment_data['subscription_id'])) {
+					if ( ! empty( $stripe_payment_data['subscription_id'] ) ) {
 						$payment_meta['_stripe_subscription_id'] = $stripe_payment_data['subscription_id'];
 					}
 
 					// Store all payment-related meta
-					foreach ($payment_meta as $meta_key => $meta_value) {
-						if (!empty($meta_value)) {
+					foreach ( $payment_meta as $meta_key => $meta_value ) {
+						if ( ! empty( $meta_value ) ) {
 							$wpdb->insert(
 								$wpdb->prefix . 'digicommerce_order_meta',
 								array(
-									'order_id' => $order_id,
-									'meta_key' => $meta_key,
-									'meta_value' => $meta_value
+									'order_id'   => $order_id,
+									'meta_key'   => $meta_key,
+									'meta_value' => $meta_value,
 								),
-								array('%d', '%s', '%s')
+								array( '%d', '%s', '%s' ),
 							);
 						}
 					}
@@ -1261,7 +1356,7 @@ class DigiCommerce_Checkout {
 					} else {
 						// Regular one-time payment
 						if ( empty( $_POST['paypal_order_id'] ) ) {
-							throw new Exception( __( 'Payment ID required for one-time payment', 'digicommerce' ) );
+							throw new Exception( esc_html__( 'Payment ID required for one-time payment', 'digicommerce' ) );
 						}
 						$payment_result = $this->process_paypal_payment(
 							$order_id,
@@ -1269,13 +1364,13 @@ class DigiCommerce_Checkout {
 						);
 					}
 
-					if ( $payment_result === false ) {
-						throw new Exception( __( 'PayPal payment processing failed.', 'digicommerce' ) );
+					if ( false === $payment_result ) {
+						throw new Exception( esc_html__( 'PayPal payment processing failed.', 'digicommerce' ) );
 					}
 					break;
 
 				default:
-					throw new Exception( __( 'Invalid payment method selected.', 'digicommerce' ) );
+					throw new Exception( esc_html__( 'Invalid payment method selected.', 'digicommerce' ) );
 			}
 
 			// Clear discount data from session after successful payment
@@ -1298,14 +1393,15 @@ class DigiCommerce_Checkout {
 				array( '%d' )
 			);
 
-			if ( $updated === false ) {
-				throw new Exception( __( 'Failed to update order status', 'digicommerce' ) );
+			if ( false === $updated ) {
+				throw new Exception( esc_html__( 'Failed to update order status', 'digicommerce' ) );
 			}
 
 			// Add order note with dynamic payment method
 			if ( class_exists( 'DigiCommerce_Orders' ) ) {
 				$note = sprintf(
-					__( 'Payment completed via %s', 'digicommerce' ),
+					// translators: %s: payment method
+					esc_html__( 'Payment completed via %s', 'digicommerce' ),
 					ucfirst( $payment_method )
 				);
 				DigiCommerce_Orders::instance()->add_order_note( $order_id, $note );
@@ -1350,6 +1446,14 @@ class DigiCommerce_Checkout {
 		}
 	}
 
+	/**
+	 * Process PayPal payment
+	 *
+	 * @param int         $order_id Order ID.
+	 * @param string|null $paypal_order_id PayPal Order ID.
+	 * @param string|null $subscription_id PayPal Subscription ID.
+	 * @throws Exception - Exception.
+	 */
 	private function process_paypal_payment( $order_id, $paypal_order_id = null, $subscription_id = null ) {
 		try {
 			global $wpdb;
@@ -1384,6 +1488,9 @@ class DigiCommerce_Checkout {
 		}
 	}
 
+	/**
+	 * Prepare order items
+	 */
 	private function prepare_order_items() {
 		$items_data = array();
 		foreach ( $this->cart_items as $item ) {
@@ -1405,7 +1512,7 @@ class DigiCommerce_Checkout {
 			}
 
 			// Add any meta data from cart item
-			if (!empty($item['meta'])) {
+			if ( ! empty( $item['meta'] ) ) {
 				$item_data['meta'] = $item['meta'];
 			}
 
@@ -1415,6 +1522,11 @@ class DigiCommerce_Checkout {
 		return $items_data;
 	}
 
+	/**
+	 * Get session data
+	 *
+	 * @param string $session_key - Session key.
+	 */
 	private function get_session_tax_rate( $session_key ) {
 		// Get session data
 		$session_data = $this->get_session( $session_key );
@@ -1427,9 +1539,7 @@ class DigiCommerce_Checkout {
 			if ( isset( $countries[ $selected_country ]['tax_rate'] ) ) {
 				$tax_rate = floatval( $countries[ $selected_country ]['tax_rate'] );
 			}
-		}
-		// If no session country, check logged in user's country
-		elseif ( is_user_logged_in() ) {
+		} elseif ( is_user_logged_in() ) {
 			$user         = wp_get_current_user();
 			$user_country = get_user_meta( $user->ID, 'billing_country', true );
 			if ( ! empty( $user_country ) ) {
@@ -1443,6 +1553,11 @@ class DigiCommerce_Checkout {
 		return $tax_rate;
 	}
 
+	/**
+	 * Create a new user account
+	 *
+	 * @param array $data - User data.
+	 */
 	private function create_user( $data ) {
 		$email = sanitize_email( $data['email'] );
 
@@ -1482,6 +1597,13 @@ class DigiCommerce_Checkout {
 		return $user_id;
 	}
 
+	/**
+	 * Update user billing details
+	 *
+	 * @param int   $user_id - User ID.
+	 * @param array $billing_data - Billing data.
+	 * @param array $default_data - Default data.
+	 */
 	private function update_user_billing( $user_id, $billing_data, $default_data = array() ) {
 		// Define billing fields to be processed
 		$billing_fields = array(
@@ -1507,12 +1629,12 @@ class DigiCommerce_Checkout {
 			$new_value = isset( $billing_data[ $meta_key ] ) ? $billing_data[ $meta_key ] : get_user_meta( $user_id, $meta_key, true );
 
 			// Skip updating if the value is null, empty, or explicitly 'null'
-			if ( $new_value === null || strtolower( (string) $new_value ) === 'null' || $new_value === '' ) {
+			if ( null === $new_value || 'null' === strtolower( (string) $new_value ) || '' === $new_value ) {
 				continue;
 			}
 
 			// Sanitize the input
-			$sanitized_value = ( $field === 'email' ) ? sanitize_email( $new_value ) : sanitize_text_field( $new_value );
+			$sanitized_value = ( 'email' === $field ) ? sanitize_email( $new_value ) : sanitize_text_field( $new_value );
 
 			// Get the current value in user meta
 			$current_value = get_user_meta( $user_id, $meta_key, true );
@@ -1533,11 +1655,11 @@ class DigiCommerce_Checkout {
 					foreach ( $map as $billing_field => $wp_field ) {
 						if ( $field === $billing_field ) {
 							// Get the current value of the corresponding WordPress field
-							$current_value = ( $wp_field === 'user_email' ) ? get_userdata( $user_id )->user_email : get_user_meta( $user_id, $wp_field, true );
+							$current_value = ( 'user_email' === $wp_field ) ? get_userdata( $user_id )->user_email : get_user_meta( $user_id, $wp_field, true );
 
 							// Update if the new value is different
 							if ( $sanitized_value !== $current_value ) {
-								if ( $wp_field === 'user_email' ) {
+								if ( 'user_email' === $wp_field ) {
 									$update_result = wp_update_user(
 										array(
 											'ID'         => $user_id,
@@ -1581,12 +1703,18 @@ class DigiCommerce_Checkout {
 		}
 	}
 
+	/**
+	 * Clear cart
+	 */
 	private function clear_cart() {
 		$this->cart_items = array();
 		$session_key      = $this->get_current_session_key();
 		$this->save_session( $session_key, array( 'cart' => $this->cart_items ) );
 	}
 
+	/**
+	 * Get cart items
+	 */
 	public function get_cart_items() {
 		// If user is logged in, ensure we're getting cart from user session.
 		if ( is_user_logged_in() ) {
@@ -1600,6 +1728,9 @@ class DigiCommerce_Checkout {
 		return $this->cart_items;
 	}
 
+	/**
+	 * Get cart total
+	 */
 	public function get_cart_total() {
 		$total = 0;
 		foreach ( $this->cart_items as $item ) {
@@ -1608,6 +1739,9 @@ class DigiCommerce_Checkout {
 		return $total;
 	}
 
+	/**
+	 * Modal
+	 */
 	public function modal() {
 		if ( ! DigiCommerce()->is_checkout_page() ) :
 			return;

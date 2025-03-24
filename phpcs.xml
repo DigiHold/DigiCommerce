@@ -60,6 +60,11 @@
 		<exclude name="Squiz.Commenting.FileComment.MissingPackageTag"/>
 	</rule>
 
+	<!-- Disable requirement for comments to end with a full stop -->
+	<rule ref="Squiz.Commenting.InlineComment">
+		<exclude name="Squiz.Commenting.InlineComment.InvalidEndChar"/>
+	</rule>
+
 	<rule ref="WordPress.Files.FileName">
 		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
 	</rule>

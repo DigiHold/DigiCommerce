@@ -36,8 +36,8 @@ $active_section = isset( $_GET['section'] ) ? sanitize_key( $_GET['section'] ) :
 				<?php foreach ( $sections as $key => $section ) : ?>
 					<a href="?section=<?php echo esc_attr( $key ); ?>" 
 					class="<?php echo $active_section === $key ? 'bg-light-blue-bg text-dark-blue' : 'text-gray-800 hover:text-dark-blue hover:bg-light-blue-bg'; ?> group rounded-md px-3 py-2 flex items-center text-sm font-medium transition-colors">
-						<?php echo $section['icon']; ?>
-						<span class="truncate ml-3"><?php echo esc_html( $section['title'] ); ?></span>
+						<?php echo wp_kses( $section['icon'], DigiCommerce::instance()->allowed_svg_el() ); ?>
+						<span class="truncate ltr:ml-3 rtl:mr-3"><?php echo esc_html( $section['title'] ); ?></span>
 					</a>
 				<?php endforeach; ?>
 
@@ -48,7 +48,7 @@ $active_section = isset( $_GET['section'] ) ? sanitize_key( $_GET['section'] ) :
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
 					</svg>
-					<span class="ml-3"><?php esc_html_e( 'Logout', 'digicommerce' ); ?></span>
+					<span class="ltr:ml-3 rtl:mr-3"><?php esc_html_e( 'Logout', 'digicommerce' ); ?></span>
 				</a>
 			</nav>
 		</aside>
@@ -57,7 +57,7 @@ $active_section = isset( $_GET['section'] ) ? sanitize_key( $_GET['section'] ) :
 		<div class="sm:px-6 lg:px-0 lg:col-span-9">
 			<?php
 			// Check for view-order parameter when in orders section
-			if ( $active_section === 'orders' && isset( $_GET['view-order'] ) ) {
+			if ( 'orders' === $active_section && isset( $_GET['view-order'] ) ) {
 				$order_id = absint( $_GET['view-order'] );
 				if ( $order_id && DigiCommerce_Orders::instance()->verify_order_access( $order_id ) ) {
 					DigiCommerce()->get_template(

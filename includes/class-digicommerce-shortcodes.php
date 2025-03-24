@@ -3,8 +3,18 @@
  * Manages all shortcodes for the plugin
  */
 class DigiCommerce_Shortcodes {
+	/**
+	 * The single instance of the class
+	 *
+	 * @var DigiCommerce_Shortcodes|null
+	 */
 	private static $instance = null;
 
+	/**
+	 * Get the instance of the class
+	 *
+	 * @return DigiCommerce_Shortcodes
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -25,7 +35,7 @@ class DigiCommerce_Shortcodes {
 	/**
 	 * Render account page
 	 *
-	 * @param array $atts Shortcode attributes
+	 * @param array $atts Shortcode attributes.
 	 * @return string
 	 */
 	public function render_account( $atts ) {
@@ -55,7 +65,7 @@ class DigiCommerce_Shortcodes {
 	/**
 	 * Render reset password page
 	 *
-	 * @param array $atts Shortcode attributes
+	 * @param array $atts Shortcode attributes.
 	 * @return string
 	 */
 	public function render_reset_password( $atts ) {
@@ -108,7 +118,7 @@ class DigiCommerce_Shortcodes {
 	/**
 	 * Render checkout page
 	 *
-	 * @param array $atts Shortcode attributes
+	 * @param array $atts Shortcode attributes.
 	 * @return string
 	 */
 	public function render_checkout( $atts ) {
@@ -132,7 +142,7 @@ class DigiCommerce_Shortcodes {
 	/**
 	 * Render payment success page
 	 *
-	 * @param array $atts Shortcode attributes
+	 * @param array $atts Shortcode attributes.
 	 * @return string
 	 */
 	public function render_payment_success( $atts ) {

@@ -5,6 +5,8 @@
 class DigiCommerce_Security {
 	/**
 	 * Unique instance
+	 *
+	 * @var DigiCommerce_Security
 	 */
 	private static $instance = null;
 
@@ -44,6 +46,8 @@ class DigiCommerce_Security {
 
 	/**
 	 * Verify reCAPTCHA
+	 *
+	 * @param string $token reCAPTCHA token.
 	 */
 	public function verify_recaptcha( $token ) {
 		$recaptcha_secret = DigiCommerce()->get_option( 'recaptcha_secret_key' );
@@ -84,6 +88,9 @@ class DigiCommerce_Security {
 
 	/**
 	 * Check rate limit for a given action
+	 *
+	 * @param string $action Action name.
+	 * @param string $ip IP address.
 	 */
 	public function check_rate_limit( $action, $ip ) {
 		$attempts = get_transient( "{$action}_attempts_{$ip}" );
@@ -92,9 +99,13 @@ class DigiCommerce_Security {
 
 	/**
 	 * Increment rate limit counter
+	 *
+	 * @param string $action Action name.
+	 * @param string $ip IP address.
 	 */
 	public function increment_rate_limit( $action, $ip ) {
-		$attempts = get_transient( "{$action}_attempts_{$ip}" ) ?: 0;
+		$transient_value = get_transient( "{$action}_attempts_{$ip}" );
+		$attempts        = false !== $transient_value ? $transient_value : 0;
 		set_transient(
 			"{$action}_attempts_{$ip}",
 			$attempts + 1,
@@ -104,6 +115,9 @@ class DigiCommerce_Security {
 
 	/**
 	 * Reset rate limit counter
+	 *
+	 * @param string $action Action name.
+	 * @param string $ip IP address.
 	 */
 	public function reset_rate_limit( $action, $ip ) {
 		delete_transient( "{$action}_attempts_{$ip}" );
@@ -111,6 +125,10 @@ class DigiCommerce_Security {
 
 	/**
 	 * Check login attempts
+	 *
+	 * @param WP_User|WP_Error $user User object if login successful, WP_Error otherwise.
+	 * @param string           $username Username.
+	 * @param string           $password Password.
 	 */
 	public function check_login_attempts( $user, $username, $password ) {
 		if ( empty( $username ) ) {
@@ -135,6 +153,8 @@ class DigiCommerce_Security {
 
 	/**
 	 * Handle failed login attempt
+	 *
+	 * @param string $ip IP address.
 	 */
 	private function handle_failed_login( $ip ) {
 		$attempts = get_transient( 'login_attempts_' . $ip );
@@ -151,6 +171,8 @@ class DigiCommerce_Security {
 
 	/**
 	 * Reset login attempts
+	 *
+	 * @param string $ip IP address.
 	 */
 	private function reset_login_attempts( $ip ) {
 		delete_transient( 'login_attempts_' . $ip );
@@ -175,6 +197,8 @@ class DigiCommerce_Security {
 
 	/**
 	 * Check password strength
+	 *
+	 * @param string $password Password.
 	 */
 	public function check_password_strength( $password ) {
 		$errors = array();
@@ -200,6 +224,8 @@ class DigiCommerce_Security {
 
 	/**
 	 * Generate strong random password
+	 *
+	 * @param int $length Password length.
 	 */
 	public function generate_strong_password( $length = 12 ) {
 		$chars    = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
@@ -219,6 +245,9 @@ class DigiCommerce_Security {
 
 	/**
 	 * Sanitize form data
+	 *
+	 * @param string $data Data to sanitize.
+	 * @param string $type Data type.
 	 */
 	public function sanitize_form_data( $data, $type = 'text' ) {
 		switch ( $type ) {

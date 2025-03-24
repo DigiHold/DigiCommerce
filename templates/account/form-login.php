@@ -223,7 +223,7 @@ defined( 'ABSPATH' ) || exit;
 		</form>
 
 		<div class="flex justify-center mt-16">
-			<a href="<?php echo home_url(); ?>" class="return__link flex items-center gap-2 font-nb text-base text-dark-blue hover:text-gold">
+			<a href="<?php echo esc_url( home_url() ); ?>" class="return__link flex items-center gap-2 font-nb text-base text-dark-blue hover:text-gold">
 				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="15" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M4 12a.7.7 0 001.1-1L2.8 8.3h9.4a.7.7 0 100-1.4H2.8l2.3-2.7a.7.7 0 00-1-1l-3.3 4-.1.1c-.1.3 0 .6.2.8L4 12z"/></svg>
 				<?php
 				esc_html_e( 'Return to ', 'digicommerce' );

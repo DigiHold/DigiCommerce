@@ -80,7 +80,7 @@ $allowed_html = array(
 				<div class="grid grid-cols-4 gap-4 mt-4">
 					<?php foreach ( $gallery_images as $index => $image ) : ?>
 						<?php
-						if ( $index === 0 ) {
+						if ( 0 === $index ) {
 							continue;} // Skip the featured image
 						?>
 						<div class="aspect-w-1 aspect-h-1 bg-gray-100 rounded-lg overflow-hidden">
@@ -108,7 +108,7 @@ $allowed_html = array(
 
 			<!-- Price Section -->
 			<div class="price-section mt-6">
-				<?php if ( $price_mode === 'single' && $single_price ) : ?>
+				<?php if ( 'single' === $price_mode && $single_price ) : ?>
 					<div class="single-price-wrap">
 						<?php
 						if ( $sale_price && $sale_price < $single_price ) :
@@ -146,7 +146,7 @@ $allowed_html = array(
 							?>
 						<?php endif; ?>
 					</div>
-				<?php elseif ( $price_mode === 'variations' && ! empty( $price_variations ) ) : ?>
+				<?php elseif ( 'variations' === $price_mode && ! empty( $price_variations ) ) : ?>
 					<div class="variation-prices space-y-4">
 						<?php
 						// Find the lowest price among variations
@@ -157,13 +157,13 @@ $allowed_html = array(
 							$current_sale_price = isset( $variation['salePrice'] ) ? $variation['salePrice'] : null;
 
 							// Initialize lowest price if not set
-							if ( $lowest_price === null || $current_price < $lowest_price ) {
+							if ( null === $lowest_price || $current_price < $lowest_price ) {
 								$lowest_price = $current_price;
 							}
 
 							// Check if this variation has a valid sale price
 							if ( $current_sale_price && $current_sale_price < $current_price ) {
-								if ( $lowest_sale_price === null || $current_sale_price < $lowest_sale_price ) {
+								if ( null === $lowest_sale_price || $current_sale_price < $lowest_sale_price ) {
 									$lowest_sale_price = $current_sale_price;
 								}
 							}
@@ -173,7 +173,7 @@ $allowed_html = array(
 						<div class="flex gap-2 mb-8 font-bold">
 							<span class="text-xl text-dark-blue"><?php esc_html_e( 'From:', 'digicommerce' ); ?></span>
 							<div class="flex items-center gap-2">
-								<?php if ( $lowest_sale_price !== null ) : ?>
+								<?php if ( null !== $lowest_sale_price ) : ?>
 									<?php
 									// Show sale price
 									echo wp_kses(
@@ -252,7 +252,7 @@ $allowed_html = array(
 											</span>
 										<?php else : ?>
 											<span class="leading-none">
-												<?php echo $product->format_price( $variation['price'], 'variation-price' ); ?>
+												<?php echo $product->format_price( $variation['price'], 'variation-price' ); // phpcs:ignore ?>
 											</span>
 										<?php endif; ?>
 									</label>
@@ -275,10 +275,10 @@ $allowed_html = array(
 			<?php if ( ! empty( $features ) ) : ?>
 				<div class="product-features mt-6">
 					<h3 class="text-medium font-bold text-dark-blue m-0 p-0 mb-4"><?php esc_html_e( 'Features', 'digicommerce' ); ?></h3>
-					<table class="w-full text-left border-collapse">
+					<table class="w-full ltr:text-left rtl:text-right border-collapse">
 						<tbody>
 							<?php foreach ( $features as $index => $feature ) : ?>
-								<tr class="<?php echo $index % 2 === 0 ? 'bg-gray-100' : ''; ?>">
+								<tr class="<?php echo 0 === $index % 2 ? 'bg-gray-100' : ''; ?>">
 									<td class="py-2 px-4 text-dark-blue"><?php echo esc_html( $feature['name'] ); ?></td>
 									<td class="py-2 px-4"><?php echo esc_html( $feature['text'] ); ?></td>
 								</tr>
@@ -296,7 +296,7 @@ $allowed_html = array(
 					<?php wp_nonce_field( 'digicommerce_add_to_cart', 'cart_nonce' ); ?>
 					<input type="hidden" name="action" value="add_to_cart">
 					<input type="hidden" name="product_id" value="<?php echo esc_attr( $product_id ); ?>">
-					<?php if ( $price_mode === 'variations' ) : ?>
+					<?php if ( 'variations' === $price_mode ) : ?>
 						<input type="hidden" name="variation_name" id="variation-name" value="">
 						<input type="hidden" name="variation_price" id="variation-price" value="">
 					<?php else : ?>
@@ -304,11 +304,12 @@ $allowed_html = array(
 					<?php endif; ?>
 					<button type="submit" class="w-full bg-dark-blue border border-solid border-transparent rounded-md py-4 px-8 flex items-center justify-center gap-2 text-base font-medium text-white hover:bg-hover-blue focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-dark-blue" id="add-to-cart-button">
 						<?php
-						if ( $price_mode === 'single' ) {
+						if ( 'single' === $price_mode ) {
 							// Use sale price if it exists and is lower than regular price
 							$display_price = ( $sale_price && $sale_price < $single_price ) ? $sale_price : $single_price;
 							echo wp_kses(
 								sprintf(
+									// translators: %s: Price
 									esc_html__( 'Purchase for %s', 'digicommerce' ),
 									$product->format_price(
 										$display_price,
@@ -325,38 +326,52 @@ $allowed_html = array(
 				</form>
 				
 				<?php
-				$categories = get_the_terms(get_the_ID(), 'digi_product_cat');
-				if ($categories && !is_wp_error($categories)) : ?>
+				$categories = get_the_terms( get_the_ID(), 'digi_product_cat' );
+				if ( $categories && ! is_wp_error( $categories ) ) :
+					?>
 					<div class="product-categories flex items-center justify-between gap-2 mt-4">
-						<p class="text-medium font-bold text-dark-blue m-0"><?php esc_html_e('Category:', 'digicommerce'); ?></p>
+						<p class="text-medium font-bold text-dark-blue m-0"><?php esc_html_e( 'Category:', 'digicommerce' ); ?></p>
 						<div class="flex flex-wrap">
-							<?php 
-							echo implode(', ', array_map(function($category) {
-								return sprintf(
-									'<a href="%s" class="hover:text-blue-600">%s</a>',
-									esc_url(get_term_link($category)),
-									esc_html($category->name)
-								);
-							}, $categories));
+							<?php
+							echo implode(
+								', ',
+								array_map( // phpcs:ignore
+									function ( $category ) {
+										return sprintf(
+											'<a href="%s" class="hover:text-blue-600">%s</a>',
+											esc_url( get_term_link( $category ) ),
+											esc_html( $category->name )
+										);
+									},
+									$categories
+								)
+							);
 							?>
 						</div>
 					</div>
 				<?php endif; ?>
 
 				<?php
-				$tags = get_the_terms(get_the_ID(), 'digi_product_tag');
-				if ($tags && !is_wp_error($tags)) : ?>
+				$tags = get_the_terms( get_the_ID(), 'digi_product_tag' );
+				if ( $tags && ! is_wp_error( $tags ) ) :
+					?>
 					<div class="product-tags flex items-center justify-between gap-2 mt-4">
-						<p class="text-medium font-bold text-dark-blue m-0"><?php esc_html_e('Tags:', 'digicommerce'); ?></p>
+						<p class="text-medium font-bold text-dark-blue m-0"><?php esc_html_e( 'Tags:', 'digicommerce' ); ?></p>
 						<div class="flex flex-wrap">
-							<?php 
-							echo implode(', ', array_map(function($tag) {
-								return sprintf(
-									'<a href="%s" class="hover:text-blue-600">%s</a>',
-									esc_url(get_term_link($tag)),
-									esc_html($tag->name)
-								);
-							}, $tags));
+							<?php
+							echo implode(
+								', ',
+								array_map( // phpcs:ignore
+									function ( $tag ) {
+										return sprintf(
+											'<a href="%s" class="hover:text-blue-600">%s</a>',
+											esc_url( get_term_link( $tag ) ),
+											esc_html( $tag->name )
+										);
+									},
+									$tags
+								)
+							);
 							?>
 						</div>
 					</div>

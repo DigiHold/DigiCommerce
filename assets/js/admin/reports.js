@@ -169,13 +169,13 @@
 				<table class="digicommerce-table min-w-full">
 					<thead class="bg-light-blue-bg">
 						<tr>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.product}
 							</th>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.orders_header}
 							</th>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.revenue_header}
 							</th>
 						</tr>
@@ -188,10 +188,10 @@
 					<td class="px-6 py-4" data-label="${digicommerceReports.i18n.product}">
 						<span class="text-sm text-gray-900">${product.name}</span>
 					</td>
-					<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.orders_header}">
+					<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.orders_header}">
 						<span class="text-sm text-gray-900">${product.orders}</span>
 					</td>
-					<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.revenue_header}">
+					<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.revenue_header}">
 						<span class="text-sm text-gray-900">${formatCurrency(product.revenue)}</span>
 					</td>
 				</tr>
@@ -213,19 +213,19 @@
 				<table class="digicommerce-table min-w-full">
 					<thead class="bg-light-blue-bg">
 						<tr>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.country}
 							</th>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.vat_rate}
 							</th>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.orders_header}
 							</th>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.vat_amount}
 							</th>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.total_amount}
 							</th>
 						</tr>
@@ -238,16 +238,16 @@
 					<td class="px-6 py-4" data-label="${digicommerceReports.i18n.country}">
 						<span class="text-sm text-gray-900">${digicommerceReports.countries[tax.country]?.name || tax.country}</span>
 					</td>
-					<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.vat_rate}">
+					<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.vat_rate}">
 						<span class="text-sm text-gray-900">${digicommerceReports.countries[tax.country] ? (digicommerceReports.countries[tax.country].tax_rate * 100).toFixed(1) : tax.vat_rate}%</span>
 					</td>
-					<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.orders_header}">
+					<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.orders_header}">
 						<span class="text-sm text-gray-900">${tax.orders}</span>
 					</td>
-					<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.vat_amount}">
+					<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.vat_amount}">
 						<span class="text-sm text-gray-900">${formatCurrency(tax.vat_amount)}</span>
 					</td>
-					<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.total_amount}">
+					<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.total_amount}">
 						<span class="text-sm text-gray-900">${formatCurrency(tax.total_amount)}</span>
 					</td>
 				</tr>
@@ -282,16 +282,16 @@
 				<table class="digicommerce-table min-w-full">
 					<thead class="bg-light-blue-bg">
 						<tr>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.customer}
 							</th>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.orders_header}
 							</th>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.total_spent}
 							</th>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.last_order}
 							</th>
 						</tr>
@@ -304,13 +304,13 @@
 					<td class="px-6 py-4" data-label="${digicommerceReports.i18n.customer}">
 						<span class="text-sm text-gray-900">${customer.name}</span>
 					</td>
-					<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.orders_header}">
+					<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.orders_header}">
 						<span class="text-sm text-gray-900">${customer.orders}</span>
 					</td>
-					<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.total_spent}">
+					<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.total_spent}">
 						<span class="text-sm text-gray-900">${formatCurrency(customer.total_spent)}</span>
 					</td>
-					<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.last_order}">
+					<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.last_order}">
 						<span class="text-sm text-gray-900">${new Date(customer.last_order).toLocaleDateString()}</span>
 					</td>
 				</tr>
@@ -332,13 +332,13 @@
 				<table class="digicommerce-table min-w-full">
 					<thead class="bg-light-blue-bg">
 						<tr>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.coupon_code}
 							</th>
-							<th class="px-6 py-3 text-right text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-right rtl:text-left text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.usage_count}
 							</th>
-							<th class="px-6 py-3 text-right text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-right rtl:text-left text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.total_discount}
 							</th>
 						</tr>
@@ -352,10 +352,10 @@
 						<td class="px-6 py-4" data-label="${digicommerceReports.i18n.coupon_code}">
 							<span class="text-sm text-gray-900">${coupon.code}</span>
 						</td>
-						<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.usage_count}">
+						<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.usage_count}">
 							<span class="text-sm text-gray-900">${coupon.usage_count}</span>
 						</td>
-						<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.total_discount}">
+						<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.total_discount}">
 							<span class="text-sm text-gray-900">${formatCurrency(coupon.total_discount)}</span>
 						</td>
 					</tr>
@@ -409,13 +409,13 @@
 				<table class="digicommerce-table min-w-full">
 					<thead class="bg-light-blue-bg">
 						<tr>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.subscription_status}
 							</th>
-							<th class="px-6 py-3 text-right text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-right rtl:text-left text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.subscription_count}
 							</th>
-							<th class="px-6 py-3 text-right text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-right rtl:text-left text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.revenue}
 							</th>
 						</tr>
@@ -429,10 +429,10 @@
 						<td class="px-6 py-4" data-label="${digicommerceReports.i18n.subscription_status}">
 							<span class="text-sm text-gray-900">${status.status}</span>
 						</td>
-						<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.subscription_count}">
+						<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.subscription_count}">
 							<span class="text-sm text-gray-900">${status.count}</span>
 						</td>
-						<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.revenue}">
+						<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.revenue}">
 							<span class="text-sm text-gray-900">${formatCurrency(status.revenue)}</span>
 						</td>
 					</tr>
@@ -480,19 +480,19 @@
 				<table class="digicommerce-table min-w-full">
 					<thead class="bg-light-blue-bg">
 						<tr>
-							<th class="px-6 py-3 text-left text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-left rtl:text-right text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.customer_email}
 							</th>
-							<th class="px-6 py-3 text-right text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-right rtl:text-left text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.order_id}
 							</th>
-							<th class="px-6 py-3 text-right text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-right rtl:text-left text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.recovered_date}
 							</th>
-							<th class="px-6 py-3 text-right text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-right rtl:text-left text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.revenue}
 							</th>
-							<th class="px-6 py-3 text-right text-xs font-bold text-dark-blue">
+							<th class="px-6 py-3 ltr:text-right rtl:text-left text-xs font-bold text-dark-blue">
 								${digicommerceReports.i18n.coupon_used}
 							</th>
 						</tr>
@@ -506,16 +506,16 @@
 						<td class="px-6 py-4" data-label="${digicommerceReports.i18n.customer_email}">
 							<span class="text-sm text-gray-900">${cart.email}</span>
 						</td>
-						<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.order_id}">
+						<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.order_id}">
 							<span class="text-sm text-gray-900">#${cart.order_id}</span>
 						</td>
-						<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.recovered_date}">
+						<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.recovered_date}">
 							<span class="text-sm text-gray-900">${new Date(cart.recovered_at).toLocaleDateString()}</span>
 						</td>
-						<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.revenue}">
+						<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.revenue}">
 							<span class="text-sm text-gray-900">${formatCurrency(cart.total)}</span>
 						</td>
-						<td class="px-6 py-4 text-right" data-label="${digicommerceReports.i18n.coupon_used}">
+						<td class="px-6 py-4 ltr:text-right rtl:text-left" data-label="${digicommerceReports.i18n.coupon_used}">
 							<span class="text-sm text-gray-900">${cart.coupon_used || "-"}</span>
 						</td>
 					</tr>

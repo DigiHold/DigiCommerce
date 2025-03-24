@@ -5,6 +5,8 @@
 class DigiCommerce_Settings {
 	/**
 	 * Instance of the class
+	 *
+	 * @var DigiCommerce_Settings
 	 */
 	private static $instance = null;
 
@@ -28,6 +30,7 @@ class DigiCommerce_Settings {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_filter( 'admin_footer_text', array( $this, 'footer_text' ), 99 );
 		add_filter( 'update_footer', array( $this, 'update_footer' ), 99 );
+		add_filter( 'language_attributes', array( $this, 'attribute_to_html' ) );
 	}
 
 	/**
@@ -332,6 +335,8 @@ class DigiCommerce_Settings {
 
 	/**
 	 * Sanitization method for social medias
+	 *
+	 * @param array $links Social links.
 	 */
 	public function sanitize_social_links( $links ) {
 		if ( ! is_array( $links ) ) {
@@ -362,14 +367,14 @@ class DigiCommerce_Settings {
 
 		// Define tabs
 		$tabs = array(
-			'general'    => esc_html__( 'General', 'digicommerce' ),
-			'product'    => esc_html__( 'Product', 'digicommerce' ),
-			'pages'      => esc_html__( 'Pages', 'digicommerce' ),
-			'recaptcha'  => esc_html__( 'reCAPTCHA', 'digicommerce' ),
-			'payment'    => esc_html__( 'Payment', 'digicommerce' ),
-			'checkout'   => esc_html__( 'Checkout', 'digicommerce' ),
-			'emails'     => esc_html__( 'Emails', 'digicommerce' ),
-			'styling'    => esc_html__( 'Styling', 'digicommerce' ),
+			'general'   => esc_html__( 'General', 'digicommerce' ),
+			'product'   => esc_html__( 'Product', 'digicommerce' ),
+			'pages'     => esc_html__( 'Pages', 'digicommerce' ),
+			'recaptcha' => esc_html__( 'reCAPTCHA', 'digicommerce' ),
+			'payment'   => esc_html__( 'Payment', 'digicommerce' ),
+			'checkout'  => esc_html__( 'Checkout', 'digicommerce' ),
+			'emails'    => esc_html__( 'Emails', 'digicommerce' ),
+			'styling'   => esc_html__( 'Styling', 'digicommerce' ),
 		);
 
 		// Add addon tab only if no pro verison
@@ -380,7 +385,7 @@ class DigiCommerce_Settings {
 		$tabs = apply_filters( 'digicommerce_settings_tabs', $tabs );
 
 		// Show settings saved notice
-		if ( isset( $_GET['settings-updated'] ) && $_GET['settings-updated'] === 'true' ) {
+		if ( isset( $_GET['settings-updated'] ) && 'true' === $_GET['settings-updated'] ) {
 			add_settings_error(
 				'digicommerce_messages',
 				'digicommerce_message',
@@ -396,20 +401,20 @@ class DigiCommerce_Settings {
 			$help['pro'] = array(
 				'title' => esc_html__( 'Upgrade to pro', 'digicommerce' ),
 				'svg'   => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="15" height="15" fill="#fff" class="default-transition"><path d="m2.8373 20.9773c-.6083-3.954-1.2166-7.9079-1.8249-11.8619-.1349-.8765.8624-1.4743 1.5718-.9422 1.8952 1.4214 3.7903 2.8427 5.6855 4.2641.624.468 1.513.3157 1.9456-.3333l4.7333-7.1c.5002-.7503 1.6026-.7503 2.1028 0l4.7333 7.1c.4326.649 1.3216.8012 1.9456.3333 1.8952-1.4214 3.7903-2.8427 5.6855-4.2641.7094-.5321 1.7067.0657 1.5719.9422-.6083 3.954-1.2166 7.9079-1.8249 11.8619z"></path><path d="m27.7902 27.5586h-23.5804c-.758 0-1.3725-.6145-1.3725-1.3725v-3.015h26.3255v3.015c-.0001.758-.6146 1.3725-1.3726 1.3725z"></path></svg>',
-				'url'   => 'https://digicommerce.me/pricing'
+				'url'   => 'https://digicommerce.me/pricing',
 			);
 		}
 
 		$help['support'] = array(
 			'title' => esc_html__( 'Support', 'digicommerce' ),
 			'svg'   => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="15" height="15" fill="#fff" class="default-transition"><path d="M256 448c141.4 0 256-93.1 256-208S397.4 32 256 32S0 125.1 0 240c0 45.1 17.7 86.8 47.7 120.9c-1.9 24.5-11.4 46.3-21.4 62.9c-5.5 9.2-11.1 16.6-15.2 21.6c-2.1 2.5-3.7 4.4-4.9 5.7c-.6 .6-1 1.1-1.3 1.4l-.3 .3c0 0 0 0 0 0c0 0 0 0 0 0s0 0 0 0s0 0 0 0c-4.6 4.6-5.9 11.4-3.4 17.4c2.5 6 8.3 9.9 14.8 9.9c28.7 0 57.6-8.9 81.6-19.3c22.9-10 42.4-21.9 54.3-30.6c31.8 11.5 67 17.9 104.1 17.9zM169.8 149.3c7.9-22.3 29.1-37.3 52.8-37.3l58.3 0c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 248.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24l0-13.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1l-58.3 0c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 336a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"/></svg>',
-			'url'   => 'https://digicommerce.me/my-account/'
+			'url'   => 'https://digicommerce.me/my-account/',
 		);
 
 		$help['documentation'] = array(
 			'title' => esc_html__( 'Documentation', 'digicommerce' ),
 			'svg'   => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="15" height="15" fill="#fff" class="default-transition"><path d="M0 32C0 14.3 14.3 0 32 0L96 0c17.7 0 32 14.3 32 32l0 64L0 96 0 32zm0 96l128 0 0 256L0 384 0 128zM0 416l128 0 0 64c0 17.7-14.3 32-32 32l-64 0c-17.7 0-32-14.3-32-32l0-64zM160 32c0-17.7 14.3-32 32-32l64 0c17.7 0 32 14.3 32 32l0 64L160 96l0-64zm0 96l128 0 0 256-128 0 0-256zm0 288l128 0 0 64c0 17.7-14.3 32-32 32l-64 0c-17.7 0-32-14.3-32-32l0-64zm203.6-19.9L320 232.6l0-89.9 100.4-26.9 66 247.4L363.6 396.1zM412.2 85L320 109.6 320 11l36.9-9.9c16.9-4.6 34.4 5.5 38.9 22.6L412.2 85zM371.8 427l122.8-32.9 16.3 61.1c4.5 17-5.5 34.5-22.5 39.1l-61.4 16.5c-16.9 4.6-34.4-5.5-38.9-22.6L371.8 427z"/></svg>',
-			'url'   => 'https://docs.digicommerce.me/'
+			'url'   => 'https://docs.digicommerce.me/',
 		);
 
 		// Define allowed SVG tags.
@@ -432,7 +437,7 @@ class DigiCommerce_Settings {
 		$utm_params = '?utm_source=WordPress&utm_medium=header&utm_campaign=digi';
 		?>
 		<div class="digicommerce">
-			<div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-dark-blue box-border -ml-5 px-8 py-6">
+			<div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-dark-blue box-border ltr:-ml-5 rtl:-mr-5 px-8 py-6">
 				<div class="digicommerce-logo">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2148.09 350" width="250" height="40.73">
 						<g>
@@ -462,9 +467,9 @@ class DigiCommerce_Settings {
 					foreach ( $help as $id => $array ) :
 						$url = $array['url'];
 						// Add UTM parameters appropriately
-						if ($id === 'support') {
+						if ( 'support' === $id ) {
 							// For support URL, check if there are existing parameters
-							$url .= (strpos($url, '?') !== false) ? '&' : '?';
+							$url .= ( strpos( $url, '?' ) !== false ) ? '&' : '?';
 							$url .= 'section=support';
 							$url .= '&utm_source=WordPress&utm_medium=header&utm_campaign=digi';
 						} else {
@@ -472,7 +477,7 @@ class DigiCommerce_Settings {
 							$url .= $utm_params;
 						}
 						?>
-						<a class="flex items-center gap-2 text-white hover:text-white/80 default-transition" href="<?php echo esc_url($url); ?>" target="_blank" rel="noopener noreferrer">
+						<a class="flex items-center gap-2 text-white hover:text-white/80 default-transition" href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener noreferrer">
 							<div class="digicommerce-help-icon flex items-center justify-center w-8 h-8 bg-white/50 rounded-full p-2 default-transition">
 								<?php echo wp_kses( $array['svg'], $allowed_html ); ?>
 							</div>
@@ -488,12 +493,13 @@ class DigiCommerce_Settings {
 			<?php
 			if ( class_exists( 'DigiCommerce_Pro' ) && ! DigiCommerce_Pro_Updates::instance()->has_pro_access() ) {
 				?>
-				<div class="digicommerce-notice notice-warning flex items-center gap-4 min-h-[48px] bg-[#fff7ee] text-[#08053a] shadow-[0px_1px_2px_rgba(16,24,40,0.1)] m-5 ml-0 p-4 rounded-md border border-solid border-[rgba(247,144,9,0.32)]">
+				<div class="digicommerce-notice notice-warning flex items-center gap-4 min-h-[48px] bg-[#fff7ee] text-[#08053a] shadow-[0px_1px_2px_rgba(16,24,40,0.1)] m-5 ltr:ml-0 rtl:mr-0 p-4 rounded-md border border-solid border-[rgba(247,144,9,0.32)]">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="16" height="16" fill="#f56e28"><path d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .2 40.1S486.3 480 472 480L40 480c-14.3 0-27.6-7.7-34.7-20.1s-7-27.8 .2-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/></svg>
 					<p class="m-0">
 						<?php
 						printf(
-							esc_html__( 'Activate your license to enable access to updates, support & PRO features. %1$sActivate now%2$s%3$s', 'digicommerce-pro' ),
+							// Translators: %1$s and %2$s are the opening and closing <a> tags, %3$s is the closing </a> tag.
+							esc_html__( 'Activate your license to enable access to updates, support & PRO features. %1$sActivate now%2$s%3$s', 'digicommerce' ),
 							'<a href="' . esc_url( admin_url( 'admin.php?page=digicommerce-updates' ) ) . '" class="inline-flex items-center gap-1 underline default-transition">',
 							'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>',
 							'</a>'
@@ -507,7 +513,7 @@ class DigiCommerce_Settings {
 
 			<?php settings_errors( 'digicommerce_messages' ); ?>
 
-			<div class="flex flex-col 2xl:grid 2xl:grid-cols-12 m-5 ml-0">
+			<div class="flex flex-col 2xl:grid 2xl:grid-cols-12 m-5 ltr:ml-0 rtl:mr-0">
 				<div class="digicommerce-tabs 2xl:col-span-2">
 					<?php foreach ( $tabs as $tab_id => $tab_label ) : ?>
 						<a href="
@@ -564,25 +570,27 @@ class DigiCommerce_Settings {
 
 	/**
 	 * Render tab content
+	 *
+	 * @param string $tab_id Tab ID.
 	 */
 	private function render_tab_content( $tab_id ) {
-		if ( $tab_id === 'general' ) {
+		if ( 'general' === $tab_id ) {
 			$this->render_general_tab();
-		} elseif ( $tab_id === 'product' ) {
+		} elseif ( 'product' === $tab_id ) {
 			$this->render_product_tab();
-		} elseif ( $tab_id === 'pages' ) {
+		} elseif ( 'pages' === $tab_id ) {
 			$this->render_pages_tab();
-		} elseif ( $tab_id === 'recaptcha' ) {
+		} elseif ( 'recaptcha' === $tab_id ) {
 			$this->render_recaptcha_tab();
-		} elseif ( $tab_id === 'payment' ) {
+		} elseif ( 'payment' === $tab_id ) {
 			$this->render_payment_tab();
-		} elseif ( $tab_id === 'checkout' ) {
+		} elseif ( 'checkout' === $tab_id ) {
 			$this->render_checkout_tab();
-		} elseif ( $tab_id === 'emails' ) {
+		} elseif ( 'emails' === $tab_id ) {
 			$this->render_emails_tab();
-		} elseif ( $tab_id === 'styling' ) {
+		} elseif ( 'styling' === $tab_id ) {
 			$this->render_styling_tab();
-		} elseif ( $tab_id === 'addons' ) {
+		} elseif ( 'addons' === $tab_id ) {
 			$this->render_addons_tab();
 		} else {
 			do_action( 'digicommerce_render_tab_content', $tab_id );
@@ -758,7 +766,7 @@ class DigiCommerce_Settings {
 					array(
 						'name'             => 'redirect_after_logout',
 						'show_option_none' => esc_html__( 'My Account page (default)', 'digicommerce' ),
-						'selected'         => $options['redirect_after_logout'],
+						'selected'         => $options['redirect_after_logout'], // phpcs:ignore
 					)
 				);
 				?>
@@ -973,18 +981,26 @@ class DigiCommerce_Settings {
 					<p>
 						<label class="cursor-pointer" for="<?php echo esc_attr( $page_id ); ?>">
 							<?php echo esc_html( $page_data['label'] ); ?>
-							<span class="description"><?php printf( esc_html__( 'containing the %s shortcode', 'digicommerce' ), '<strong>' . esc_html( '[digicommerce_' . str_replace( '_page_id', '', $page_id ) . ']' ) . '</strong>' ); ?></span>
+							<span class="description">
+								<?php
+								printf(
+									// translators: %s: shortcode.
+									esc_html__( 'containing the %s shortcode', 'digicommerce' ),
+									'<strong>' . esc_html( '[digicommerce_' . str_replace( '_page_id', '', $page_id ) . ']' ) . '</strong>'
+								);
+								?>
+							</span>
 						</label>
 						<div class="flex flex-col md:flex-row md:items-center gap-4">
 							<?php
 							wp_dropdown_pages(
 								array(
-									'name'              => $page_id,
-									'id'                => $page_id,
+									'name'              => $page_id, // phpcs:ignore
+									'id'                => $page_id, // phpcs:ignore
 									'class'             => 'digicommerce__search',
 									'show_option_none'  => esc_html__( 'Select a page', 'digicommerce' ),
 									'option_none_value' => '',
-									'selected'          => $options[ $page_id ],
+									'selected'          => $options[ $page_id ], // phpcs:ignore
 								)
 							);
 
@@ -1080,7 +1096,7 @@ class DigiCommerce_Settings {
 				</div>
 
 				<!-- Test Mode Keys -->
-				<div class="test-mode-keys hidden gap-4 flex-col 3xl:flex-row" <?php echo $options['stripe_mode'] === 'live' ? '' : 'style="display:flex;"'; ?>>
+				<div class="test-mode-keys hidden gap-4 flex-col 3xl:flex-row" <?php echo 'live' === $options['stripe_mode'] ? '' : 'style="display:flex;"'; ?>>
 					<div class="flex flex-col gap-2 flex-1">
 						<label class="cursor-pointer" for="stripe_test_publishable_key"><?php esc_html_e( 'Test Publishable Key', 'digicommerce' ); ?></label>
 						<input type="text" id="stripe_test_publishable_key" name="stripe_test_publishable_key" value="<?php echo esc_attr( $options['stripe_test_publishable_key'] ); ?>" class="regular-text">
@@ -1093,7 +1109,7 @@ class DigiCommerce_Settings {
 				</div>
 
 				<!-- Live Mode Keys -->
-				<div class="live-mode-keys hidden gap-4 flex-col 3xl:flex-row" <?php echo $options['stripe_mode'] === 'test' ? '' : 'style="display:flex;"'; ?>>
+				<div class="live-mode-keys hidden gap-4 flex-col 3xl:flex-row" <?php echo 'test' === $options['stripe_mode'] ? '' : 'style="display:flex;"'; ?>>
 					<div class="flex flex-col gap-2 flex-1">
 						<label class="cursor-pointer" for="stripe_live_publishable_key"><?php esc_html_e( 'Live Publishable Key', 'digicommerce' ); ?></label>
 						<input type="text" id="stripe_live_publishable_key" name="stripe_live_publishable_key" value="<?php echo esc_attr( $options['stripe_live_publishable_key'] ); ?>" class="regular-text">
@@ -1637,77 +1653,77 @@ class DigiCommerce_Settings {
 					<!-- Gold -->
 					<div class="flex flex-col gap-2">
 						<label class="cursor-pointer" for="color_gold"><?php esc_html_e( 'Gold', 'digicommerce' ); ?></label>
-						<input type="color" id="color_gold" name="color_gold" value="<?php echo esc_attr( $options['color_gold'] ? : '#CCB161' ); ?>" class="digi-color">
+						<input type="color" id="color_gold" name="color_gold" value="<?php echo esc_attr( isset( $options['color_gold'] ) && $options['color_gold'] ? $options['color_gold'] : '#CCB161' ); ?>" class="digi-color">
 						<small class="text-gray-500"><?php esc_html_e( 'Default: #CCB161', 'digicommerce' ); ?></small>
 					</div>
 
 					<!-- Yellow -->
 					<div class="flex flex-col gap-2">
 						<label class="cursor-pointer" for="color_yellow"><?php esc_html_e( 'Yellow', 'digicommerce' ); ?></label>
-						<input type="color" id="color_yellow" name="color_yellow" value="<?php echo esc_attr( $options['color_yellow'] ? : '#FFE599' ); ?>" class="digi-color">
+						<input type="color" id="color_yellow" name="color_yellow" value="<?php echo esc_attr( isset( $options['color_yellow'] ) && $options['color_yellow'] ? $options['color_yellow'] : '#FFE599' ); ?>" class="digi-color">
 						<small class="text-gray-500"><?php esc_html_e( 'Default: #FFE599', 'digicommerce' ); ?></small>
 					</div>
 
 					<!-- Border -->
 					<div class="flex flex-col gap-2">
 						<label class="cursor-pointer" for="color_border"><?php esc_html_e( 'Border', 'digicommerce' ); ?></label>
-						<input type="color" id="color_border" name="color_border" value="<?php echo esc_attr( $options['color_border'] ? : '#CACED9' ); ?>" class="digi-color">
+						<input type="color" id="color_border" name="color_border" value="<?php echo esc_attr( isset( $options['color_border'] ) && $options['color_border'] ? $options['color_border'] : '#CACED9' ); ?>" class="digi-color">
 						<small class="text-gray-500"><?php esc_html_e( 'Default: #CACED9', 'digicommerce' ); ?></small>
 					</div>
 
 					<!-- Light Blue -->
 					<div class="flex flex-col gap-2">
 						<label class="cursor-pointer" for="color_light_blue"><?php esc_html_e( 'Light Blue', 'digicommerce' ); ?></label>
-						<input type="color" id="color_light_blue" name="color_light_blue" value="<?php echo esc_attr( $options['color_light_blue'] ? : '#E1E4ED' ); ?>" class="digi-color">
+						<input type="color" id="color_light_blue" name="color_light_blue" value="<?php echo esc_attr( isset( $options['color_light_blue'] ) && $options['color_light_blue'] ? $options['color_light_blue'] : '#E1E4ED' ); ?>" class="digi-color">
 						<small class="text-gray-500"><?php esc_html_e( 'Default: #E1E4ED', 'digicommerce' ); ?></small>
 					</div>
 
 					<!-- Light Blue Background -->
 					<div class="flex flex-col gap-2">
 						<label class="cursor-pointer" for="color_light_blue_bg"><?php esc_html_e( 'Light Blue Background', 'digicommerce' ); ?></label>
-						<input type="color" id="color_light_blue_bg" name="color_light_blue_bg" value="<?php echo esc_attr( $options['color_light_blue_bg'] ? : '#F6F7F9' ); ?>" class="digi-color">
+						<input type="color" id="color_light_blue_bg" name="color_light_blue_bg" value="<?php echo esc_attr( isset( $options['color_light_blue_bg'] ) && $options['color_light_blue_bg'] ? $options['color_light_blue_bg'] : '#F6F7F9' ); ?>" class="digi-color">
 						<small class="text-gray-500"><?php esc_html_e( 'Default: #F6F7F9', 'digicommerce' ); ?></small>
 					</div>
 
 					<!-- Dark Blue -->
 					<div class="flex flex-col gap-2">
 						<label class="cursor-pointer" for="color_dark_blue"><?php esc_html_e( 'Dark Blue', 'digicommerce' ); ?></label>
-						<input type="color" id="color_dark_blue" name="color_dark_blue" value="<?php echo esc_attr( $options['color_dark_blue'] ? : '#09053A' ); ?>" class="digi-color">
+						<input type="color" id="color_dark_blue" name="color_dark_blue" value="<?php echo esc_attr( isset( $options['color_dark_blue'] ) && $options['color_dark_blue'] ? $options['color_dark_blue'] : '#09053A' ); ?>" class="digi-color">
 						<small class="text-gray-500"><?php esc_html_e( 'Default: #09053A', 'digicommerce' ); ?></small>
 					</div>
 
 					<!-- Dark Blue 10 -->
 					<div class="flex flex-col gap-2">
 						<label class="cursor-pointer" for="color_dark_blue_10"><?php esc_html_e( 'Dark Blue 10', 'digicommerce' ); ?></label>
-						<input type="color" id="color_dark_blue_10" name="color_dark_blue_10" value="<?php echo esc_attr( $options['color_dark_blue_10'] ? : '#E6E5EB' ); ?>" class="digi-color">
+						<input type="color" id="color_dark_blue_10" name="color_dark_blue_10" value="<?php echo esc_attr( isset( $options['color_dark_blue_10'] ) && $options['color_dark_blue_10'] ? $options['color_dark_blue_10'] : '#E6E5EB' ); ?>" class="digi-color">
 						<small class="text-gray-500"><?php esc_html_e( 'Default: #E6E5EB', 'digicommerce' ); ?></small>
 					</div>
 
 					<!-- Dark Blue 20 -->
 					<div class="flex flex-col gap-2">
 						<label class="cursor-pointer" for="color_dark_blue_20"><?php esc_html_e( 'Dark Blue 20', 'digicommerce' ); ?></label>
-						<input type="color" id="color_dark_blue_20" name="color_dark_blue_20" value="<?php echo esc_attr( $options['color_dark_blue_20'] ? : '#BAB8C8' ); ?>" class="digi-color">
+						<input type="color" id="color_dark_blue_20" name="color_dark_blue_20" value="<?php echo esc_attr( isset( $options['color_dark_blue_20'] ) && $options['color_dark_blue_20'] ? $options['color_dark_blue_20'] : '#BAB8C8' ); ?>" class="digi-color">
 						<small class="text-gray-500"><?php esc_html_e( 'Default: #BAB8C8', 'digicommerce' ); ?></small>
 					</div>
 
 					<!-- Hover Blue -->
 					<div class="flex flex-col gap-2">
 						<label class="cursor-pointer" for="color_hover_blue"><?php esc_html_e( 'Hover Blue', 'digicommerce' ); ?></label>
-						<input type="color" id="color_hover_blue" name="color_hover_blue" value="<?php echo esc_attr( $options['color_hover_blue'] ? : '#362F85' ); ?>" class="digi-color">
+						<input type="color" id="color_hover_blue" name="color_hover_blue" value="<?php echo esc_attr( isset( $options['color_hover_blue'] ) && $options['color_hover_blue'] ? $options['color_hover_blue'] : '#362F85' ); ?>" class="digi-color">
 						<small class="text-gray-500"><?php esc_html_e( 'Default: #362F85', 'digicommerce' ); ?></small>
 					</div>
 
 					<!-- Grey -->
 					<div class="flex flex-col gap-2">
 						<label class="cursor-pointer" for="color_grey"><?php esc_html_e( 'Grey', 'digicommerce' ); ?></label>
-						<input type="color" id="color_grey" name="color_grey" value="<?php echo esc_attr( $options['color_grey'] ? : '#646071' ); ?>" class="digi-color">
+						<input type="color" id="color_grey" name="color_grey" value="<?php echo esc_attr( isset( $options['color_grey'] ) && $options['color_grey'] ? $options['color_grey'] : '#646071' ); ?>" class="digi-color">
 						<small class="text-gray-500"><?php esc_html_e( 'Default: #646071', 'digicommerce' ); ?></small>
 					</div>
 
 					<!-- Dark Grey -->
 					<div class="flex flex-col gap-2">
 						<label class="cursor-pointer" for="color_dark_grey"><?php esc_html_e( 'Dark Grey', 'digicommerce' ); ?></label>
-						<input type="color" id="color_dark_grey" name="color_dark_grey" value="<?php echo esc_attr( $options['color_dark_grey'] ? : '#5B5766' ); ?>" class="digi-color">
+						<input type="color" id="color_dark_grey" name="color_dark_grey" value="<?php echo esc_attr( isset( $options['color_dark_grey'] ) && $options['color_dark_grey'] ? $options['color_dark_grey'] : '#5B5766' ); ?>" class="digi-color">
 						<small class="text-gray-500"><?php esc_html_e( 'Default: #5B5766', 'digicommerce' ); ?></small>
 					</div>
 				</div>
@@ -1961,6 +1977,8 @@ class DigiCommerce_Settings {
 
 	/**
 	 * Add admin scripts
+	 *
+	 * @param string $hook The current admin page.
 	 */
 	public function enqueue_scripts( $hook ) {
 		if ( 'toplevel_page_digicommerce-settings' !== $hook ) {
@@ -2004,19 +2022,19 @@ class DigiCommerce_Settings {
 					'remove'      => esc_html__( 'Remove', 'digicommerce' ),
 					'addSocial'   => esc_html__( 'Add Social', 'digicommerce' ),
 				),
-				'colors' => array(
-					'color_gold' => array('default' => '#CCB161'),
-					'color_yellow' => array('default' => '#FFE599'),
-					'color_border' => array('default' => '#CACED9'),
-					'color_light_blue' => array('default' => '#E1E4ED'),
-					'color_light_blue_bg' => array('default' => '#F6F7F9'),
-					'color_dark_blue' => array('default' => '#09053A'),
-					'color_dark_blue_10' => array('default' => '#E6E5EB'),
-					'color_dark_blue_20' => array('default' => '#BAB8C8'),
-					'color_hover_blue' => array('default' => '#362F85'),
-					'color_grey' => array('default' => '#646071'),
-					'color_dark_grey' => array('default' => '#5B5766')
-				)
+				'colors'        => array(
+					'color_gold'          => array( 'default' => '#CCB161' ),
+					'color_yellow'        => array( 'default' => '#FFE599' ),
+					'color_border'        => array( 'default' => '#CACED9' ),
+					'color_light_blue'    => array( 'default' => '#E1E4ED' ),
+					'color_light_blue_bg' => array( 'default' => '#F6F7F9' ),
+					'color_dark_blue'     => array( 'default' => '#09053A' ),
+					'color_dark_blue_10'  => array( 'default' => '#E6E5EB' ),
+					'color_dark_blue_20'  => array( 'default' => '#BAB8C8' ),
+					'color_hover_blue'    => array( 'default' => '#362F85' ),
+					'color_grey'          => array( 'default' => '#646071' ),
+					'color_dark_grey'     => array( 'default' => '#5B5766' ),
+				),
 			)
 		);
 
@@ -2026,6 +2044,8 @@ class DigiCommerce_Settings {
 
 	/**
 	 * Customize admin footer
+	 *
+	 * @param string $text The current footer text.
 	 */
 	public function footer_text( $text ) {
 		$screen = get_current_screen();
@@ -2049,6 +2069,8 @@ class DigiCommerce_Settings {
 
 	/**
 	 * Customize admin footer version
+	 *
+	 * @param string $version The current footer version.
 	 */
 	public function update_footer( $version ) {
 		$screen = get_current_screen();
@@ -2060,6 +2082,20 @@ class DigiCommerce_Settings {
 		}
 
 		return $version;
+	}
+
+	/**
+	 * Add dir attr to HTML for LTR direction for compatibility with Tailwind
+	 *
+	 * @param string $lang_attr The current lang attribute.
+	 */
+	public function attribute_to_html( $lang_attr ) {
+		if ( ! is_rtl() ) {
+			// Only add dir="ltr" when the site is NOT in RTL mode
+			return $lang_attr . ' dir="ltr"';
+		}
+
+		return $lang_attr;
 	}
 }
 DigiCommerce_Settings::instance();

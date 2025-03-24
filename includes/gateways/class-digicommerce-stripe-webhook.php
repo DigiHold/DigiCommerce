@@ -3,8 +3,18 @@
  * Stripe Webhook Handler class
  */
 class DigiCommerce_Stripe_Webhook {
+	/**
+	 * The single instance of the class
+	 *
+	 * @var DigiCommerce_Stripe_Webhook
+	 */
 	private static $instance = null;
 
+	/**
+	 * Instance
+	 *
+	 * @return DigiCommerce_Stripe_Webhook instance
+	 */
 	public static function instance() {
 		if ( is_null( self::$instance ) ) {
 			self::$instance = new self();
@@ -12,6 +22,9 @@ class DigiCommerce_Stripe_Webhook {
 		return self::$instance;
 	}
 
+	/**
+	 * Constructor
+	 */
 	private function __construct() {
 		// Add webhook endpoint
 		add_action( 'rest_api_init', array( $this, 'register_webhook_endpoint' ) );
@@ -25,136 +38,141 @@ class DigiCommerce_Stripe_Webhook {
 			'digicommerce/v2',
 			'/stripe-webhook',
 			array(
-				'methods' => 'POST',
-				'callback' => array($this, 'handle_webhook'),
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'handle_webhook' ),
 				'permission_callback' => '__return_true',
-				'args' => array(
+				'args'                => array(
 					'type' => array(
-						'required' => true,
-						'type' => 'string',
-						'description' => 'Stripe webhook event type',
-						'enum' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'description'       => 'Stripe webhook event type',
+						'enum'              => array(
 							'charge.refunded',
 							'invoice.payment_succeeded',
 							'invoice.payment_failed',
 							'customer.subscription.paused',
-							'customer.subscription.updated'
+							'customer.subscription.updated',
 						),
-						'sanitize_callback' => 'sanitize_text_field'
+						'sanitize_callback' => 'sanitize_text_field',
 					),
 					'data' => array(
-						'required' => true,
-						'type' => 'object',
-						'description' => 'Stripe webhook event data'
-					)
-				)
+						'required'    => true,
+						'type'        => 'object',
+						'description' => 'Stripe webhook event data',
+					),
+				),
 			)
 		);
 	}
 
 	/**
 	 * Handle webhook events
+	 *
+	 * @param WP_REST_Request $request Request object.
 	 */
-	public function handle_webhook($request) {
-		$webhook_secret = DigiCommerce()->get_option('stripe_webhook_secret');
-		
+	public function handle_webhook( $request ) {
+		$webhook_secret = DigiCommerce()->get_option( 'stripe_webhook_secret' );
+
 		try {
-			if (empty($webhook_secret)) {
+			if ( empty( $webhook_secret ) ) {
 				return new WP_Error(
 					'invalid_webhook',
 					'Stripe webhook secret is not configured',
-					array('status' => 401)
+					array( 'status' => 401 ),
 				);
 			}
-	
-			$payload = $request->get_body();
+
+			$payload    = $request->get_body();
 			$sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
-	
-			if (empty($sig_header)) {
+
+			if ( empty( $sig_header ) ) {
 				return new WP_Error(
 					'missing_signature',
 					'Stripe signature header is missing',
-					array('status' => 401)
+					array( 'status' => 401 ),
 				);
 			}
-	
+
 			try {
 				$event = \Stripe\Webhook::constructEvent(
 					$payload,
 					$sig_header,
 					$webhook_secret
 				);
-			} catch (\Stripe\Exception\SignatureVerificationException $e) {
+			} catch ( \Stripe\Exception\SignatureVerificationException $e ) {
 				return new WP_Error(
 					'invalid_signature',
 					'Invalid Stripe signature',
-					array('status' => 401)
+					array( 'status' => 401 ),
 				);
-			} catch (\UnexpectedValueException $e) {
+			} catch ( \UnexpectedValueException $e ) {
 				return new WP_Error(
 					'invalid_payload',
 					'Invalid payload',
-					array('status' => 400)
+					array( 'status' => 400 ),
 				);
 			}
-	
+
 			// Validate event data
-			if (empty($event->type) || empty($event->data->object)) {
+			if ( empty( $event->type ) || empty( $event->data->object ) ) {
 				return new WP_Error(
 					'invalid_event',
 					'Invalid event data',
-					array('status' => 400)
+					array( 'status' => 400 ),
 				);
 			}
-	
+
 			// Handle based on event type
-			switch ($event->type) {
+			switch ( $event->type ) {
 				case 'charge.refunded':
-					$this->handle_refund_event($event);
+					$this->handle_refund_event( $event );
 					break;
-	
+
 				case 'invoice.payment_succeeded':
 				case 'invoice.payment_failed':
-					if (class_exists('DigiCommerce_Pro')) {
-						$this->handle_invoice_event($event);
+					if ( class_exists( 'DigiCommerce_Pro' ) ) {
+						$this->handle_invoice_event( $event );
 					}
 					break;
-	
+
 				case 'customer.subscription.paused':
 				case 'customer.subscription.updated':
-					if (class_exists('DigiCommerce_Pro')) {
-						$this->handle_subscription_update_event($event);
+					if ( class_exists( 'DigiCommerce_Pro' ) ) {
+						$this->handle_subscription_update_event( $event );
 					}
 					break;
-	
+
 				default:
 					return new WP_Error(
 						'unsupported_event',
 						'Unsupported webhook event type',
-						array('status' => 400)
+						array( 'status' => 400 ),
 					);
 			}
-	
+
 			return new WP_REST_Response(
 				array(
-					'status' => 'success',
-					'message' => 'Webhook processed successfully',
-					'event_type' => $event->type
+					'status'     => 'success',
+					'message'    => 'Webhook processed successfully',
+					'event_type' => $event->type,
 				),
 				200
 			);
-	
-		} catch (Exception $e) {
+
+		} catch ( Exception $e ) {
 			return new WP_Error(
 				'webhook_error',
 				$e->getMessage(),
-				array('status' => 500)
+				array( 'status' => 500 ),
 			);
 		}
 	}
 
 	/**
 	 * Handle refund events for both normal and subscription products
+	 *
+	 * @param object $event Stripe webhook event object.
+	 * @throws Exception If an error occurs.
 	 */
 	public function handle_refund_event( $event ) {
 		global $wpdb;
@@ -250,11 +268,11 @@ class DigiCommerce_Stripe_Webhook {
 				);
 
 				// If not found and this is an initial subscription payment
-				if (!$subscription_id && isset($charge->metadata->is_subscription_initial) && $charge->metadata->is_subscription_initial === 'true') {
+				if ( ! $subscription_id && isset( $charge->metadata->is_subscription_initial ) && 'true' === $charge->metadata->is_subscription_initial ) {
 					// Try to get from metadata order ID
-					$metadata_order_id = isset($charge->metadata->order_id) ? intval($charge->metadata->order_id) : null;
-					
-					if ($metadata_order_id) {
+					$metadata_order_id = isset( $charge->metadata->order_id ) ? intval( $charge->metadata->order_id ) : null;
+
+					if ( $metadata_order_id ) {
 						$subscription_id = $wpdb->get_var(
 							$wpdb->prepare(
 								"SELECT si.subscription_id 
@@ -266,7 +284,7 @@ class DigiCommerce_Stripe_Webhook {
 					}
 				}
 
-				if ($subscription_id) {
+				if ( $subscription_id ) {
 					// Handle subscription cancellation
 					// Get Stripe subscription ID
 					$stripe_subscription_id = $wpdb->get_var(
@@ -277,7 +295,7 @@ class DigiCommerce_Stripe_Webhook {
 						)
 					);
 
-					if (!$stripe_subscription_id && isset($charge->metadata->order_id)) {
+					if ( ! $stripe_subscription_id && isset( $charge->metadata->order_id ) ) {
 						// Try to get from metadata order ID
 						$stripe_subscription_id = $wpdb->get_var(
 							$wpdb->prepare(
@@ -288,15 +306,15 @@ class DigiCommerce_Stripe_Webhook {
 						);
 					}
 
-					if ($stripe_subscription_id) {
+					if ( $stripe_subscription_id ) {
 						try {
-							$stripe_subscription = \Stripe\Subscription::retrieve($stripe_subscription_id);
-							if ($stripe_subscription->status !== 'canceled') {
+							$stripe_subscription = \Stripe\Subscription::retrieve( $stripe_subscription_id );
+							if ( 'canceled' !== $stripe_subscription->status ) {
 								$stripe_subscription->cancel();
 							}
-						} catch (Exception $e) {
+						} catch ( Exception $e ) {
 							// Log the error but continue with the local cancellation
-							error_log('Error cancelling Stripe subscription: ' . $e->getMessage());
+							error_log( 'Error cancelling Stripe subscription: ' . $e->getMessage() );
 						}
 					}
 
@@ -305,23 +323,23 @@ class DigiCommerce_Stripe_Webhook {
 						$wpdb->prefix . 'digicommerce_subscriptions',
 						array(
 							'status'        => 'cancelled',
-							'date_modified' => current_time('mysql'),
+							'date_modified' => current_time( 'mysql' ),
 						),
-						array('id' => $subscription_id),
-						array('%s', '%s'),
-						array('%d')
+						array( 'id' => $subscription_id ),
+						array( '%s', '%s' ),
+						array( '%d' ),
 					);
 
 					// Cancel pending schedules
 					$wpdb->update(
 						$wpdb->prefix . 'digicommerce_subscription_schedule',
-						array('status' => 'cancelled'),
+						array( 'status' => 'cancelled' ),
 						array(
 							'subscription_id' => $subscription_id,
 							'status'          => 'pending',
 						),
-						array('%s'),
-						array('%d', '%s')
+						array( '%s' ),
+						array( '%d', '%s' ),
 					);
 
 					// Add subscription note
@@ -332,10 +350,10 @@ class DigiCommerce_Stripe_Webhook {
 							'meta_key'        => 'note',
 							'meta_value'      => 'Subscription cancelled due to order refund in Stripe.',
 						),
-						array('%d', '%s', '%s')
+						array( '%d', '%s', '%s' ),
 					);
 
-					do_action('digicommerce_subscription_cancelled', $subscription_id);
+					do_action( 'digicommerce_subscription_cancelled', $subscription_id );
 				}
 
 				$wpdb->query( 'COMMIT' );
@@ -352,6 +370,9 @@ class DigiCommerce_Stripe_Webhook {
 
 	/**
 	 * Handle invoice payment events for subscriptions
+	 *
+	 * @param object $event Stripe webhook event object.
+	 * @throws Exception If an error occurs.
 	 */
 	private function handle_invoice_event( $event ) {
 		global $wpdb;
@@ -379,10 +400,10 @@ class DigiCommerce_Stripe_Webhook {
 				return;
 			}
 
-			if ( $event->type === 'invoice.payment_succeeded' ) {
+			if ( 'invoice.payment_succeeded' === $event->type ) {
 				// Update next payment date
 				$subscription = \Stripe\Subscription::retrieve( $invoice->subscription );
-				$next_payment = date( 'Y-m-d H:i:s', $subscription->current_period_end );
+				$next_payment = date( 'Y-m-d H:i:s', $subscription->current_period_end ); // phpcs:ignore
 
 				// Update subscription next payment date
 				$result1 = $wpdb->update(
@@ -397,10 +418,6 @@ class DigiCommerce_Stripe_Webhook {
 					array( '%d' )
 				);
 
-				if ( $result1 === false ) {
-					error_log( 'Failed to update subscription next payment date for subscription ID: ' . $subscription_id );
-				}
-
 				// Update license expiration to match next payment
 				// First, get all orders for this subscription
 				$order_ids = $wpdb->get_col(
@@ -411,24 +428,15 @@ class DigiCommerce_Stripe_Webhook {
 					)
 				);
 
-				if ( !empty( $order_ids ) ) {
+				if ( ! empty( $order_ids ) ) {
 					// Update all licenses associated with these orders
 					$order_ids_placeholders = implode( ',', array_fill( 0, count( $order_ids ), '%d' ) );
 					$query_params = array_merge(
 						array( $next_payment, 'active', current_time( 'mysql' ) ),
 						$order_ids
 					);
-					
-					$result2 = $wpdb->query( $wpdb->prepare(
-						"UPDATE {$wpdb->prefix}digicommerce_licenses 
-						SET expires_at = %s, status = %s, date_modified = %s
-						WHERE order_id IN ($order_ids_placeholders)",
-						$query_params
-					) );
 
-					if ( $result2 === false ) {
-						error_log( 'Failed to update license expiration dates for subscription ID: ' . $subscription_id );
-					}
+					$result2 = $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}digicommerce_licenses  SET expires_at = %s, status = %s, date_modified = %s WHERE order_id IN ($order_ids_placeholders)", $query_params ) ); // phpcs:ignore
 				}
 
 				do_action( 'digicommerce_subscription_payment_success', $subscription_id );
@@ -442,6 +450,9 @@ class DigiCommerce_Stripe_Webhook {
 
 	/**
 	 * Handle subscription update events
+	 *
+	 * @param object $event Stripe webhook event object.
+	 * @throws Exception If an error occurs.
 	 */
 	private function handle_subscription_update_event( $event ) {
 		global $wpdb;
@@ -468,15 +479,15 @@ class DigiCommerce_Stripe_Webhook {
 
 			$data = array( 'date_modified' => current_time( 'mysql' ) );
 
-			if ( $event->type === 'customer.subscription.paused' ) {
+			if ( 'customer.subscription.paused' === $event->type ) {
 				$data['status'] = 'paused';
 			} else {
-				$data['next_payment'] = date( 'Y-m-d H:i:s', $subscription->current_period_end );
+				$data['next_payment'] = date( 'Y-m-d H:i:s', $subscription->current_period_end ); // phpcs:ignore
 
 				// Update status based on Stripe status
-				if ( $subscription->status === 'active' ) {
+				if ( 'active' === $subscription->status ) {
 					$data['status'] = 'active';
-				} elseif ( $subscription->status === 'canceled' ) {
+				} elseif ( 'canceled' === $subscription->status ) {
 					$data['status'] = 'cancelled';
 				}
 			}
@@ -498,6 +509,8 @@ class DigiCommerce_Stripe_Webhook {
 
 	/**
 	 * Get subscription ID from Stripe subscription ID
+	 *
+	 * @param string $stripe_subscription_id Stripe subscription ID.
 	 */
 	private function get_subscription_id_from_stripe( $stripe_subscription_id ) {
 		global $wpdb;

@@ -5,6 +5,8 @@
 class DigiCommerce_Login_Handler {
 	/**
 	 * Instance of the class
+	 *
+	 * @var DigiCommerce_Login_Handler
 	 */
 	private static $instance = null;
 
@@ -51,7 +53,7 @@ class DigiCommerce_Login_Handler {
 		}
 
 		// Don't redirect if this is a logout request
-		if ( $pagenow === 'wp-login.php' && isset( $_GET['action'] ) && $_GET['action'] === 'logout' ) {
+		if ( 'wp-login.php' === $pagenow && isset( $_GET['action'] ) && 'logout' === $_GET['action'] ) {
 			return;
 		}
 
@@ -84,6 +86,9 @@ class DigiCommerce_Login_Handler {
 
 	/**
 	 * Modify lost password form URL
+	 *
+	 * @param string $url URL to the lost password page.
+	 * @param string $redirect URL to redirect to.
 	 */
 	public function redirect_lostpassword_url( $url, $redirect ) {
 		// Get My Account page URL
@@ -95,6 +100,8 @@ class DigiCommerce_Login_Handler {
 
 	/**
 	 * Modify registration form URL
+	 *
+	 * @param string $url URL to the registration page.
 	 */
 	public function redirect_register_url( $url ) {
 		// Get My Account page URL
@@ -106,6 +113,10 @@ class DigiCommerce_Login_Handler {
 
 	/**
 	 * Modify login form URL
+	 *
+	 * @param string $url URL to the login page.
+	 * @param string $redirect URL to redirect to.
+	 * @param bool   $force_reauth Whether to force reauthentication.
 	 */
 	public function redirect_login_url( $url, $redirect, $force_reauth ) {
 		// Get My Account page URL

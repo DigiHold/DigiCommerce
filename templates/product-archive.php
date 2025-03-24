@@ -24,22 +24,29 @@ $allowed_html = array(
 	<?php if ( have_posts() ) : ?>
 		<!-- Products Grid -->
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-			<?php while ( have_posts() ) : the_post();
+			<?php
+			while ( have_posts() ) :
+				the_post();
 				// Get product metadata
-				$price_mode = get_post_meta( get_the_ID(), 'digi_price_mode', true ) ?: 'single';
-				$single_price = get_post_meta( get_the_ID(), 'digi_price', true );
-				$sale_price = get_post_meta( get_the_ID(), 'digi_sale_price', true );
-				$price_variations = get_post_meta( get_the_ID(), 'digi_price_variations', true );
+				$price_mode          = get_post_meta( get_the_ID(), 'digi_price_mode', true ) ? get_post_meta( get_the_ID(), 'digi_price_mode', true ) : 'single';
+				$single_price        = get_post_meta( get_the_ID(), 'digi_price', true );
+				$sale_price          = get_post_meta( get_the_ID(), 'digi_sale_price', true );
+				$price_variations    = get_post_meta( get_the_ID(), 'digi_price_variations', true );
 				$product_description = get_post_meta( get_the_ID(), 'digi_product_description', true );
-			?>
+				?>
 				<article class="product-card group flex flex-col bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-gray-200">
 					<a href="<?php the_permalink(); ?>" class="flex-1">
 						<!-- Product Image -->
 						<?php if ( has_post_thumbnail() ) : ?>
 							<div class="aspect-w-16 aspect-h-9 w-full overflow-hidden bg-gray-100">
-								<?php the_post_thumbnail( 'medium_large', array(
-									'class' => 'w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300'
-								) ); ?>
+								<?php
+								the_post_thumbnail(
+									'medium_large',
+									array(
+										'class' => 'w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300',
+									)
+								);
+								?>
 							</div>
 						<?php endif; ?>
 
@@ -51,7 +58,7 @@ $allowed_html = array(
 
 							<!-- Price Display -->
 							<div class="mb-4">
-								<?php if ( $price_mode === 'single' && $single_price ) : ?>
+								<?php if ( 'single' === $price_mode && $single_price ) : ?>
 									<?php if ( $sale_price && $sale_price < $single_price ) : ?>
 										<div class="flex items-center gap-2">
 											<?php
@@ -84,21 +91,21 @@ $allowed_html = array(
 										);
 										?>
 									<?php endif; ?>
-								<?php elseif ( $price_mode === 'variations' && ! empty( $price_variations ) ) : ?>
+								<?php elseif ( 'variations' === $price_mode && ! empty( $price_variations ) ) : ?>
 									<?php
 									// Find the lowest price among variations
-									$lowest_price = null;
+									$lowest_price      = null;
 									$lowest_sale_price = null;
 									foreach ( $price_variations as $variation ) {
 										$current_price = $variation['price'];
 										$current_sale_price = isset( $variation['salePrice'] ) ? $variation['salePrice'] : null;
 
-										if ( $lowest_price === null || $current_price < $lowest_price ) {
+										if ( null === $lowest_price || $current_price < $lowest_price ) {
 											$lowest_price = $current_price;
 										}
 
 										if ( $current_sale_price && $current_sale_price < $current_price ) {
-											if ( $lowest_sale_price === null || $current_sale_price < $lowest_sale_price ) {
+											if ( null === $lowest_sale_price || $current_sale_price < $lowest_sale_price ) {
 												$lowest_sale_price = $current_sale_price;
 											}
 										}
@@ -106,8 +113,8 @@ $allowed_html = array(
 									?>
 									<div class="flex items-center gap-2">
 										<span class="text-sm text-dark-blue"><?php esc_html_e( 'From:', 'digicommerce' ); ?></span>
-										<?php if ( $lowest_sale_price !== null ) : ?>
-											<?php
+										<?php
+										if ( null !== $lowest_sale_price ) :
 											echo wp_kses(
 												$product->format_price(
 													$lowest_sale_price,
@@ -115,9 +122,7 @@ $allowed_html = array(
 												),
 												$allowed_html
 											);
-											?>
-										<?php else : ?>
-											<?php
+										else :
 											echo wp_kses(
 												$product->format_price(
 													$lowest_price,
@@ -125,8 +130,8 @@ $allowed_html = array(
 												),
 												$allowed_html
 											);
-											?>
-										<?php endif; ?>
+										endif;
+										?>
 									</div>
 								<?php endif; ?>
 							</div>
@@ -140,19 +145,23 @@ $allowed_html = array(
 						</a>
 					</div>
 				</article>
-			<?php endwhile; ?>
+				<?php
+			endwhile;
+			?>
 		</div>
 
 		<!-- Pagination -->
 		<nav class="mt-12">
 			<?php
 			echo wp_kses_post(
-				paginate_links( array(
-					'prev_text' => '← ' . __( 'Previous', 'digicommerce' ),
-					'next_text' => __( 'Next', 'digicommerce' ) . ' →',
-					'type'      => 'list',
-					'class'     => 'pagination',
-				) )
+				paginate_links(
+					array(
+						'prev_text' => '← ' . __( 'Previous', 'digicommerce' ),
+						'next_text' => __( 'Next', 'digicommerce' ) . ' →',
+						'type'      => 'list',
+						'class'     => 'pagination',
+					)
+				)
 			);
 			?>
 		</nav>

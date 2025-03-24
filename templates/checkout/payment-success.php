@@ -77,31 +77,30 @@ $billing_country = ! empty( $billing_details ) ? $billing_details['country'] : '
 $vat_number      = ! empty( $billing_details ) ? $billing_details['vat_number'] : '';
 
 // Get business country and buyer country
-$business_country = DigiCommerce()->get_option('business_country');
-$buyer_country = $billing_country;
-$vat_rate = isset($order_data['vat_rate']) ? floatval($order_data['vat_rate']) : 0.00;
+$business_country = DigiCommerce()->get_option( 'business_country' );
+$buyer_country    = $billing_country;
+$vat_rate         = isset( $order_data['vat_rate'] ) ? floatval( $order_data['vat_rate'] ) : 0.00;
 
 // Initialize VAT amount
-$vat = 0;
+$vat       = 0;
 $apply_vat = false;
 
 // Only calculate VAT if taxes are not disabled
-if (!DigiCommerce()->get_option('remove_taxes')) {
-    if ($buyer_country === $business_country) {
-        // Domestic sale: Always charge seller's country VAT
-        $apply_vat = true;
-        $vat = round($subtotal * $vat_rate, 2);
-    } 
-    elseif (!empty($countries[$buyer_country]['eu']) && !empty($countries[$business_country]['eu'])) {
-        // EU cross-border sale
-        if (empty($vat_number) || !DigiCommerce_Orders::instance()->validate_vat_number($vat_number, $buyer_country)) {
-            // No valid VAT number - charge buyer's country rate
-            $apply_vat = true;
-            $vat = round($subtotal * $vat_rate, 2);
-        }
-        // With valid VAT number - no VAT (vat remains 0)
-    }
-    // Non-EU sale - no VAT (vat remains 0)
+if ( ! DigiCommerce()->get_option( 'remove_taxes' ) ) {
+	if ( $buyer_country === $business_country ) {
+		// Domestic sale: Always charge seller's country VAT
+		$apply_vat = true;
+		$vat       = round( $subtotal * $vat_rate, 2 );
+	} elseif ( ! empty( $countries[ $buyer_country ]['eu'] ) && ! empty( $countries[ $business_country ]['eu'] ) ) {
+		// EU cross-border sale
+		if ( empty( $vat_number ) || ! DigiCommerce_Orders::instance()->validate_vat_number( $vat_number, $buyer_country ) ) {
+			// No valid VAT number - charge buyer's country rate
+			$apply_vat = true;
+			$vat       = round( $subtotal * $vat_rate, 2 );
+		}
+		// With valid VAT number - no VAT (vat remains 0)
+	}
+	// Non-EU sale - no VAT (vat remains 0)
 }
 
 // Calculate total with VAT
@@ -120,7 +119,7 @@ if ( ! empty( $order_data['discount_code'] ) ) {
 	);
 
 	if ( $coupon ) {
-		if ( $coupon->discount_type === 'percentage' ) {
+		if ( 'percentage' === $coupon->discount_type ) {
 			// Apply percentage discount to total with VAT
 			$discount_amount = round( ( $total_with_vat * floatval( $coupon->amount ) ) / 100, 2 );
 		} else {
@@ -145,7 +144,8 @@ $total = number_format( $total, 2, '.', '' );
 			<p class="text-2xl sm:text-4xl font-bold text-dark-blue m-0 no-margin">
 				<?php
 				printf(
-					__( 'Thank you for your purchase %s!', 'text-domain' ),
+					// translators: %s: customer first name
+					esc_html__( 'Thank you for your purchase %s!', 'digicommerce' ),
 					esc_html( $billing_details['first_name'] )
 				);
 				?>
@@ -228,7 +228,7 @@ $total = number_format( $total, 2, '.', '' );
 							</div>
 						</div>
 
-						<div class="flex flex-col items-end gap-4 text-medium text-right">
+						<div class="flex flex-col items-end gap-4 text-medium ltr:text-right rtl:text-left">
 							<div class="billing-info flex flex-col gap-2 text-medium leading-tight">
 								<?php
 								if ( ! empty( $company ) ) {
@@ -288,40 +288,43 @@ $total = number_format( $total, 2, '.', '' );
 				$licenses = DigiCommerce_Pro_License::instance()->get_user_licenses(
 					$order_data['user_id'],
 					array(
-						'status' => array('active', 'expired'),
+						'status'  => array( 'active', 'expired' ),
 						'orderby' => 'date_created',
-						'order' => 'DESC',
+						'order'   => 'DESC',
 					)
 				);
-				
-				// Filter licenses for this specific order
-				$order_licenses = array_filter($licenses, function($license) use ($order_id) {
-					return $license['order_id'] == $order_id;
-				});
 
-				if (!empty($order_licenses)) :
+				// Filter licenses for this specific order
+				$order_licenses = array_filter(
+					$licenses,
+					function ( $license ) use ( $order_id ) {
+						return $license['order_id'] == $order_id;
+					}
+				);
+
+				if ( ! empty( $order_licenses ) ) :
 					?>
 					<div class="p-4 mb-4 bg-dark-blue-5 rounded-md">
 						<div class="flex flex-col gap-2">
-							<h3 class="text-lg font-bold m-0"><?php esc_html_e('License Keys', 'digicommerce-pro'); ?></h3>
-							<?php foreach ($order_licenses as $license) : ?>
+							<h3 class="text-lg font-bold m-0"><?php esc_html_e( 'License Keys', 'digicommerce' ); ?></h3>
+							<?php foreach ( $order_licenses as $license ) : ?>
 								<div class="flex items-center gap-2">
-									<strong><?php echo esc_html($license['product_name']); ?>:</strong>
-									<code class="bg-light-blue px-2 py-1 rounded"><?php echo esc_html($license['license_key']); ?></code>
+									<strong><?php echo esc_html( $license['product_name'] ); ?>:</strong>
+									<code class="bg-light-blue px-2 py-1 rounded"><?php echo esc_html( $license['license_key'] ); ?></code>
 								</div>
 							<?php endforeach; ?>
-							<?php 
-							$account_page_id = DigiCommerce()->get_option('account_page_id');
-							if ($account_page_id) :
+							<?php
+							$account_page_id = DigiCommerce()->get_option( 'account_page_id' );
+							if ( $account_page_id ) :
 								$license_url = add_query_arg(
 									array(
-										'section' => 'licenses'
+										'section' => 'licenses',
 									),
-									get_permalink($account_page_id)
+									get_permalink( $account_page_id )
 								);
 								?>
-								<a href="<?php echo esc_url($license_url); ?>" class="text-dark-blue hover:underline">
-									<?php esc_html_e('Manage Your Licenses', 'digicommerce-pro'); ?> →
+								<a href="<?php echo esc_url( $license_url ); ?>" class="text-dark-blue hover:underline">
+									<?php esc_html_e( 'Manage Your Licenses', 'digicommerce' ); ?> →
 								</a>
 							<?php endif; ?>
 						</div>
@@ -390,6 +393,7 @@ $total = number_format( $total, 2, '.', '' );
 											printf(
 												'<div class="flex items-center">%s</div>',
 												sprintf(
+													// translators: %s: subscription billing period
 													esc_html__( 'Billed %s until cancellation', 'digicommerce' ),
 													esc_html( $period_display )
 												)
@@ -400,9 +404,10 @@ $total = number_format( $total, 2, '.', '' );
 												printf(
 													'<div class="flex items-center gap-1">%s</div>',
 													sprintf(
+														// translators: %1$s: signup fee, %2$s: total price
 														esc_html__( 'First payment of %1$s then %2$s', 'digicommerce' ),
-														DigiCommerce_Product::instance()->format_price( $signup_fee, '' ),
-														DigiCommerce_Product::instance()->format_price( $item['total'], '' )
+														DigiCommerce_Product::instance()->format_price( $signup_fee, '' ), // phpcs:ignore
+														DigiCommerce_Product::instance()->format_price( $item['total'], '' ) // phpcs:ignore
 													)
 												);
 											}
@@ -412,6 +417,7 @@ $total = number_format( $total, 2, '.', '' );
 												printf(
 													'<div class="flex items-center">%s</div>',
 													sprintf(
+														// translators: %1$d: free trial duration, %2$s: free trial period
 														esc_html__( '%1$d %2$s free trial', 'digicommerce' ),
 														esc_html( $free_trial['duration'] ),
 														esc_html( $free_trial['period'] )
@@ -430,15 +436,15 @@ $total = number_format( $total, 2, '.', '' );
 											$show_variation_files = false;
 											$variation_files      = array();
 											$regular_files        = array();
-										
+
 											// First check for variation files if it's a variable product
-											if ( $price_mode === 'variations' && ! empty( $variation_name ) ) {
+											if ( 'variations' === $price_mode && ! empty( $variation_name ) ) {
 												$variations = get_post_meta( $product_id, 'digi_price_variations', true );
-										
+
 												if ( ! empty( $variations ) && is_array( $variations ) ) {
 													foreach ( $variations as $variation ) {
-														if (isset($variation['name']) && $variation['name'] === $variation_name) {
-															if (!empty($variation['files']) && is_array($variation['files'])) {
+														if ( isset( $variation['name'] ) && $variation['name'] === $variation_name ) {
+															if ( ! empty( $variation['files'] ) && is_array( $variation['files'] ) ) {
 																$variation_files = $variation['files'];
 																$show_variation_files = true;
 															} else {
@@ -449,24 +455,24 @@ $total = number_format( $total, 2, '.', '' );
 													}
 												}
 											}
-										
+
 											// Only get regular files if no variation files were found
 											if ( ! $show_variation_files ) {
 												$cache_key     = 'product_files_' . $product_id;
 												$regular_files = wp_cache_get( $cache_key, 'digicommerce_files' );
-										
+
 												if ( false === $regular_files ) {
 													$regular_files = get_post_meta( $product_id, 'digi_files', true );
-										
+
 													if ( ! empty( $regular_files ) && is_array( $regular_files ) ) {
 														wp_cache_set( $cache_key, $regular_files, 'digicommerce_files', HOUR_IN_SECONDS );
 													}
 												}
 											}
-										
+
 											// Use variation files if available, otherwise fall back to regular files
 											$files_to_show = $show_variation_files ? $variation_files : $regular_files;
-										
+
 											if ( ! empty( $files_to_show ) && is_array( $files_to_show ) ) :
 												?>
 												<div class="flex flex-col items-start gap-2">
@@ -474,10 +480,10 @@ $total = number_format( $total, 2, '.', '' );
 													// First check if this is a subscription product
 													$subscription_enabled = ! empty( $item['subscription_enabled'] );
 													$downloadable_files = array();
-										
+
 													foreach ( $files_to_show as $file ) {
 														$can_download = false;
-										
+
 														if ( $subscription_enabled ) {
 															// Get subscription status for this order/product
 															global $wpdb;
@@ -493,11 +499,11 @@ $total = number_format( $total, 2, '.', '' );
 																),
 																ARRAY_A
 															);
-										
+
 															if ( $subscription ) {
-																if ( $subscription['status'] === 'active' ) {
+																if ( 'active' === $subscription['status'] ) {
 																	$can_download = true;
-																} elseif ( $subscription['status'] === 'cancelled' ) {
+																} elseif ( 'cancelled' === $subscription['status'] ) {
 																	$next_payment = strtotime( $subscription['next_payment'] );
 																	$now         = time();
 																	$can_download = ( $now < $next_payment );
@@ -507,31 +513,31 @@ $total = number_format( $total, 2, '.', '' );
 															// Regular product - use normal order access check
 															$can_download = DigiCommerce_Orders::instance()->verify_order_access( $order_id, $token );
 														}
-										
-														if ( $can_download && !empty( $file['id'] ) ) {
+
+														if ( $can_download && ! empty( $file['id'] ) ) {
 															$downloadable_files[] = $file;
 														}
 													}
-										
+
 													if ( count( $downloadable_files ) > 1 ) :
 														// Reverse the array so newest files appear first
-														$downloadable_files = array_reverse($downloadable_files);
+														$downloadable_files = array_reverse( $downloadable_files );
 														?>
 														<div class="flex items-scretch gap-2">
 															<select class="py-2 px-3 text-sm rounded border border-solid border-dark-blue-20 bg-white text-dark-blue" 
 																	name="file_select" 
-																	id="file_select_<?php echo esc_attr($product_id); ?>">
+																	id="file_select_<?php echo esc_attr( $product_id ); ?>">
 																<?php foreach ( $downloadable_files as $file ) : ?>
-																	<option value="<?php echo esc_attr($file['id']); ?>">
-																		<?php echo esc_html($file['itemName'] ?? $file['name'] ?? __('Download', 'digicommerce')); ?>
+																	<option value="<?php echo esc_attr( $file['id'] ); ?>">
+																		<?php echo esc_html( $file['itemName'] ?? $file['name'] ?? esc_html__( 'Download', 'digicommerce' ) ); ?>
 																	</option>
 																<?php endforeach; ?>
 															</select>
 															
 															<button type="button" 
 																	class="download-item flex items-center gap-2 text-sm rounded py-2 px-3 bg-dark-blue-10 hover:bg-dark-blue text-dark-blue hover:text-white border border-solid border-dark-blue-20 hover:border-dark-blue default-transition" 
-																	data-order="<?php echo esc_attr($order_id); ?>"
-																	data-token="<?php echo esc_attr($token); ?>">
+																	data-order="<?php echo esc_attr( $order_id ); ?>"
+																	data-token="<?php echo esc_attr( $token ); ?>">
 																<div class="icon flex-shrink-0">
 																	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="20" height="20" fill="currentColor">
 																		<path d="m28 24v-4a1 1 0 0 0 -2 0v4a1 1 0 0 1 -1 1h-18a1 1 0 0 1 -1-1v-4a1 1 0 0 0 -2 0v4a3 3 0 0 0 3 3h18a3 3 0 0 0 3-3zm-6.38-5.22-5 4a1 1 0 0 1 -1.24 0l-5-4a1 1 0 0 1 1.24-1.56l3.38 2.7v-13.92a1 1 0 0 1 2 0v13.92l3.38-2.7a1 1 0 1 1 1.24 1.56z"/>
@@ -540,14 +546,16 @@ $total = number_format( $total, 2, '.', '' );
 																<span class="text flex-grow"><?php echo esc_html__( 'Download', 'digicommerce' ); ?></span>
 															</button>
 														</div>
-													<?php else : 
+														<?php
+													else :
 														// Single file - show just the download button
-														$file = reset($downloadable_files); ?>
+														$file = reset( $downloadable_files );
+														?>
 														<button type="button" 
 																class="download-item flex items-center gap-2 text-sm rounded py-2 px-3 bg-dark-blue-10 hover:bg-dark-blue text-dark-blue hover:text-white border border-solid border-dark-blue-20 hover:border-dark-blue default-transition" 
-																data-file="<?php echo esc_attr($file['id']); ?>" 
-																data-order="<?php echo esc_attr($order_id); ?>"
-																data-token="<?php echo esc_attr($token); ?>">
+																data-file="<?php echo esc_attr( $file['id'] ); ?>" 
+																data-order="<?php echo esc_attr( $order_id ); ?>"
+																data-token="<?php echo esc_attr( $token ); ?>">
 															<div class="icon flex-shrink-0">
 																<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="20" height="20" fill="currentColor">
 																	<path d="m28 24v-4a1 1 0 0 0 -2 0v4a1 1 0 0 1 -1 1h-18a1 1 0 0 1 -1-1v-4a1 1 0 0 0 -2 0v4a3 3 0 0 0 3 3h18a3 3 0 0 0 3-3zm-6.38-5.22-5 4a1 1 0 0 1 -1.24 0l-5-4a1 1 0 0 1 1.24-1.56l3.38 2.7v-13.92a1 1 0 0 1 2 0v13.92l3.38-2.7a1 1 0 1 1 1.24 1.56z"/>
@@ -555,7 +563,9 @@ $total = number_format( $total, 2, '.', '' );
 															</div>
 															<span class="text flex-grow"><?php echo esc_html__( 'Download', 'digicommerce' ); ?></span>
 														</button>
-													<?php endif; ?>
+														<?php
+													endif;
+													?>
 												</div>
 												<?php
 											endif;
@@ -574,17 +584,17 @@ $total = number_format( $total, 2, '.', '' );
 									if ( $subscription_enabled ) {
 										if ( $signup_fee > 0 ) {
 											// Show signup fee
-											echo DigiCommerce_Product::instance()->format_price( $signup_fee, 'total-price' );
+											echo DigiCommerce_Product::instance()->format_price( $signup_fee, 'total-price' ); // phpcs:ignore
 										} elseif ( ! $has_free_trial ) {
 											// Show first payment amount
-											echo DigiCommerce_Product::instance()->format_price( $item['price'], 'total-price' );
+											echo DigiCommerce_Product::instance()->format_price( $item['price'], 'total-price' ); // phpcs:ignore
 										} else {
 											// Show 0 for free trial with no signup fee
-											echo DigiCommerce_Product::instance()->format_price( 0, 'total-price' );
+											echo DigiCommerce_Product::instance()->format_price( 0, 'total-price' ); // phpcs:ignore
 										}
 									} else {
 										// Show regular price for non-subscription products
-										echo DigiCommerce_Product::instance()->format_price( $item['price'], 'total-price' );
+										echo DigiCommerce_Product::instance()->format_price( $item['price'], 'total-price' ); // phpcs:ignore
 									}
 									?>
 								</td>
@@ -602,7 +612,7 @@ $total = number_format( $total, 2, '.', '' );
 						<tr>
 							<th scope="row"><?php esc_html_e( 'Subtotal:', 'digicommerce' ); ?></th>
 							<td data-label="<?php esc_html_e( 'Subtotal', 'digicommerce' ); ?>" class="text-dark-blue font-bold end">
-								<?php echo DigiCommerce_Product::instance()->format_price( $subtotal, 'subtotal-price' ); ?>
+								<?php echo DigiCommerce_Product::instance()->format_price( $subtotal, 'subtotal-price' ); // phpcs:ignore ?>
 							</td>
 						</tr>
 
@@ -618,7 +628,7 @@ $total = number_format( $total, 2, '.', '' );
 								?>
 							</th>
 							<td data-label="<?php esc_html_e( 'VAT', 'digicommerce' ); ?>" class="text-dark-blue font-bold end">
-								<?php echo DigiCommerce_Product::instance()->format_price( $vat, 'vat-price' ); ?>
+								<?php echo DigiCommerce_Product::instance()->format_price( $vat, 'vat-price' ); // phpcs:ignore ?>
 							</td>
 						</tr>
 						<?php
@@ -632,7 +642,7 @@ $total = number_format( $total, 2, '.', '' );
 								<?php esc_html_e( 'Coupon:', 'digicommerce' ); ?>
 							</th>
 							<td data-label="<?php esc_html_e( 'Discount', 'digicommerce' ); ?>" class="text-dark-blue font-bold end">
-								<div class="flex justify-end">-<?php echo DigiCommerce_Product::instance()->format_price( $discount_amount, 'discount-amount' ); ?></div>
+								<div class="flex justify-end">-<?php echo DigiCommerce_Product::instance()->format_price( $discount_amount, 'discount-amount' ); // phpcs:ignore ?></div>
 							</td>
 						</tr>
 					<?php endif; ?>
@@ -642,7 +652,7 @@ $total = number_format( $total, 2, '.', '' );
 						<th scope="row"><?php esc_html_e( 'Total:', 'digicommerce' ); ?></th>
 						<td data-label="<?php esc_html_e( 'Total', 'digicommerce' ); ?>" class="end">
 							<span class="amount">
-								<?php echo DigiCommerce_Product::instance()->format_price( $total, 'total-price' ); ?>
+								<?php echo DigiCommerce_Product::instance()->format_price( $total, 'total-price' ); // phpcs:ignore ?>
 							</span>
 						</td>
 					</tr>
