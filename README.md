@@ -51,7 +51,7 @@ This repository is for development purposes. For support, please use the appropr
 
 As an open-source project, we welcome contributions to improve DigiCommerce. Here's how you can help:
 
-1. **Report Issues**: If you find a bug, please [open an issue](https://github.com/digicommerce/digicommerce/issues) with detailed information
+1. **Report Issues**: If you find a bug, please [open an issue](https://github.com/DigiCommerceWP/DigiCommerce/issues) with detailed information
 2. **Suggest Features**: Have ideas? We'd love to hear them!
 3. **Submit Pull Requests**: Code contributions are welcome for open issues
 
