@@ -61,6 +61,7 @@
         let finalData = {
           customer_id: setupResult.data.customerId
         };
+        const hasSubscription = setupResult.data.setupIntent !== void 0;
         if (setupResult.data.setupIntent) {
           const { setupIntent, error: setupError } = await stripeInstance2.confirmCardSetup(
             setupResult.data.setupIntent.client_secret,
@@ -69,42 +70,50 @@
           if (setupError) {
             throw new Error(setupError.message);
           }
-          if (setupIntent.status === "succeeded") {
-            const subscriptionResponse = await fetch(digicommerceVars.ajaxurl, {
-              method: "POST",
-              headers: { "Content-Type": "application/x-www-form-urlencoded" },
-              body: new URLSearchParams({
-                action: "digicommerce_process_stripe_payment",
-                nonce: formData.get("checkout_nonce"),
-                stripe_payment_data: JSON.stringify({
-                  customer_id: setupResult.data.customerId,
-                  payment_method: setupIntent.payment_method,
-                  setup_intent_id: setupIntent.id
-                }),
-                ...this.getFormFields(formData)
-              })
-            });
-            const subscriptionResult = await subscriptionResponse.json();
-            if (!subscriptionResult.success) {
-              throw new Error(subscriptionResult.data?.message || "Failed to create subscription");
-            }
-            finalData = {
-              ...finalData,
-              payment_method: setupIntent.payment_method,
-              setup_intent_id: setupIntent.id,
-              subscription_id: subscriptionResult.data.subscriptionId
-            };
-          }
+          finalData.payment_method = setupIntent.payment_method;
+          finalData.setup_intent_id = setupIntent.id;
         }
         if (setupResult.data.paymentIntent) {
+          const paymentConfirmData = finalData.payment_method ? { payment_method: finalData.payment_method } : paymentData;
           const { paymentIntent, error: paymentError } = await stripeInstance2.confirmCardPayment(
             setupResult.data.paymentIntent.client_secret,
-            paymentData
+            paymentConfirmData
           );
           if (paymentError) {
             throw new Error(paymentError.message);
           }
           finalData.payment_intent_id = paymentIntent.id;
+          if (!finalData.payment_method) {
+            finalData.payment_method = paymentIntent.payment_method;
+          }
+        }
+        if (finalData.payment_method && hasSubscription && finalData.setup_intent_id) {
+          const subscriptionResponse = await fetch(digicommerceVars.ajaxurl, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+              action: "digicommerce_process_stripe_payment",
+              nonce: formData.get("checkout_nonce"),
+              stripe_payment_data: JSON.stringify(finalData),
+              ...this.getFormFields(formData)
+            })
+          });
+          const subscriptionResult = await subscriptionResponse.json();
+          if (!subscriptionResult.success) {
+            throw new Error(subscriptionResult.data?.message || "Failed to create subscription");
+          }
+          if (subscriptionResult.data.requiresAction && subscriptionResult.data.clientSecret) {
+            const { paymentIntent, error: confirmError } = await stripeInstance2.confirmCardPayment(
+              subscriptionResult.data.clientSecret
+            );
+            if (confirmError) {
+              throw new Error(confirmError.message);
+            }
+            finalData.payment_intent_id = paymentIntent.id;
+          }
+          if (subscriptionResult.data.subscriptionId) {
+            finalData.subscription_id = subscriptionResult.data.subscriptionId;
+          }
         }
         return await this.processCheckout(new URLSearchParams({
           action: "digicommerce_process_checkout",
@@ -118,19 +127,19 @@
         throw error;
       }
     },
-    async processCheckout(data) {
-      const response = await fetch(digicommerceVars.ajaxurl, {
+    processCheckout(data) {
+      return fetch(digicommerceVars.ajaxurl, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded"
         },
         body: data
+      }).then((response) => response.json()).then((result) => {
+        if (!result.success) {
+          throw new Error(result.data?.message || "Checkout processing failed");
+        }
+        return result;
       });
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.data?.message || "Checkout processing failed");
-      }
-      return result;
     },
     getBillingDetails(formData) {
       return {

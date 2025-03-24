@@ -64,7 +64,7 @@ $allowed_html = array(
 					?>
 					<tr>
 						<td class="px-6 py-4" data-label="<?php esc_html_e( 'Order', 'digicommerce' ); ?>">
-							<a href="<?php echo esc_url( add_query_arg( array( 'section' => 'orders', 'view-order' => $order['id'] ), get_permalink() ) ); ?>" class="whitespace-nowrap text-medium font-bold text-dark-blue hover:text-gold default-transition">
+							<a href="<?php echo esc_url( add_query_arg( array( 'section' => 'orders', 'view-order' => $order['order_id'] ), get_permalink() ) ); ?>" class="whitespace-nowrap text-medium font-bold text-dark-blue hover:text-gold default-transition">
 								<?php echo esc_html( $order['order_number'] ); ?>
 							</a>
 						</td>
@@ -88,7 +88,7 @@ $allowed_html = array(
 							?>
 						</td>
 						<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" data-label="<?php esc_html_e( 'Details', 'digicommerce' ); ?>">
-							<a href="<?php echo esc_url( add_query_arg( array( 'section' => 'orders', 'view-order' => $order['id'] ), get_permalink() ) ); ?>" class="whitespace-nowrap text-medium font-bold text-dark-blue hover:text-gold default-transition">
+							<a href="<?php echo esc_url( add_query_arg( array( 'section' => 'orders', 'view-order' => $order['order_id'] ), get_permalink() ) ); ?>" class="whitespace-nowrap text-medium font-bold text-dark-blue hover:text-gold default-transition">
 								<?php esc_html_e( 'View details', 'digicommerce' ); ?>
 							</a>
 						</td>

@@ -101,7 +101,6 @@ class DigiCommerce_Settings {
 		register_setting( 'digicommerce_options', 'digicommerce_stripe_test_secret_key' );
 		register_setting( 'digicommerce_options', 'digicommerce_stripe_live_publishable_key' );
 		register_setting( 'digicommerce_options', 'digicommerce_stripe_live_secret_key' );
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_enable_3d_secure' );
 		register_setting( 'digicommerce_options', 'digicommerce_stripe_webhook_secret' );
 		register_setting( 'digicommerce_options', 'digicommerce_paypal_sandbox' );
 		register_setting( 'digicommerce_options', 'digicommerce_paypal_client_id' );
@@ -247,7 +246,6 @@ class DigiCommerce_Settings {
 			'stripe_test_secret_key'      => sanitize_text_field( $_POST['stripe_test_secret_key'] ),
 			'stripe_live_publishable_key' => sanitize_text_field( $_POST['stripe_live_publishable_key'] ),
 			'stripe_live_secret_key'      => sanitize_text_field( $_POST['stripe_live_secret_key'] ),
-			'stripe_enable_3d_secure'     => isset( $_POST['stripe_enable_3d_secure'] ) ? 1 : 0,
 			'stripe_webhook_secret'       => sanitize_text_field( $_POST['stripe_webhook_secret'] ),
 			'paypal_sandbox'              => isset( $_POST['paypal_sandbox'] ) ? 1 : 0,
 			'paypal_client_id'            => sanitize_text_field( $_POST['paypal_client_id'] ),
@@ -405,7 +403,7 @@ class DigiCommerce_Settings {
 		$help['support'] = array(
 			'title' => esc_html__( 'Support', 'digicommerce' ),
 			'svg'   => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="15" height="15" fill="#fff" class="default-transition"><path d="M256 448c141.4 0 256-93.1 256-208S397.4 32 256 32S0 125.1 0 240c0 45.1 17.7 86.8 47.7 120.9c-1.9 24.5-11.4 46.3-21.4 62.9c-5.5 9.2-11.1 16.6-15.2 21.6c-2.1 2.5-3.7 4.4-4.9 5.7c-.6 .6-1 1.1-1.3 1.4l-.3 .3c0 0 0 0 0 0c0 0 0 0 0 0s0 0 0 0s0 0 0 0c-4.6 4.6-5.9 11.4-3.4 17.4c2.5 6 8.3 9.9 14.8 9.9c28.7 0 57.6-8.9 81.6-19.3c22.9-10 42.4-21.9 54.3-30.6c31.8 11.5 67 17.9 104.1 17.9zM169.8 149.3c7.9-22.3 29.1-37.3 52.8-37.3l58.3 0c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 248.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24l0-13.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1l-58.3 0c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 336a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"/></svg>',
-			'url'   => 'https://digicommerce.me/my-account/?section=support'
+			'url'   => 'https://digicommerce.me/my-account/'
 		);
 
 		$help['documentation'] = array(
@@ -429,6 +427,9 @@ class DigiCommerce_Settings {
 				'fill' => true,
 			),
 		);
+
+		// UTM parameters
+		$utm_params = '?utm_source=WordPress&utm_medium=header&utm_campaign=digi';
 		?>
 		<div class="digicommerce">
 			<div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-dark-blue box-border -ml-5 px-8 py-6">
@@ -459,8 +460,19 @@ class DigiCommerce_Settings {
 				<div class="digicommerce-help flex flex-col esm:flex-row items-center gap-4">
 					<?php
 					foreach ( $help as $id => $array ) :
+						$url = $array['url'];
+						// Add UTM parameters appropriately
+						if ($id === 'support') {
+							// For support URL, check if there are existing parameters
+							$url .= (strpos($url, '?') !== false) ? '&' : '?';
+							$url .= 'section=support';
+							$url .= '&utm_source=WordPress&utm_medium=header&utm_campaign=digi';
+						} else {
+							// For other URLs, simply append the UTM parameters
+							$url .= $utm_params;
+						}
 						?>
-						<a class="flex items-center gap-2 text-white hover:text-white/80 default-transition" href="<?php echo esc_url( $array['url'] ); ?>?utm_source=WordPress&amp;utm_medium=header&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer">
+						<a class="flex items-center gap-2 text-white hover:text-white/80 default-transition" href="<?php echo esc_url($url); ?>" target="_blank" rel="noopener noreferrer">
 							<div class="digicommerce-help-icon flex items-center justify-center w-8 h-8 bg-white/50 rounded-full p-2 default-transition">
 								<?php echo wp_kses( $array['svg'], $allowed_html ); ?>
 							</div>
@@ -864,7 +876,7 @@ class DigiCommerce_Settings {
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Product URLs', 'digicommerce' ); ?></p>
 				
 				<div class="flex">
-					<a href="https://docs.digicommerce.me/product-urls?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+					<a href="https://docs.digicommerce.me/docs/product-tab/?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#product-urls" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
 						<?php esc_html_e( 'Learn more', 'digicommerce' ); ?>
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
 					</a>
@@ -903,7 +915,7 @@ class DigiCommerce_Settings {
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Product Post Type', 'digicommerce' ); ?></p>
 
 				<div class="flex">
-					<a href="https://docs.digicommerce.me/product-post-type?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+					<a href="https://docs.digicommerce.me/docs/product-tab/?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#product-post-type" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
 						<?php esc_html_e( 'Learn more', 'digicommerce' ); ?>
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
 					</a>
@@ -1009,21 +1021,22 @@ class DigiCommerce_Settings {
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'reCAPTCHA v3', 'digicommerce' ); ?></p>
 
 				<div class="flex">
-					<a href="https://docs.digicommerce.me/recaptcha?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+					<a href="https://docs.digicommerce.me/docs/recaptcha-tab/?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
 						<?php esc_html_e( 'See instructions', 'digicommerce' ); ?>
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
 					</a>
 				</div>
 			</div>
-			<div class="w-full 3xl:w-1/2 flex flex-col gap-4">
-				<p class="flex flex-col gap-2">
+			<div class="w-full 3xl:w-1/2 flex flex-col 3xl:flex-row gap-4">
+				<div class="flex flex-col gap-2 flex-1">
 					<label class="cursor-pointer" for="recaptcha_site_key"><?php esc_html_e( 'reCAPTCHA site key', 'digicommerce' ); ?></label>
 					<input type="text" id="recaptcha_site_key" name="recaptcha_site_key" value="<?php echo esc_attr( $options['recaptcha_site_key'] ); ?>" class="regular-text">
-				</p>
-				<p class="flex flex-col gap-2">
+				</div>
+
+				<div class="flex flex-col gap-2 flex-1">
 					<label class="cursor-pointer" for="recaptcha_secret_key"><?php esc_html_e( 'reCAPTCHA secret key', 'digicommerce' ); ?></label>
 					<input type="text" id="recaptcha_secret_key" name="recaptcha_secret_key" value="<?php echo esc_attr( $options['recaptcha_secret_key'] ); ?>" class="regular-text">
-				</p>
+				</div>
 			</div>
 		</div>
 		<?php
@@ -1047,7 +1060,7 @@ class DigiCommerce_Settings {
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Stripe', 'digicommerce' ); ?></p>
 
 				<div class="flex">
-					<a href="https://docs.digicommerce.me/stripe?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+					<a href="https://docs.digicommerce.me/docs/payment-tab?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#stripe" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
 						<?php esc_html_e( 'See instructions', 'digicommerce' ); ?>
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
 					</a>
@@ -1091,14 +1104,6 @@ class DigiCommerce_Settings {
 						<input type="password" id="stripe_live_secret_key" name="stripe_live_secret_key" value="<?php echo esc_attr( $options['stripe_live_secret_key'] ); ?>" class="regular-text">
 					</div>
 				</div>
-				
-				<!-- Other Stripe Options -->
-				<div class="flex flex-col gap-2">
-					<label class="flex items-center gap-2 cursor-pointer">
-						<input type="checkbox" name="stripe_enable_3d_secure" value="1" <?php checked( $options['stripe_enable_3d_secure'], '1' ); ?>>
-						<span class="flex-1"><?php esc_html_e( 'Enable 3D Secure', 'digicommerce' ); ?></span>
-					</label>
-				</div>
 
 				<!-- Webhook Settings -->
 				<div class="flex flex-col gap-4">
@@ -1111,7 +1116,15 @@ class DigiCommerce_Settings {
 					<div class="flex flex-col gap-2">
 						<p class="text-medium"><?php esc_html_e( 'Stripe Webhook URL', 'digicommerce' ); ?></p>
 						<code class="bg-light-blue text-dark-blue p-4 rounded-md select-all"><?php echo esc_url( rest_url( 'digicommerce/v2/stripe-webhook' ) ); ?></code>
-						<small><?php esc_html_e( 'Add this webhook URL to your Stripe dashboard. Read the documentation for more details.', 'digicommerce' ); ?></small>
+						<small>
+							<?php
+							printf(
+								/* translators: %s: Documentation link */
+								esc_html__( 'Add this webhook URL to your Stripe dashboard. %s for more details.', 'digicommerce' ),
+								'<a href="https://docs.digicommerce.me/docs/payment-tab?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#stripe-webhook" target="_blank" rel="noopener noreferrer">Read the documentation</a>'
+							);
+							?>
+						</small>
 					</div>
 				</div>
 			</div>
@@ -1123,7 +1136,7 @@ class DigiCommerce_Settings {
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Paypal', 'digicommerce' ); ?></p>
 
 				<div class="flex">
-					<a href="https://docs.digicommerce.me/paypal?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+					<a href="https://docs.digicommerce.me/docs/payment-tab?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#paypal" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
 						<?php esc_html_e( 'See instructions', 'digicommerce' ); ?>
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
 					</a>
@@ -1160,7 +1173,15 @@ class DigiCommerce_Settings {
 					<div class="flex flex-col gap-2">
 						<p class="text-medium"><?php esc_html_e( 'PayPal Webhook URL', 'digicommerce' ); ?></p>
 						<code class="bg-light-blue text-dark-blue p-4 rounded-md select-all"><?php echo esc_url( rest_url( 'digicommerce/v2/paypal-webhook' ) ); ?></code>
-						<small><?php esc_html_e( 'Add this webhook URL to your PayPal developer dashboard. Read the documentation for more details.', 'digicommerce' ); ?></small>
+						<small>
+							<?php
+							printf(
+								/* translators: %s: Documentation link */
+								esc_html__( 'Add this webhook URL to your PayPal developer dashboard. %s for more details.', 'digicommerce' ),
+								'<a href="https://docs.digicommerce.me/docs/payment-tab?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#paypal-webhook" target="_blank" rel="noopener noreferrer">Read the documentation</a>'
+							);
+							?>
+						</small>
 					</div>
 				</div>
 			</div>
@@ -1186,7 +1207,7 @@ class DigiCommerce_Settings {
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Remove taxes', 'digicommerce' ); ?></p>
 
 				<div class="flex">
-					<a href="https://docs.digicommerce.me/remove-taxes?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+					<a href="https://docs.digicommerce.me/docs/checkout-tab?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#remove-taxes" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
 						<?php esc_html_e( 'See instructions', 'digicommerce' ); ?>
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
 					</a>
@@ -1206,7 +1227,7 @@ class DigiCommerce_Settings {
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Login Form', 'digicommerce' ); ?></p>
 
 				<div class="flex">
-					<a href="https://docs.digicommerce.me/login-during-checkout?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+					<a href="https://docs.digicommerce.me/docs/checkout-tab?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#login-during-checkout" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
 						<?php esc_html_e( 'See instructions', 'digicommerce' ); ?>
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
 					</a>
@@ -1222,8 +1243,15 @@ class DigiCommerce_Settings {
 
 		<!-- Minimal Style -->
 		<div class="flex flex-col 3xl:flex-row gap-4">
-			<div class="w-full 3xl:w-1/6 flex">
+			<div class="w-full 3xl:w-1/6 flex flex-col gap-2">
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Minimal Style', 'digicommerce' ); ?></p>
+
+				<div class="flex">
+					<a href="https://docs.digicommerce.me/docs/checkout-tab?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#minimal-style" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+						<?php esc_html_e( 'See instructions', 'digicommerce' ); ?>
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
+					</a>
+				</div>
 			</div>
 			<div class="w-full 3xl:w-1/2 flex flex-col gap-4">
 				<label class="flex items-center gap-2 cursor-pointer">
@@ -1239,7 +1267,7 @@ class DigiCommerce_Settings {
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Minimal Fields', 'digicommerce' ); ?></p>
 
 				<div class="flex">
-					<a href="https://docs.digicommerce.me/minimal-fields?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+					<a href="https://docs.digicommerce.me/docs/checkout-tab?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#minimal-fields" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
 						<?php esc_html_e( 'See instructions', 'digicommerce' ); ?>
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
 					</a>
@@ -1261,7 +1289,7 @@ class DigiCommerce_Settings {
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Order Agreement', 'digicommerce' ); ?></p>
 
 				<div class="flex">
-					<a href="https://docs.digicommerce.me/order-agreement?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+					<a href="https://docs.digicommerce.me/docs/checkout-tab?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#agreement" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
 						<?php esc_html_e( 'See instructions', 'digicommerce' ); ?>
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
 					</a>
@@ -1294,7 +1322,7 @@ class DigiCommerce_Settings {
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Modal Terms', 'digicommerce' ); ?></p>
 
 				<div class="flex">
-					<a href="https://docs.digicommerce.me/modal?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+					<a href="https://docs.digicommerce.me/docs/checkout-tab?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#modal" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
 						<?php esc_html_e( 'See instructions', 'digicommerce' ); ?>
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
 					</a>
@@ -1327,7 +1355,7 @@ class DigiCommerce_Settings {
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Remove product', 'digicommerce' ); ?></p>
 
 				<div class="flex">
-					<a href="https://docs.digicommerce.me/remove-product?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+					<a href="https://docs.digicommerce.me/docs/checkout-tab?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#remove-product" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
 						<?php esc_html_e( 'See instructions', 'digicommerce' ); ?>
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
 					</a>
@@ -1347,7 +1375,7 @@ class DigiCommerce_Settings {
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Empty cart settings', 'digicommerce' ); ?></p>
 				
 				<div class="flex">
-					<a href="https://docs.digicommerce.me/empty-cart?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
+					<a href="https://docs.digicommerce.me/docs/checkout-tab?utm_source=WordPress&amp;utm_medium=settings&amp;utm_campaign=digi#empty-cart" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-dark-blue hover:text-gold text-sm default-transition">
 						<?php esc_html_e( 'Learn more', 'digicommerce' ); ?>
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12"><path d="M11.2 2.8a.8.8 0 00-1.3 1L12.6 7h-11a.8.8 0 100 1.7h11L10 12a.8.8 0 101.3 1L15 8.6a.8.8 0 000-1.2l-3.8-4.5z"/></svg>
 					</a>
@@ -1552,6 +1580,7 @@ class DigiCommerce_Settings {
 											<option value="youtube" <?php selected( $link['platform'], 'youtube' ); ?>>YouTube</option>
 											<option value="pinterest" <?php selected( $link['platform'], 'pinterest' ); ?>>Pinterest</option>
 											<option value="tiktok" <?php selected( $link['platform'], 'tiktok' ); ?>>TikTok</option>
+											<option value="github" <?php selected( $link['platform'], 'github' ); ?>>GitHub</option>
 										</select>
 									</div>
 									<div class="flex flex-col gap-2 w-full">
@@ -1867,7 +1896,6 @@ class DigiCommerce_Settings {
 			'stripe_test_secret_key'      => DigiCommerce()->get_option( 'stripe_test_secret_key', '' ),
 			'stripe_live_publishable_key' => DigiCommerce()->get_option( 'stripe_live_publishable_key', '' ),
 			'stripe_live_secret_key'      => DigiCommerce()->get_option( 'stripe_live_secret_key', '' ),
-			'stripe_enable_3d_secure'     => DigiCommerce()->get_option( 'stripe_enable_3d_secure', '0' ),
 			'stripe_webhook_secret'       => DigiCommerce()->get_option( 'stripe_webhook_secret', '' ),
 			'paypal_sandbox'              => DigiCommerce()->get_option( 'paypal_sandbox', '0' ),
 			'paypal_client_id'            => DigiCommerce()->get_option( 'paypal_client_id', '' ),

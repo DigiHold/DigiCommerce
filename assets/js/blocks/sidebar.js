@@ -51,7 +51,11 @@
           );
           return;
         }
-        onSave({ version: version.trim(), changelog: changelog.trim() });
+        onSave({
+          version: version.trim(),
+          changelog: changelog.trim(),
+          release_date: (/* @__PURE__ */ new Date()).toISOString()
+        });
         onClose();
       };
       if (!isOpen)

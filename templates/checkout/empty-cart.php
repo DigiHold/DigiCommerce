@@ -40,7 +40,7 @@ $empty_cart_button_url = DigiCommerce()->get_option(
 		<?php echo wp_kses_post( $empty_cart_text ); ?>
 	</p>
 	<div class="mt-6">
-		<a href="<?php echo esc_url( $empty_cart_button_url ); ?>" class="inline-flex items-center px-6 py-3 border border-solid border-transparent text-base font-medium rounded-md shadow-sm no-underline text-dark-blue bg-gold hover:bg-dark-blue hover:text-gold default-transition">
+		<a id="browse-products" href="<?php echo esc_url( $empty_cart_button_url ); ?>" class="inline-flex items-center px-6 py-3 border border-solid border-transparent text-base font-medium rounded-md shadow-sm no-underline text-dark-blue bg-gold hover:bg-dark-blue hover:text-gold default-transition">
 			<?php echo wp_kses_post( $empty_cart_button_text ); ?>
 		</a>
 	</div>

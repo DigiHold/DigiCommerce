@@ -206,14 +206,13 @@ a:hover {
 }
 
 .social-links {
-    display: flex;
-    justify-content: center;
-    gap: .5rem;
+    display: inline-block;
     margin-bottom: 30px;
 }
 
 .social-links a {
-    display: flex;
+    display: inline-block;
+	padding: 0 .25rem;
 }
 
 .social-links a img {

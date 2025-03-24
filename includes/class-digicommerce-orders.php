@@ -500,11 +500,11 @@ class DigiCommerce_Orders {
 		$offset  = $args['offset'] > 0 ? 'OFFSET ' . intval( $args['offset'] ) : '';
 
 		// Get orders with billing info
-		$query = "SELECT o.*, b.* FROM {$this->table_orders} o 
-                 LEFT JOIN {$this->table_billing} b ON o.id = b.order_id 
-                 {$where} 
-                 ORDER BY o.{$orderby} {$order}
-                 {$limit} {$offset}";
+		$query = "SELECT o.id as order_id, o.*, b.id as billing_id, b.* FROM {$this->table_orders} o 
+				LEFT JOIN {$this->table_billing} b ON o.id = b.order_id 
+				{$where} 
+				ORDER BY o.{$orderby} {$order}
+				{$limit} {$offset}";
 
 		$results = $wpdb->get_results( $query, ARRAY_A );
 

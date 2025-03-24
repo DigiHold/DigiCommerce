@@ -32,6 +32,8 @@ class DigiCommerce_Stripe {
 
 		add_action('wp_ajax_digicommerce_process_stripe_payment', array($this, 'handle_stripe_payment'));
         add_action('wp_ajax_nopriv_digicommerce_process_stripe_payment', array($this, 'handle_stripe_payment'));
+		add_action('wp_ajax_digicommerce_verify_subscription', array($this, 'verify_subscription_status'));
+		add_action('wp_ajax_nopriv_digicommerce_verify_subscription', array($this, 'verify_subscription_status'));
 	}
 
 	// Update the DigiCommerce_Stripe class with new payment handler
@@ -67,32 +69,43 @@ class DigiCommerce_Stripe {
 			$initial_payment = 0;
 			$has_subscription = false;
 			$has_free_trial = false;
+			$has_signup_fee = false;
+			
+			// Track one-time products vs subscription products
+			$one_time_products_total = 0;
+			$subscription_products_total = 0;
 	
 			foreach ($cart_items as $item) {
 				if (!empty($item['subscription_enabled'])) {
 					$has_subscription = true;
 
-					// If there's a signup fee, only charge that
+					// If there's a signup fee, charge that as initial payment
 					if (!empty($item['subscription_signup_fee']) && floatval($item['subscription_signup_fee']) > 0) {
+						$has_signup_fee = true;
 						$initial_payment += floatval($item['subscription_signup_fee']);
 					} 
-					// If no signup fee, check trial and regular payment
+					// If no signup fee, track the subscription amount separately
 					else {
 						// If there's a free trial
 						if (!empty($item['subscription_free_trial']) && 
 							intval($item['subscription_free_trial']['duration']) > 0) {
 							$has_free_trial = true;
-							$initial_payment += 0;
 						} 
-						// No signup fee and no trial, charge full price
+						// No signup fee and no trial - track separately
 						else {
-							$initial_payment += floatval($item['price']);
+							$subscription_products_total += floatval($item['price']);
 						}
 					}
 				} else {
 					// Add one-time product price
-					$initial_payment += floatval($item['price']);
+					$one_time_products_total += floatval($item['price']);
 				}
+			}
+			
+			// If we only have subscription products with no signup fee, don't do initial payment
+			// Otherwise, add one-time products to initial payment
+			if ($one_time_products_total > 0) {
+				$initial_payment += $one_time_products_total;
 			}
 	
 			// Apply VAT and discount calculations to initial payment
@@ -182,65 +195,102 @@ class DigiCommerce_Stripe {
 			if (!empty($stripe_payment_data['payment_method']) && 
 				!empty($stripe_payment_data['setup_intent_id'])) {
 				
-					try {
-						$payment_method = \Stripe\PaymentMethod::retrieve($stripe_payment_data['payment_method']);
-
-						if ($payment_method->customer !== $customer->id) {
-							try {
-								$payment_method->attach(['customer' => $customer->id]);
-							} catch (Exception $attachError) {
-								throw $attachError;
-							}
-						}
+				try {
+					// Retrieve and attach payment method if needed
+					$payment_method = \Stripe\PaymentMethod::retrieve($stripe_payment_data['payment_method']);
+					if ($payment_method->customer !== $customer->id) {
+						$payment_method->attach(['customer' => $customer->id]);
+					}
+				
+					// Update customer's default payment method
+					\Stripe\Customer::update(
+						$customer->id,
+						[
+							'invoice_settings' => [
+								'default_payment_method' => $stripe_payment_data['payment_method']
+							]
+						]
+					);
 					
-						// Log the update attempt
-						try {
-							\Stripe\Customer::update(
-								$customer->id,
-								[
-									'invoice_settings' => [
-										'default_payment_method' => $stripe_payment_data['payment_method']
-									]
-								]
-							);
-						} catch (Exception $updateError) {
-							throw $updateError;
-						}
-
-						// Create subscription
-					$subscription_params = [
-						'customer' => $customer->id,
-						'default_payment_method' => $stripe_payment_data['payment_method'],
-						'items' => $this->prepare_subscription_items($cart_items, $billing_data),
-						'metadata' => $this->prepare_metadata($cart_items, $billing_data),
-						'expand' => ['latest_invoice.payment_intent']
-					];
-	
-					// Add trial period if applicable
-					if ($has_free_trial) {
-						foreach ($cart_items as $item) {
-							if (!empty($item['subscription_enabled']) && 
-								!empty($item['subscription_free_trial']) &&
-								!empty($item['subscription_free_trial']['duration'])) {
-								$trial_days = $this->get_trial_period_days($item['subscription_free_trial']);
-								if ($trial_days > 0) {
-									$subscription_params['trial_period_days'] = $trial_days;
+					// Create subscription only if needed
+					if ($has_subscription) {
+						// Create subscription parameters
+						$subscription_params = [
+							'customer' => $customer->id,
+							'default_payment_method' => $stripe_payment_data['payment_method'],
+							'items' => $this->prepare_subscription_items($cart_items, $billing_data),
+							'metadata' => $this->prepare_metadata($cart_items, $billing_data),
+							'expand' => ['latest_invoice.payment_intent'],
+							'payment_settings' => [
+								'payment_method_types' => ['card'],
+								'save_default_payment_method' => 'on_subscription'
+							],
+							'collection_method' => 'charge_automatically',
+						];
+						
+						// PREVENT DOUBLE CHARGING - Key changes here
+						if ($has_free_trial) {
+							// If there's a trial period specified in the product
+							foreach ($cart_items as $item) {
+								if (!empty($item['subscription_enabled']) && 
+									!empty($item['subscription_free_trial']) &&
+									!empty($item['subscription_free_trial']['duration'])) {
+									$trial_days = $this->get_trial_period_days($item['subscription_free_trial']);
+									if ($trial_days > 0) {
+										$subscription_params['trial_period_days'] = $trial_days;
+									}
+									break;
 								}
-								break;
 							}
 						}
+						elseif ($has_signup_fee || $one_time_products_total > 0) {
+							// If we're charging an initial payment (signup fee or one-time products),
+							// delay the first subscription invoice by using billing cycle anchor
+							$subscription_params['billing_cycle_anchor'] = strtotime('+1 ' . $this->get_stripe_interval($item['subscription_period']));
+							$subscription_params['proration_behavior'] = 'none';
+						}
+						elseif ($subscription_products_total > 0 && $initial_payment == 0) {
+							// Only subscription products with no initial payment
+							// Use default_incomplete so we can confirm the payment manually
+							$subscription_params['payment_behavior'] = 'default_incomplete';
+						}
+				
+						// Create subscription
+						$subscription = \Stripe\Subscription::create($subscription_params);
+				
+						// Check if subscription payment requires authentication
+						if (!empty($subscription_params['trial_period_days']) || 
+							!empty($subscription_params['billing_cycle_anchor'])) {
+							// No payment needed for trial subscriptions or when using billing_cycle_anchor
+							$response['data']['subscriptionId'] = $subscription->id;
+							wp_send_json_success($response['data']);
+							return;
+						}
+				
+						// For non-trial, immediate payment subscriptions, check if payment requires action
+						if (isset($subscription->latest_invoice->payment_intent) &&
+							($subscription->latest_invoice->payment_intent->status === 'requires_action' ||
+							$subscription->latest_invoice->payment_intent->status === 'requires_confirmation')) {
+							
+							wp_send_json_success([
+								'subscriptionId' => $subscription->id,
+								'requiresAction' => true,
+								'clientSecret' => $subscription->latest_invoice->payment_intent->client_secret
+							]);
+							return;
+						}
+				
+						// Return subscription ID for successful subscriptions
+						$response['data']['subscriptionId'] = $subscription->id;
 					}
-	
-					$subscription = \Stripe\Subscription::create($subscription_params);
-					$response['data']['subscriptionId'] = $subscription->id;
 					
-					} catch (\Stripe\Exception\CardException $e) {
-						wp_send_json_error(['message' => $e->getMessage()]);
-						return;
-					} catch (Exception $e) {
-						wp_send_json_error(['message' => $e->getMessage()]);
-						return;
-					}
+					wp_send_json_success($response['data']);
+					
+				} catch (\Stripe\Exception\CardException $e) {
+					wp_send_json_error(['message' => $e->getMessage()]);
+				} catch (Exception $e) {
+					wp_send_json_error(['message' => $e->getMessage()]);
+				}
 			}
 			// If no payment method/setup intent, prepare intents based on payment requirements
 			else {
@@ -258,13 +308,15 @@ class DigiCommerce_Stripe {
 						'id' => $setup_intent->id
 					];
 				}
-	
+
 				// Create PaymentIntent if there's an immediate payment needed
 				if ($total > 0) {
 					$payment_intent = \Stripe\PaymentIntent::create([
 						'amount' => $this->convert_to_cents($total),
 						'currency' => strtolower(DigiCommerce()->get_option('currency', 'USD')),
 						'customer' => $customer->id,
+						'setup_future_usage' => $has_subscription ? 'off_session' : null,
+						'payment_method_types' => ['card'],
 						'metadata' => array_merge(
 							$this->prepare_metadata($cart_items, $billing_data),
 							[
@@ -278,7 +330,7 @@ class DigiCommerce_Stripe {
 						),
 						'description' => $this->get_payment_description($cart_items)
 					]);
-	
+
 					$response['data']['paymentIntent'] = [
 						'client_secret' => $payment_intent->client_secret,
 						'id' => $payment_intent->id
@@ -287,6 +339,42 @@ class DigiCommerce_Stripe {
 			}
 	
 			wp_send_json_success($response['data']);
+	
+		} catch (Exception $e) {
+			wp_send_json_error(['message' => $e->getMessage()]);
+		}
+	}
+
+	public function verify_subscription_status() {
+		try {
+			check_ajax_referer('digicommerce_process_checkout', 'nonce');
+	
+			$subscription_id = sanitize_text_field($_POST['subscription_id'] ?? '');
+			$payment_intent_id = sanitize_text_field($_POST['payment_intent_id'] ?? '');
+	
+			if (empty($subscription_id)) {
+				throw new Exception('Subscription ID is required');
+			}
+	
+			// Retrieve and check subscription status
+			$subscription = \Stripe\Subscription::retrieve([
+				'id' => $subscription_id,
+				'expand' => ['latest_invoice.payment_intent']
+			]);
+	
+			if ($subscription->status !== 'active' && $subscription->status !== 'trialing') {
+				throw new Exception('Subscription is not active');
+			}
+	
+			// If there was a payment, verify it succeeded
+			if ($payment_intent_id) {
+				$payment_intent = \Stripe\PaymentIntent::retrieve($payment_intent_id);
+				if ($payment_intent->status !== 'succeeded') {
+					throw new Exception('Payment was not successful');
+				}
+			}
+	
+			wp_send_json_success(['status' => $subscription->status]);
 	
 		} catch (Exception $e) {
 			wp_send_json_error(['message' => $e->getMessage()]);

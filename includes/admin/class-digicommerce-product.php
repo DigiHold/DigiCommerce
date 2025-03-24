@@ -237,6 +237,7 @@ class DigiCommerce_Product {
 													'properties' => array(
 														'version' => array( 'type' => 'string' ),
 														'changelog' => array( 'type' => 'string' ),
+														'release_date' => array( 'type' => 'string' ),
 													),
 												),
 											),
@@ -306,7 +307,8 @@ class DigiCommerce_Product {
 										'type' => 'object',
 										'properties' => array(
 											'version' => array( 'type' => 'string' ),
-											'changelog' => array( 'type' => 'string' )
+											'changelog' => array( 'type' => 'string' ),
+											'release_date' => array( 'type' => 'string' ),
 										)
 									)
 								),

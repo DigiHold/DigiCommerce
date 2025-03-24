@@ -61,7 +61,11 @@
 				return;
 			}
 
-			onSave({ version: version.trim(), changelog: changelog.trim() });
+			onSave({ 
+				version: version.trim(), 
+				changelog: changelog.trim(),
+				release_date: new Date().toISOString()
+			});
 			onClose();
 		};
 

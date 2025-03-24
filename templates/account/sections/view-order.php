@@ -5,6 +5,12 @@
 
 defined( 'ABSPATH' ) || exit;
 
+error_log('Order ID: ' . (isset($_GET['view-order']) ? $_GET['view-order'] : 'not set'));
+				error_log('Order Data: ' . (is_array($order_data) ? 'exists' : 'is false or empty'));
+				if (is_array($order_data)) {
+					error_log('Order ID from data: ' . (isset($order_data['id']) ? $order_data['id'] : 'not set'));
+				}
+
 // Get order ID from the order data
 $order_id = isset( $order_data['id'] ) ? $order_data['id'] : null;
 

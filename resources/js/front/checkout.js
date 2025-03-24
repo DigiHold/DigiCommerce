@@ -46,9 +46,9 @@ const DigiUI = {
 
 // Stripe Payment Handler Functions
 const DigiStripe = {
-	async handlePayment(formData, cardElement, stripeInstance) {
+    async handlePayment(formData, cardElement, stripeInstance) {
 		try {
-			// First handle card setup/confirmation
+			// Step 1: Get customer and payment intents information
 			const setupResponse = await fetch(digicommerceVars.ajaxurl, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -60,12 +60,10 @@ const DigiStripe = {
 			});
 	
 			const setupResult = await setupResponse.json();
-	
 			if (!setupResult.success) {
 				throw new Error(setupResult.data?.message || 'Payment setup failed');
 			}
 	
-			// Confirm card setup and payment
 			const paymentData = {
 				payment_method: {
 					card: cardElement,
@@ -76,64 +74,85 @@ const DigiStripe = {
 			let finalData = {
 				customer_id: setupResult.data.customerId
 			};
+            
+            // Check if the cart has a subscription item
+            const hasSubscription = setupResult.data.setupIntent !== undefined;
 	
-			// Handle setup intent if exists (for subscriptions)
+			// Step 2: Handle SetupIntent for subscription if present
 			if (setupResult.data.setupIntent) {
 				const { setupIntent, error: setupError } = await stripeInstance.confirmCardSetup(
 					setupResult.data.setupIntent.client_secret,
 					paymentData
 				);
-			
+	
 				if (setupError) {
 					throw new Error(setupError.message);
 				}
-				
-				if (setupIntent.status === 'succeeded') {
-					// Send request to create subscription
-					const subscriptionResponse = await fetch(digicommerceVars.ajaxurl, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-						body: new URLSearchParams({
-							action: 'digicommerce_process_stripe_payment',
-							nonce: formData.get('checkout_nonce'),
-							stripe_payment_data: JSON.stringify({
-								customer_id: setupResult.data.customerId,
-								payment_method: setupIntent.payment_method,
-								setup_intent_id: setupIntent.id
-							}),
-							...this.getFormFields(formData),
-						})
-					});
 	
-					const subscriptionResult = await subscriptionResponse.json();
-					if (!subscriptionResult.success) {
-						throw new Error(subscriptionResult.data?.message || 'Failed to create subscription');
-					}
-	
-					finalData = {
-						...finalData,
-						payment_method: setupIntent.payment_method,
-						setup_intent_id: setupIntent.id,
-						subscription_id: subscriptionResult.data.subscriptionId
-					};
-				}
+				finalData.payment_method = setupIntent.payment_method;
+				finalData.setup_intent_id = setupIntent.id;
 			}
 	
-			// Handle payment intent if exists
+			// Step 3: Handle regular PaymentIntent if present
 			if (setupResult.data.paymentIntent) {
+				const paymentConfirmData = finalData.payment_method ? 
+					{ payment_method: finalData.payment_method } : paymentData;
+	
 				const { paymentIntent, error: paymentError } = await stripeInstance.confirmCardPayment(
 					setupResult.data.paymentIntent.client_secret,
-					paymentData
+					paymentConfirmData
 				);
-			
+	
 				if (paymentError) {
 					throw new Error(paymentError.message);
 				}
-			
+	
 				finalData.payment_intent_id = paymentIntent.id;
+				if (!finalData.payment_method) {
+					finalData.payment_method = paymentIntent.payment_method;
+				}
 			}
 	
-			// Send final checkout data
+			// Step 4: Send payment method to create subscription - ONLY FOR SUBSCRIPTIONS
+			if (finalData.payment_method && hasSubscription && finalData.setup_intent_id) {
+				const subscriptionResponse = await fetch(digicommerceVars.ajaxurl, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: new URLSearchParams({
+						action: 'digicommerce_process_stripe_payment',
+						nonce: formData.get('checkout_nonce'),
+						stripe_payment_data: JSON.stringify(finalData),
+						...this.getFormFields(formData),
+					})
+				});
+			
+				const subscriptionResult = await subscriptionResponse.json();
+				
+				if (!subscriptionResult.success) {
+					throw new Error(subscriptionResult.data?.message || 'Failed to create subscription');
+				}
+	
+				// Handle 3D Secure authentication for subscription
+				if (subscriptionResult.data.requiresAction && subscriptionResult.data.clientSecret) {
+					const { paymentIntent, error: confirmError } = await stripeInstance.confirmCardPayment(
+						subscriptionResult.data.clientSecret
+					);
+	
+					if (confirmError) {
+						throw new Error(confirmError.message);
+					}
+					
+					// Store the payment intent ID from the subscription's initial payment
+					finalData.payment_intent_id = paymentIntent.id;
+				}
+				
+				// Store the subscription ID
+				if (subscriptionResult.data.subscriptionId) {
+					finalData.subscription_id = subscriptionResult.data.subscriptionId;
+				}
+			}
+	
+			// Step 5: Process final checkout
 			return await this.processCheckout(new URLSearchParams({
 				action: 'digicommerce_process_checkout',
 				checkout_nonce: formData.get('checkout_nonce'),
@@ -147,23 +166,21 @@ const DigiStripe = {
 			throw error;
 		}
 	},
-	
-	async processCheckout(data) {
-        const response = await fetch(digicommerceVars.ajaxurl, {
+
+    processCheckout(data) {
+        return fetch(digicommerceVars.ajaxurl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
             body: data
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.data?.message || 'Checkout processing failed');
-        }
-
-        return result;
+        }).then(response => response.json())
+          .then(result => {
+              if (!result.success) {
+                  throw new Error(result.data?.message || 'Checkout processing failed');
+              }
+              return result;
+          });
     },
 
     getBillingDetails(formData) {
@@ -181,36 +198,33 @@ const DigiStripe = {
     },
 
     getFormFields(formData) {
-        // Get the base fields
-		const fields = {
-			first_name: formData.get('billing_first_name'),
-			last_name: formData.get('billing_last_name'),
-			email: formData.get('billing_email'),
-			phone: formData.get('billing_phone'),
-			company: formData.get('billing_company') || '',
-			address: formData.get('billing_address'),
-			city: formData.get('billing_city'),
-			postcode: formData.get('billing_postcode'),
-			country: formData.get('billing_country'),
-			vat_number: formData.get('billing_vat_number') || ''
-		};
+        const fields = {
+            first_name: formData.get('billing_first_name'),
+            last_name: formData.get('billing_last_name'),
+            email: formData.get('billing_email'),
+            phone: formData.get('billing_phone'),
+            company: formData.get('billing_company') || '',
+            address: formData.get('billing_address'),
+            city: formData.get('billing_city'),
+            postcode: formData.get('billing_postcode'),
+            country: formData.get('billing_country'),
+            vat_number: formData.get('billing_vat_number') || ''
+        };
 
-		// Add mailing list subscription status if the checkbox exists
-		const mailingListCheckbox = document.getElementById('subscribe_mailing_list');
-		if (mailingListCheckbox) {
-			fields.subscribe_mailing_list = mailingListCheckbox.checked ? '1' : '0';
-		}
+        const mailingListCheckbox = document.getElementById('subscribe_mailing_list');
+        if (mailingListCheckbox) {
+            fields.subscribe_mailing_list = mailingListCheckbox.checked ? '1' : '0';
+        }
 
-		// Add abandoned cart params from URL if they exist
-		const urlParams = new URLSearchParams(window.location.search);
-		if (urlParams.get('from_abandoned') === '1') {
-			fields.from_abandoned = '1';
-			if (urlParams.get('coupon')) {
-				fields.recovery_coupon = urlParams.get('coupon');
-			}
-		}
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('from_abandoned') === '1') {
+            fields.from_abandoned = '1';
+            if (urlParams.get('coupon')) {
+                fields.recovery_coupon = urlParams.get('coupon');
+            }
+        }
 
-		return fields;
+        return fields;
     }
 };
 

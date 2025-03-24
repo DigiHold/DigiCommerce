@@ -121,7 +121,11 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			// Add page state labels in admin
 			add_filter( 'display_post_states', array( $this, 'add_page_state_labels' ), 10, 2 );
 
+			// Loads options.
 			$this->load_options();
+
+			// Add theme compatibility.
+			$this->themes_compatibility();
 
 			// Add body class
 			add_action( 'template_redirect', array( $this, 'maybe_add_recaptcha_class' ) );
@@ -287,6 +291,38 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 
 			if ( $row ) {
 				$this->options = maybe_unserialize( $row->option_value );
+			}
+		}
+
+		/**
+		 * Theme compatibility
+		 */
+		public function themes_compatibility() {
+			// Get theme template (parent theme) and stylesheet (child theme if used).
+			$template   = get_template();
+			$stylesheet = get_stylesheet();
+
+			// Map of theme slugs to compatibility class file names.
+			$theme_compatibility = array(
+				'blocksy',
+				'hello-elementor',
+				'hestia',
+				'kadence',
+				'neve',
+				'oceanwp',
+			);
+
+			// Check if current theme has compatibility file.
+			foreach ( $theme_compatibility as $theme_slug ) {
+				// Check if this theme or its parent is active.
+				if ( $theme_slug === $template || $theme_slug === $stylesheet ) {
+					$file_path = DIGICOMMERCE_PLUGIN_DIR . 'includes/compatibility/class-digicommerce-' . $theme_slug . '.php';
+
+					if ( file_exists( $file_path ) ) {
+						require_once $file_path;
+						break; // Stop after first match.
+					}
+				}
 			}
 		}
 
@@ -673,7 +709,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 						$localized_vars
 					);
 
-					$localized = true; // Set the flag to true after localizing
+					$localized = true;
 				}
 			}
 		}

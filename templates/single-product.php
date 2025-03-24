@@ -57,6 +57,8 @@ $allowed_html = array(
 );
 ?>
 
+<?php do_action( 'digicommerce_before_wrapper' ); ?>
+
 <div class="digicommerce-single-product digicommerce flex flex-col gap-8 py-12">
 	<div class="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start">
 		<!-- Product Image -->
@@ -404,6 +406,8 @@ $allowed_html = array(
 
 	<?php do_action( 'digicommerce_after_single_product' ); ?>
 </div>
+
+<?php do_action( 'digicommerce_after_wrapper' ); ?>
 
 <?php
 get_footer();

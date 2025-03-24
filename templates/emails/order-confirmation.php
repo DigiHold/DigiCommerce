@@ -195,24 +195,20 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 										$files_to_show = $show_variation_files ? $variation_files : $regular_files;
 
 										if ( ! empty( $files_to_show ) && is_array( $files_to_show ) ) :
+											// Get only the latest file (last item in the array)
+											$latest_file = end($files_to_show);
+											
+											if ( !empty( $latest_file['id'] ) ) :
 											?>
 											<div style="margin-top: 10px;">
-												<?php
-												foreach ( $files_to_show as $file ) :
-													if ( empty( $file['id'] ) ) {
-														continue;
-													}
-													?>
-													<div style="margin: 5px 0;">
-														<a href="<?php echo DigiCommerce_Files::instance()->generate_secure_download_url( $file['id'], $order_id, true ); ?>" style="display: inline-block; padding: 8px 15px; background-color: #e5e7eb; color: #374151; text-decoration: none; border-radius: 4px; font-size: 14px;">
-															<?php esc_html_e( 'Download', 'digicommerce' ); ?>
-														</a>
-													</div>
-													<?php
-												endforeach;
-												?>
+												<div style="margin: 5px 0;">
+													<a href="<?php echo DigiCommerce_Files::instance()->generate_secure_download_url( $latest_file['id'], $order_id, true ); ?>" style="display: inline-block; padding: 8px 15px; background-color: #e5e7eb; color: #374151; text-decoration: none; border-radius: 4px; font-size: 14px;">
+														<?php esc_html_e( 'Download', 'digicommerce' ); ?>
+													</a>
+												</div>
 											</div>
 											<?php
+											endif;
 										endif;
 									}
 									?>

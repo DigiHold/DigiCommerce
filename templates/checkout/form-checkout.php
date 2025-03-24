@@ -228,7 +228,7 @@ if ( ! $minimal_style ) {
 										</label>
 									</div>
 
-									<div class="field relative col-span-6 lg:col-span-1 bg-gray-950">
+									<div class="field relative col-span-6 lg:col-span-1">
 										<input type="text" id="billing_city" name="billing_city" class="default-transition" value="<?php echo esc_attr( $user_data['city'] ?? '' ); ?>" required>
 										<label class="flex justify-start gap-[.1rem]" for="billing_city">
 											<?php esc_html_e( 'City', 'digicommerce' ); ?>
@@ -384,7 +384,7 @@ if ( ! $minimal_style ) {
 										if ( ! $stripe_enabled && ! $paypal_enabled ) {
 											?>
 											<!-- No Payment Methods Configured -->
-											<div class="flex items-centergap-4">
+											<div class="flex items-center gap-4">
 												<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 48" width="40" height="30">
 													<g clip-path="url(#clip0)">
 														<path d="M55.4 46H22c-3.6 0-5.8-4-4-7l16.8-28c1.8-3 6.2-2.9 8 .1l16.5 28c1.9 3-.4 6.9-4 6.9z" fill="#FFE599"></path>

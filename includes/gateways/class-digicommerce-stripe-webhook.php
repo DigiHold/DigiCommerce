@@ -171,8 +171,8 @@ class DigiCommerce_Stripe_Webhook {
 				$order_id = $wpdb->get_var(
 					$wpdb->prepare(
 						"SELECT order_id FROM {$wpdb->prefix}digicommerce_order_meta 
-                    WHERE meta_key IN ('_stripe_payment_intent_id', '_stripe_initial_payment_intent_id') 
-                    AND meta_value = %s",
+						WHERE meta_key IN ('_stripe_payment_intent_id', '_stripe_initial_payment_intent_id') 
+						AND meta_value = %s",
 						$payment_intent
 					)
 				);
@@ -237,47 +237,66 @@ class DigiCommerce_Stripe_Webhook {
 				);
 
 				// Handle subscription if exists
+				$subscription_id = null;
+
+				// First, try to get subscription ID directly from subscription items
 				$subscription_id = $wpdb->get_var(
 					$wpdb->prepare(
 						"SELECT si.subscription_id 
-                    FROM {$wpdb->prefix}digicommerce_subscription_items si
-                    WHERE si.order_id = %d",
+						FROM {$wpdb->prefix}digicommerce_subscription_items si
+						WHERE si.order_id = %d",
 						$order_id
 					)
 				);
 
-				if ( $subscription_id ) {
-					// Handle both initial payment and regular subscription refunds
-					$stripe_subscription_id = null;
-
-					// Check if this is an initial payment refund
-					if ( isset( $charge->metadata->is_subscription_initial ) && $charge->metadata->is_subscription_initial === 'true' ) {
-						// Get subscription ID from meta for initial payment
-						$stripe_subscription_id = $wpdb->get_var(
+				// If not found and this is an initial subscription payment
+				if (!$subscription_id && isset($charge->metadata->is_subscription_initial) && $charge->metadata->is_subscription_initial === 'true') {
+					// Try to get from metadata order ID
+					$metadata_order_id = isset($charge->metadata->order_id) ? intval($charge->metadata->order_id) : null;
+					
+					if ($metadata_order_id) {
+						$subscription_id = $wpdb->get_var(
 							$wpdb->prepare(
-								"SELECT meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
-                            WHERE order_id = %d AND meta_key = '_stripe_subscription_id'",
-								$charge->metadata->order_id
+								"SELECT si.subscription_id 
+								FROM {$wpdb->prefix}digicommerce_subscription_items si
+								WHERE si.order_id = %d",
+								$metadata_order_id
 							)
 						);
-					} else {
-						// Regular subscription payment refund
+					}
+				}
+
+				if ($subscription_id) {
+					// Handle subscription cancellation
+					// Get Stripe subscription ID
+					$stripe_subscription_id = $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
+							WHERE order_id = %d AND meta_key = '_stripe_subscription_id'",
+							$order_id
+						)
+					);
+
+					if (!$stripe_subscription_id && isset($charge->metadata->order_id)) {
+						// Try to get from metadata order ID
 						$stripe_subscription_id = $wpdb->get_var(
 							$wpdb->prepare(
 								"SELECT meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
-                            WHERE order_id = %d AND meta_key = '_stripe_subscription_id'",
-								$order_id
+								WHERE order_id = %d AND meta_key = '_stripe_subscription_id'",
+								$charge->metadata->order_id
 							)
 						);
 					}
 
-					if ( $stripe_subscription_id ) {
+					if ($stripe_subscription_id) {
 						try {
-							$stripe_subscription = \Stripe\Subscription::retrieve( $stripe_subscription_id );
-							if ( $stripe_subscription->status !== 'canceled' ) {
+							$stripe_subscription = \Stripe\Subscription::retrieve($stripe_subscription_id);
+							if ($stripe_subscription->status !== 'canceled') {
 								$stripe_subscription->cancel();
 							}
-						} catch ( Exception $e ) {
+						} catch (Exception $e) {
+							// Log the error but continue with the local cancellation
+							error_log('Error cancelling Stripe subscription: ' . $e->getMessage());
 						}
 					}
 
@@ -286,23 +305,23 @@ class DigiCommerce_Stripe_Webhook {
 						$wpdb->prefix . 'digicommerce_subscriptions',
 						array(
 							'status'        => 'cancelled',
-							'date_modified' => current_time( 'mysql' ),
+							'date_modified' => current_time('mysql'),
 						),
-						array( 'id' => $subscription_id ),
-						array( '%s', '%s' ),
-						array( '%d' )
+						array('id' => $subscription_id),
+						array('%s', '%s'),
+						array('%d')
 					);
 
 					// Cancel pending schedules
 					$wpdb->update(
 						$wpdb->prefix . 'digicommerce_subscription_schedule',
-						array( 'status' => 'cancelled' ),
+						array('status' => 'cancelled'),
 						array(
 							'subscription_id' => $subscription_id,
 							'status'          => 'pending',
 						),
-						array( '%s' ),
-						array( '%d', '%s' )
+						array('%s'),
+						array('%d', '%s')
 					);
 
 					// Add subscription note
@@ -313,10 +332,10 @@ class DigiCommerce_Stripe_Webhook {
 							'meta_key'        => 'note',
 							'meta_value'      => 'Subscription cancelled due to order refund in Stripe.',
 						),
-						array( '%d', '%s', '%s' )
+						array('%d', '%s', '%s')
 					);
 
-					do_action( 'digicommerce_subscription_cancelled', $subscription_id );
+					do_action('digicommerce_subscription_cancelled', $subscription_id);
 				}
 
 				$wpdb->query( 'COMMIT' );
@@ -347,11 +366,11 @@ class DigiCommerce_Stripe_Webhook {
 			$subscription_id = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT si.subscription_id
-                FROM {$wpdb->prefix}digicommerce_subscription_items si
-                JOIN {$wpdb->prefix}digicommerce_order_meta om ON si.order_id = om.order_id
-                WHERE om.meta_key = '_stripe_subscription_id' 
-                AND om.meta_value = %s
-                LIMIT 1",
+					FROM {$wpdb->prefix}digicommerce_subscription_items si
+					JOIN {$wpdb->prefix}digicommerce_order_meta om ON si.order_id = om.order_id
+					WHERE om.meta_key = '_stripe_subscription_id' 
+					AND om.meta_value = %s
+					LIMIT 1",
 					$invoice->subscription
 				)
 			);
@@ -365,26 +384,52 @@ class DigiCommerce_Stripe_Webhook {
 				$subscription = \Stripe\Subscription::retrieve( $invoice->subscription );
 				$next_payment = date( 'Y-m-d H:i:s', $subscription->current_period_end );
 
-				$wpdb->update(
+				// Update subscription next payment date
+				$result1 = $wpdb->update(
 					$wpdb->prefix . 'digicommerce_subscriptions',
 					array(
 						'next_payment'  => $next_payment,
 						'date_modified' => current_time( 'mysql' ),
+						'status'        => 'active', // Ensure subscription is active
 					),
 					array( 'id' => $subscription_id ),
-					array( '%s', '%s' ),
+					array( '%s', '%s', '%s' ),
 					array( '%d' )
 				);
 
+				if ( $result1 === false ) {
+					error_log( 'Failed to update subscription next payment date for subscription ID: ' . $subscription_id );
+				}
+
 				// Update license expiration to match next payment
-				$wpdb->query($wpdb->prepare(
-					"UPDATE {$wpdb->prefix}digicommerce_licenses l
-					JOIN {$wpdb->prefix}digicommerce_subscription_items si ON l.order_id = si.order_id
-					SET l.expires_at = %s
-					WHERE si.subscription_id = %d",
-					$next_payment,
-					$subscription_id
-				));
+				// First, get all orders for this subscription
+				$order_ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT order_id FROM {$wpdb->prefix}digicommerce_subscription_items 
+						WHERE subscription_id = %d",
+						$subscription_id
+					)
+				);
+
+				if ( !empty( $order_ids ) ) {
+					// Update all licenses associated with these orders
+					$order_ids_placeholders = implode( ',', array_fill( 0, count( $order_ids ), '%d' ) );
+					$query_params = array_merge(
+						array( $next_payment, 'active', current_time( 'mysql' ) ),
+						$order_ids
+					);
+					
+					$result2 = $wpdb->query( $wpdb->prepare(
+						"UPDATE {$wpdb->prefix}digicommerce_licenses 
+						SET expires_at = %s, status = %s, date_modified = %s
+						WHERE order_id IN ($order_ids_placeholders)",
+						$query_params
+					) );
+
+					if ( $result2 === false ) {
+						error_log( 'Failed to update license expiration dates for subscription ID: ' . $subscription_id );
+					}
+				}
 
 				do_action( 'digicommerce_subscription_payment_success', $subscription_id );
 			} else {

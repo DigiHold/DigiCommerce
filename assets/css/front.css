@@ -349,10 +349,6 @@
   grid-template-columns:repeat(4, minmax(0, 1fr))
 }
 
-.flex-row{
-  flex-direction:row
-}
-
 .flex-col{
   flex-direction:column
 }
@@ -600,11 +596,6 @@
 .bg-gray-500{
   --tw-bg-opacity:1;
   background-color:rgb(107 114 128 / var(--tw-bg-opacity, 1))
-}
-
-.bg-gray-950{
-  --tw-bg-opacity:1;
-  background-color:rgb(3 7 18 / var(--tw-bg-opacity, 1))
 }
 
 .bg-green-500{
@@ -3021,10 +3012,6 @@ input[type='radio']:checked + .payment_method_name{
 
   .sm\:flex-row{
     flex-direction:row
-  }
-
-  .sm\:flex-col{
-    flex-direction:column
   }
 
   .sm\:items-center{

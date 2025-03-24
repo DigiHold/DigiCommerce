@@ -40,7 +40,7 @@ class DigiCommerce_PayPal_Webhook {
 							'BILLING.SUBSCRIPTION.UPDATED',
 							'BILLING.SUBSCRIPTION.CANCELLED',
 							'BILLING.SUBSCRIPTION.SUSPENDED',
-							'BILLING.SUBSCRIPTION.PAYMENT.SUCCEEDED',
+							'BILLING.SUBSCRIPTION.EXPIRED',
 							'BILLING.SUBSCRIPTION.PAYMENT.FAILED'
 						),
 						'sanitize_callback' => 'sanitize_text_field'
@@ -427,7 +427,8 @@ class DigiCommerce_PayPal_Webhook {
 				// Update license expiration to match next payment
 				$wpdb->query($wpdb->prepare(
 					"UPDATE {$wpdb->prefix}digicommerce_licenses l
-					JOIN {$wpdb->prefix}digicommerce_subscription_items si ON l.order_id = si.order_id
+					JOIN {$wpdb->prefix}digicommerce_subscription_items si 
+						ON l.order_id = si.order_id AND l.product_id = si.product_id
 					SET l.expires_at = %s
 					WHERE si.subscription_id = %d",
 					$next_payment,
