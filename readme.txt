@@ -15,6 +15,15 @@ DigiCommerce transforms your WordPress site into a high-performance ecommerce pl
 
 https://digicommerce.me
 
+== Demos ==
+
+[Hotel](https://hotel.digidemo.me/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)
+[Training Coach](https://coach.digidemo.me/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)
+[Beauty Spa](https://spa.digidemo.me/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)
+[Restaurant](https://resto.digidemo.me/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)
+[eBook](https://ebook.digidemo.me/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)
+[Images](https://images.digidemo.me/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)
+
 **Perfect for Digital Products**
 * Ebooks and digital publications
 * Software licenses and applications

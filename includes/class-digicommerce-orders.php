@@ -368,33 +368,7 @@ class DigiCommerce_Orders {
 				);
 
 				$wpdb->query(
-					$wpdb->prepare(
-						"INSERT INTO {$this->table_billing}
-                        (order_id, first_name, last_name, company, address, city, postcode, country, email, phone, vat_number) 
-                        VALUES (%d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        ON DUPLICATE KEY UPDATE 
-                        first_name = VALUES(first_name),
-                        last_name = VALUES(last_name),
-                        company = VALUES(company),
-                        address = VALUES(address),
-                        city = VALUES(city),
-                        postcode = VALUES(postcode),
-                        country = VALUES(country),
-                        email = VALUES(email),
-                        phone = VALUES(phone),
-                        vat_number = VALUES(vat_number)",
-						$billing_data['order_id'],
-						$billing_data['first_name'],
-						$billing_data['last_name'],
-						$billing_data['company'],
-						$billing_data['address'],
-						$billing_data['city'],
-						$billing_data['postcode'],
-						$billing_data['country'],
-						$billing_data['email'],
-						$billing_data['phone'],
-						$billing_data['vat_number']
-					)
+					$wpdb->prepare( "INSERT INTO {$this->table_billing} (order_id, first_name, last_name, company, address, city, postcode, country, email, phone, vat_number)  VALUES (%d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE  first_name = VALUES(first_name), last_name = VALUES(last_name), company = VALUES(company), address = VALUES(address), city = VALUES(city), postcode = VALUES(postcode), country = VALUES(country), email = VALUES(email), phone = VALUES(phone), vat_number = VALUES(vat_number)", $billing_data['order_id'], $billing_data['first_name'], $billing_data['last_name'], $billing_data['company'], $billing_data['address'], $billing_data['city'], $billing_data['postcode'], $billing_data['country'], $billing_data['email'], $billing_data['phone'], $billing_data['vat_number'] ) // phpcs:ignore
 				);
 			}
 
