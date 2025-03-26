@@ -939,6 +939,38 @@ class DigiCommerce_Checkout {
 			exit;
 		}
 
+		// Check for abandoned cart
+		if ( isset( $_GET['from_abandoned'] ) && '1' === $_GET['from_abandoned'] && isset( $_GET['customer_email'] ) && class_exists( 'DigiCommerce_Pro' ) ) {
+			$email = sanitize_email( urldecode( $_GET['customer_email'] ) );
+
+			// Check if cart is empty (session expired or new session)
+			if ( empty( $this->cart_items ) ) {
+				global $wpdb;
+
+				// Get the cart data from abandoned_carts table
+				$table_abandoned_cart = $wpdb->prefix . 'digicommerce_abandoned_carts';
+				$abandoned_cart       = $wpdb->get_row(
+					$wpdb->prepare( "SELECT * FROM {$table_abandoned_cart} WHERE email = %s AND recovered = 0 ORDER BY created_at DESC LIMIT 1", $email ) // phpcs:ignore
+				);
+
+				if ( $abandoned_cart && ! empty( $abandoned_cart->cart_contents ) ) {
+					// Get current session key
+					$session_key  = $this->get_current_session_key();
+					$session_data = $this->get_session( $session_key ) ? : array();
+
+					// Restore cart items from abandoned cart
+					$cart_items = json_decode( $abandoned_cart->cart_contents, true );
+					if ( json_last_error() === JSON_ERROR_NONE && is_array( $cart_items ) ) {
+						$session_data['cart'] = $cart_items;
+						$this->cart_items     = $cart_items;
+
+						// Save restored cart to session
+						$this->save_session( $session_key, $session_data );
+					}
+				}
+			}
+		}
+
 		// Get product ID, variation index, and coupon code from the URL parameters.
 		$product_id      = isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0;
 		$variation_index = isset( $_GET['variation'] ) ? ( intval( $_GET['variation'] ) - 1 ) : -1;
