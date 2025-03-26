@@ -60,7 +60,7 @@ class DigiCommerce_PayPal {
 	 *
 	 * @return string
 	 */
-	private function get_api_url() {
+	public function get_api_url() {
 		return $this->is_sandbox
 			? 'https://api-m.sandbox.paypal.com'
 			: 'https://api-m.paypal.com';
@@ -72,7 +72,7 @@ class DigiCommerce_PayPal {
 	 * @return string
 	 * @throws Exception If access token cannot be retrieved.
 	 */
-	private function get_access_token() {
+	public function get_access_token() {
 		if ( empty( $this->client_id ) || empty( $this->client_secret ) ) {
 			throw new Exception( esc_html__( 'PayPal configuration incomplete', 'digicommerce' ) );
 		}
@@ -768,60 +768,6 @@ class DigiCommerce_PayPal {
 		} catch ( Exception $e ) {
 			throw new Exception( 'Refund failed: ' . $e->getMessage() ); // phpcs:ignore
 		}
-	}
-
-	/**
-	 * Verify PayPal webhook signature
-	 *
-	 * @param array  $headers The webhook headers.
-	 * @param string $payload The webhook payload.
-	 * @param string $webhook_id The webhook ID.
-	 * @return bool Whether the signature is valid.
-	 * @throws Exception If verification fails.
-	 */
-	public function verify_webhook_signature( $headers, $payload, $webhook_id ) {
-		if ( empty( $webhook_id ) ) {
-			throw new Exception( 'Webhook ID not configured' );
-		}
-
-		$transmission_id = $headers['PayPal-Transmission-Id'] ?? '';
-		$timestamp       = $headers['PayPal-Transmission-Time'] ?? '';
-		$signature       = $headers['PayPal-Transmission-Sig'] ?? '';
-		$cert_url        = $headers['PayPal-Cert-Url'] ?? '';
-		$auth_algo       = $headers['PayPal-Auth-Algo'] ?? '';
-
-		if ( empty( $transmission_id ) || empty( $timestamp ) ||
-			empty( $signature ) || empty( $cert_url ) || empty( $auth_algo ) ) {
-			throw new Exception( 'Missing required webhook headers' );
-		}
-
-		$verify_data = array(
-			'auth_algo'         => $auth_algo,
-			'cert_url'          => $cert_url,
-			'transmission_id'   => $transmission_id,
-			'transmission_sig'  => $signature,
-			'transmission_time' => $timestamp,
-			'webhook_id'        => $webhook_id,
-			'webhook_event'     => json_decode( $payload ),
-		);
-
-		$response = wp_remote_post(
-			$this->get_api_url() . '/v1/notifications/verify-webhook-signature',
-			array(
-				'headers' => array(
-					'Authorization' => 'Bearer ' . $this->get_access_token(),
-					'Content-Type'  => 'application/json',
-				),
-				'body'    => json_encode( $verify_data ),
-			)
-		);
-
-		if ( is_wp_error( $response ) ) {
-			throw new Exception( $response->get_error_message() ); // phpcs:ignore
-		}
-
-		$body = json_decode( wp_remote_retrieve_body( $response ) );
-		return isset( $body->verification_status ) && 'SUCCESS' === $body->verification_status;
 	}
 }
 
