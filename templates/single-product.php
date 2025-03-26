@@ -227,7 +227,7 @@ $allowed_html = array(
 										?>
 										" 
 										<?php checked( isset( $variation['isDefault'] ) && $variation['isDefault'] ); ?>>
-									<label for="variation-<?php echo esc_attr( $index ); ?>" class="default-transition">
+									<label for="variation-<?php echo esc_attr( $index ); ?>" class="cursor-pointer default-transition">
 										<span class="leading-none font-bold"><?php echo esc_html( $variation['name'] ); ?></span>
 										<?php if ( isset( $variation['salePrice'] ) && $variation['salePrice'] < $variation['price'] ) : ?>
 											<span class="leading-none flex items-center gap-1">
