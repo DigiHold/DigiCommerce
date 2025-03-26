@@ -252,15 +252,15 @@ class DigiCommerce_Stripe {
 							'default_payment_method' => $stripe_payment_data['payment_method'],
 							'items'                  => $this->prepare_subscription_items( $cart_items, $billing_data ),
 							'metadata'               => $this->prepare_metadata( $cart_items, $billing_data ),
-							'expand'                 => ['latest_invoice.payment_intent'], // phpcs:ignore
+							'expand'                 => [ 'latest_invoice.payment_intent' ], // phpcs:ignore
 							'payment_settings'       => [ // phpcs:ignore
-								'payment_method_types' => ['card'], // phpcs:ignore
+								'payment_method_types' => [ 'card' ], // phpcs:ignore
 								'save_default_payment_method' => 'on_subscription',
 							],
 							'collection_method'      => 'charge_automatically',
 						];
 
-						// PREVENT DOUBLE CHARGING - Key changes here
+						// PREVENT DOUBLE CHARGING - Add discount handling
 						if ( $has_free_trial ) {
 							// If there's a trial period specified in the product
 							foreach ( $cart_items as $item ) {
@@ -283,6 +283,26 @@ class DigiCommerce_Stripe {
 							// Only subscription products with no initial payment
 							// Use default_incomplete so we can confirm the payment manually
 							$subscription_params['payment_behavior'] = 'default_incomplete';
+
+							// Handle discount for subscription-only payments with no initial payment
+							if ( ! empty( $session_data['discount'] ) ) {
+								// Create a one-time coupon in Stripe
+								$coupon = \Stripe\Coupon::create(
+									[ // phpcs:ignore
+										'duration' => 'once',
+										'currency' => strtolower( DigiCommerce()->get_option( 'currency', 'USD' ) ),
+										'name'     => 'One-time discount (' . ( $session_data['discount']['code'] ?? 'custom' ) . ')',
+										// Determine if percentage or fixed amount
+										'percentage' === $session_data['discount']['type']
+											? 'percent_off' : 'amount_off' => 'percentage' === $session_data['discount']['type']
+											? floatval( $session_data['discount']['amount'] )
+											: $this->convert_to_cents( floatval( $session_data['discount']['amount'] ) ),
+									]
+								);
+
+								// Add coupon to subscription
+								$subscription_params['coupon'] = $coupon->id;
+							}
 						}
 
 						// Create subscription
@@ -350,7 +370,7 @@ class DigiCommerce_Stripe {
 							'customer'             => $customer->id,
 							'setup_future_usage'   => $has_subscription ? 'off_session' : null,
 							'payment_method_types' => ['card'], // phpcs:ignore
-							'metadata' => array_merge(
+							'metadata'             => array_merge(
 								$this->prepare_metadata( $cart_items, $billing_data ),
 								[ // phpcs:ignore
 									'subtotal'        => $subtotal,
@@ -361,7 +381,7 @@ class DigiCommerce_Stripe {
 									'total'           => $total,
 								]
 							),
-							'description' => $this->get_payment_description( $cart_items ),
+							'description'          => $this->get_payment_description( $cart_items ),
 						]
 					);
 
