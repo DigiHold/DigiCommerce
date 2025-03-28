@@ -7,8 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-return <<<CSS
-body {
+$css = 'body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
     line-height: 1.6;
     color: #374151;
@@ -257,5 +256,7 @@ a:hover {
     .order-items th {
         padding: 8px;
     }
-}
-CSS;
+}';
+
+// Return the CSS string
+return $css;

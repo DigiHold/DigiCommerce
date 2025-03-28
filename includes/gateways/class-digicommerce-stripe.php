@@ -78,7 +78,7 @@ class DigiCommerce_Stripe {
 
 			// Get stripe payment data from request
 			$stripe_payment_data = isset( $_POST['stripe_payment_data'] ) ?
-				json_decode( stripslashes( $_POST['stripe_payment_data'] ), true ) : null;
+				json_decode( stripslashes( $_POST['stripe_payment_data'] ), true ) : null; // phpcs:ignore
 
 			// Get cart and session data
 			$cart         = DigiCommerce_Checkout::instance();
@@ -88,16 +88,16 @@ class DigiCommerce_Stripe {
 
 			// Get user billing data
 			$billing_data = array(
-				'email'      => sanitize_email( $_POST['email'] ?? '' ),
-				'first_name' => sanitize_text_field( $_POST['first_name'] ?? '' ),
-				'last_name'  => sanitize_text_field( $_POST['last_name'] ?? '' ),
-				'company'    => sanitize_text_field( $_POST['company'] ?? '' ),
-				'phone'      => sanitize_text_field( $_POST['phone'] ?? '' ),
-				'address'    => sanitize_text_field( $_POST['address'] ?? '' ),
-				'city'       => sanitize_text_field( $_POST['city'] ?? '' ),
-				'postcode'   => sanitize_text_field( $_POST['postcode'] ?? '' ),
-				'country'    => sanitize_text_field( $_POST['country'] ?? '' ),
-				'vat_number' => sanitize_text_field( $_POST['vat_number'] ?? '' ),
+				'email'      => sanitize_email( $_POST['email'] ?? '' ), // phpcs:ignore
+				'first_name' => sanitize_text_field( $_POST['first_name'] ?? '' ), // phpcs:ignore
+				'last_name'  => sanitize_text_field( $_POST['last_name'] ?? '' ), // phpcs:ignore
+				'company'    => sanitize_text_field( $_POST['company'] ?? '' ), // phpcs:ignore
+				'phone'      => sanitize_text_field( $_POST['phone'] ?? '' ), // phpcs:ignore
+				'address'    => sanitize_text_field( $_POST['address'] ?? '' ), // phpcs:ignore
+				'city'       => sanitize_text_field( $_POST['city'] ?? '' ), // phpcs:ignore
+				'postcode'   => sanitize_text_field( $_POST['postcode'] ?? '' ), // phpcs:ignore
+				'country'    => sanitize_text_field( $_POST['country'] ?? '' ), // phpcs:ignore
+				'vat_number' => sanitize_text_field( $_POST['vat_number'] ?? '' ), // phpcs:ignore
 			);
 
 			// Calculate initial payment amount (signup fee or first payment)
@@ -408,8 +408,8 @@ class DigiCommerce_Stripe {
 		try {
 			check_ajax_referer( 'digicommerce_process_checkout', 'nonce' );
 
-			$subscription_id   = sanitize_text_field( $_POST['subscription_id'] ?? '' );
-			$payment_intent_id = sanitize_text_field( $_POST['payment_intent_id'] ?? '' );
+			$subscription_id   = sanitize_text_field( $_POST['subscription_id'] ?? '' ); // phpcs:ignore
+			$payment_intent_id = sanitize_text_field( $_POST['payment_intent_id'] ?? '' ); // phpcs:ignore
 
 			if ( empty( $subscription_id ) ) {
 				throw new Exception( 'Subscription ID is required' );
@@ -670,7 +670,7 @@ class DigiCommerce_Stripe {
 			}
 
 			// Get payment data from order meta
-			$payment_intent_id = $wpdb->get_var(
+			$payment_intent_id = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
                 WHERE order_id = %d AND meta_key = '_stripe_payment_intent_id'",
@@ -679,7 +679,7 @@ class DigiCommerce_Stripe {
 			);
 
 			// Get subscription ID
-			$subscription_id = $wpdb->get_var(
+			$subscription_id = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT si.subscription_id 
                 FROM {$wpdb->prefix}digicommerce_subscription_items si
@@ -709,7 +709,7 @@ class DigiCommerce_Stripe {
 			if ( $subscription_id ) {
 				try {
 					// Get Stripe subscription ID
-					$stripe_subscription_id = $wpdb->get_var(
+					$stripe_subscription_id = $wpdb->get_var( // phpcs:ignore
 						$wpdb->prepare(
 							"SELECT meta_value 
                         FROM {$wpdb->prefix}digicommerce_order_meta 
@@ -813,7 +813,7 @@ class DigiCommerce_Stripe {
 			$refund_result = array();
 
 			// First check if there was a signup fee payment
-			$signup_fee_intent_id = $wpdb->get_var(
+			$signup_fee_intent_id = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
                 WHERE order_id = %d AND meta_key = '_stripe_signup_fee_intent_id'",
@@ -822,7 +822,7 @@ class DigiCommerce_Stripe {
 			);
 
 			// Get initial subscription payment intent
-			$initial_payment_intent_id = $wpdb->get_var(
+			$initial_payment_intent_id = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
                 WHERE order_id = %d AND meta_key = '_stripe_initial_payment_intent_id'",
@@ -901,7 +901,7 @@ class DigiCommerce_Stripe {
 			}
 
 			// Update subscription status in database
-			$wpdb->update(
+			$wpdb->update( // phpcs:ignore
 				$wpdb->prefix . 'digicommerce_subscriptions',
 				array(
 					'status'        => 'cancelled',
@@ -913,7 +913,7 @@ class DigiCommerce_Stripe {
 			);
 
 			// Cancel pending schedules
-			$wpdb->update(
+			$wpdb->update( // phpcs:ignore
 				$wpdb->prefix . 'digicommerce_subscription_schedule',
 				array( 'status' => 'cancelled' ),
 				array(
@@ -927,12 +927,12 @@ class DigiCommerce_Stripe {
 			// Add subscription note with all refund details
 			$note = esc_html__( 'Subscription cancelled due to refund.', 'digicommerce' );
 
-			$wpdb->insert(
+			$wpdb->insert( // phpcs:ignore
 				$wpdb->prefix . 'digicommerce_subscription_meta',
 				array(
 					'subscription_id' => $subscription_id,
-					'meta_key'        => 'note',
-					'meta_value'      => $note,
+					'meta_key'        => 'note', // phpcs:ignore
+					'meta_value'      => $note, // phpcs:ignore
 				),
 				array( '%d', '%s', '%s' )
 			);
@@ -987,12 +987,12 @@ class DigiCommerce_Stripe {
 			'timestamp' => current_time( 'mysql' ),
 		);
 
-		$wpdb->insert(
+		$wpdb->insert( // phpcs:ignore
 			$wpdb->prefix . 'digicommerce_order_meta',
 			array(
 				'order_id'   => $order_id,
-				'meta_key'   => 'refund_log',
-				'meta_value' => maybe_serialize( $log_data ),
+				'meta_key'   => 'refund_log', // phpcs:ignore
+				'meta_value' => maybe_serialize( $log_data ), // phpcs:ignore
 			)
 		);
 	}

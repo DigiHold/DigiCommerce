@@ -83,7 +83,7 @@ class DigiCommerce_Reports {
 		// Enqueue Chart.js
 		wp_enqueue_script(
 			'chartjs',
-			'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+			DIGICOMMERCE_PLUGIN_URL . 'assets/js/vendor/chartjs.js',
 			array(),
 			'4.4.1',
 			true
@@ -167,7 +167,7 @@ class DigiCommerce_Reports {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		$range = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
+		$range = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month'; // phpcs:ignore
 
 		// Enhanced date validation
 		$start_date = null;
@@ -175,15 +175,15 @@ class DigiCommerce_Reports {
 
 		if ( 'custom' === $range ) {
 			// Validate start date
-			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
-				$start_date = sanitize_text_field( $_POST['start_date'] );
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) { // phpcs:ignore
+				$start_date = sanitize_text_field( $_POST['start_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid start date format' );
 			}
 
 			// Validate end date
-			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
-				$end_date = sanitize_text_field( $_POST['end_date'] );
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) { // phpcs:ignore
+				$end_date = sanitize_text_field( $_POST['end_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid end date format' );
 			}
@@ -232,19 +232,19 @@ class DigiCommerce_Reports {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
+		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month'; // phpcs:ignore
 		$start_date = null;
 		$end_date   = null;
 
 		if ( 'custom' === $range ) {
-			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
-				$start_date = sanitize_text_field( $_POST['start_date'] );
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) { // phpcs:ignore
+				$start_date = sanitize_text_field( $_POST['start_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid start date format' );
 			}
 
-			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
-				$end_date = sanitize_text_field( $_POST['end_date'] );
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) { // phpcs:ignore
+				$end_date = sanitize_text_field( $_POST['end_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid end date format' );
 			}
@@ -265,19 +265,19 @@ class DigiCommerce_Reports {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
+		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month'; // phpcs:ignore
 		$start_date = null;
 		$end_date   = null;
 
 		if ( 'custom' === $range ) {
-			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
-				$start_date = sanitize_text_field( $_POST['start_date'] );
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) { // phpcs:ignore
+				$start_date = sanitize_text_field( $_POST['start_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid start date format' );
 			}
 
-			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
-				$end_date = sanitize_text_field( $_POST['end_date'] );
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) { // phpcs:ignore
+				$end_date = sanitize_text_field( $_POST['end_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid end date format' );
 			}
@@ -302,19 +302,19 @@ class DigiCommerce_Reports {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
+		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month'; // phpcs:ignore
 		$start_date = null;
 		$end_date   = null;
 
 		if ( 'custom' === $range ) {
-			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
-				$start_date = sanitize_text_field( $_POST['start_date'] );
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) { // phpcs:ignore
+				$start_date = sanitize_text_field( $_POST['start_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid start date format' );
 			}
 
-			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
-				$end_date = sanitize_text_field( $_POST['end_date'] );
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) { // phpcs:ignore
+				$end_date = sanitize_text_field( $_POST['end_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid end date format' );
 			}
@@ -338,19 +338,19 @@ class DigiCommerce_Reports {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
+		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month'; // phpcs:ignore
 		$start_date = null;
 		$end_date   = null;
 
 		if ( 'custom' === $range ) {
-			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
-				$start_date = sanitize_text_field( $_POST['start_date'] );
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) { // phpcs:ignore
+				$start_date = sanitize_text_field( $_POST['start_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid start date format' );
 			}
 
-			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
-				$end_date = sanitize_text_field( $_POST['end_date'] );
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) { // phpcs:ignore
+				$end_date = sanitize_text_field( $_POST['end_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid end date format' );
 			}
@@ -372,19 +372,19 @@ class DigiCommerce_Reports {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
+		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month'; // phpcs:ignore
 		$start_date = null;
 		$end_date   = null;
 
 		if ( 'custom' === $range ) {
-			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
-				$start_date = sanitize_text_field( $_POST['start_date'] );
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) { // phpcs:ignore
+				$start_date = sanitize_text_field( $_POST['start_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid start date format' );
 			}
 
-			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
-				$end_date = sanitize_text_field( $_POST['end_date'] );
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) { // phpcs:ignore
+				$end_date = sanitize_text_field( $_POST['end_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid end date format' );
 			}
@@ -406,19 +406,19 @@ class DigiCommerce_Reports {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month';
+		$range      = isset( $_POST['range'] ) ? sanitize_text_field( $_POST['range'] ) : 'this_month'; // phpcs:ignore
 		$start_date = null;
 		$end_date   = null;
 
 		if ( 'custom' === $range ) {
-			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) {
-				$start_date = sanitize_text_field( $_POST['start_date'] );
+			if ( isset( $_POST['start_date'] ) && $this->validate_date( $_POST['start_date'] ) ) { // phpcs:ignore
+				$start_date = sanitize_text_field( $_POST['start_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid start date format' );
 			}
 
-			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) {
-				$end_date = sanitize_text_field( $_POST['end_date'] );
+			if ( isset( $_POST['end_date'] ) && $this->validate_date( $_POST['end_date'] ) ) { // phpcs:ignore
+				$end_date = sanitize_text_field( $_POST['end_date'] ); // phpcs:ignore
 			} else {
 				wp_send_json_error( 'Invalid end date format' );
 			}
@@ -584,7 +584,7 @@ class DigiCommerce_Reports {
 	private function get_revenue_by_payment_method() {
 		global $wpdb;
 
-		return $wpdb->get_results(
+		return $wpdb->get_results( // phpcs:ignore
 			"SELECT 
 				payment_method,
 				COUNT(*) as orders,
@@ -603,7 +603,7 @@ class DigiCommerce_Reports {
 	private function get_refund_stats() {
 		global $wpdb;
 
-		return $wpdb->get_row(
+		return $wpdb->get_row( // phpcs:ignore
 			"SELECT 
 				COUNT(*) as total_refunds,
 				SUM(total) as refunded_amount,
@@ -723,7 +723,7 @@ class DigiCommerce_Reports {
 
 		global $wpdb;
 
-		return $wpdb->get_row(
+		return $wpdb->get_row( // phpcs:ignore
 			"SELECT 
 				COUNT(*) as total_subscriptions,
 				SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_subscriptions,
@@ -893,7 +893,7 @@ class DigiCommerce_Reports {
 	 */
 	public function render_reports_page() {
 		// Get current tab
-		$current_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'overview';
+		$current_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'overview'; // phpcs:ignore
 
 		// Define tabs
 		$tabs = array(

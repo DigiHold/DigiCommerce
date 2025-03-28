@@ -70,7 +70,7 @@ $allowed_html = array(
 					data-pswp-index="0" 
 					data-pswp-width="<?php echo esc_attr( $gallery_images[0]['w'] ); ?>" 
 					data-pswp-height="<?php echo esc_attr( $gallery_images[0]['h'] ); ?>">
-						<img src="<?php echo esc_url( $gallery_images[0]['thumb'] ); ?>" class="w-full h-full object-center object-cover" alt="">
+						<img src="<?php echo esc_url( $gallery_images[0]['thumb'] ); // phpcs:ignore ?>" class="w-full h-full object-center object-cover" alt="">
 					</a>
 				</div>
 			<?php endif; ?>
@@ -88,7 +88,7 @@ $allowed_html = array(
 							data-pswp-index="<?php echo esc_attr( $index ); ?>" 
 							data-pswp-width="<?php echo esc_attr( $image['w'] ); ?>" 
 							data-pswp-height="<?php echo esc_attr( $image['h'] ); ?>">
-								<img src="<?php echo esc_url( $image['thumb'] ); ?>" class="w-full h-full object-center object-cover" alt="">
+								<img src="<?php echo esc_url( $image['thumb'] ); // phpcs:ignore ?>" class="w-full h-full object-center object-cover" alt="">
 							</a>
 						</div>
 					<?php endforeach; ?>

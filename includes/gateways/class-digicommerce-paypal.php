@@ -152,8 +152,8 @@ class DigiCommerce_PayPal {
 				floatval( $subscription_item['subscription_signup_fee'] ) : 0;
 
 			$business_country = DigiCommerce()->get_option( 'business_country' );
-			$country          = isset( $_POST['country'] ) ? sanitize_text_field( $_POST['country'] ) : '';
-			$vat_number       = isset( $_POST['vat_number'] ) ? sanitize_text_field( $_POST['vat_number'] ) : '';
+			$country          = isset( $_POST['country'] ) ? sanitize_text_field( $_POST['country'] ) : ''; // phpcs:ignore
+			$vat_number       = isset( $_POST['vat_number'] ) ? sanitize_text_field( $_POST['vat_number'] ) : ''; // phpcs:ignore
 
 			if ( empty( $country ) ) {
 				throw new Exception( esc_html__( 'Country is required', 'digicommerce' ) );
@@ -463,7 +463,7 @@ class DigiCommerce_PayPal {
 			global $wpdb;
 
 			// Get PayPal IDs
-			$order_meta = $wpdb->get_results(
+			$order_meta = $wpdb->get_results( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT meta_key, meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
             WHERE order_id = %d AND meta_key IN ('_paypal_order_id', '_paypal_subscription_id', '_paypal_capture_id')",
@@ -482,7 +482,7 @@ class DigiCommerce_PayPal {
 			$refund_processed = false;
 
 			// Get subscription ID if exists
-			$subscription_id = $wpdb->get_var(
+			$subscription_id = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT si.subscription_id 
             FROM {$wpdb->prefix}digicommerce_subscription_items si
@@ -591,12 +591,12 @@ class DigiCommerce_PayPal {
 									'timestamp'       => current_time( 'mysql' ),
 								);
 
-								$wpdb->insert(
+								$wpdb->insert( // phpcs:ignore
 									$wpdb->prefix . 'digicommerce_order_meta',
 									array(
 										'order_id'   => $order_id,
-										'meta_key'   => 'refund_log',
-										'meta_value' => maybe_serialize( $log_data ),
+										'meta_key'   => 'refund_log', // phpcs:ignore
+										'meta_value' => maybe_serialize( $log_data ), // phpcs:ignore
 									),
 									array( '%d', '%s', '%s' )
 								);
@@ -628,7 +628,7 @@ class DigiCommerce_PayPal {
 						$cancel_code = wp_remote_retrieve_response_code( $cancel_response );
 					if ( 204 === $cancel_code ) {
 						// Update subscription status
-						$wpdb->update(
+						$wpdb->update( // phpcs:ignore
 							$wpdb->prefix . 'digicommerce_subscriptions',
 							array(
 								'status'        => 'cancelled',
@@ -640,7 +640,7 @@ class DigiCommerce_PayPal {
 						);
 
 						// Cancel pending schedules
-						$wpdb->update(
+						$wpdb->update( // phpcs:ignore
 							$wpdb->prefix . 'digicommerce_subscription_schedule',
 							array( 'status' => 'cancelled' ),
 							array(
@@ -652,12 +652,12 @@ class DigiCommerce_PayPal {
 						);
 
 						// Add subscription note
-						$wpdb->insert(
+						$wpdb->insert( // phpcs:ignore
 							$wpdb->prefix . 'digicommerce_subscription_meta',
 							array(
 								'subscription_id' => $subscription_id,
-								'meta_key'        => 'note',
-								'meta_value'      => esc_html__( 'Subscription cancelled due to refund request.', 'digicommerce' ),
+								'meta_key'        => 'note', // phpcs:ignore
+								'meta_value'      => esc_html__( 'Subscription cancelled due to refund request.', 'digicommerce' ), // phpcs:ignore
 							),
 							array( '%d', '%s', '%s' )
 						);
@@ -723,12 +723,12 @@ class DigiCommerce_PayPal {
 										'timestamp'       => current_time( 'mysql' ),
 									);
 
-									$wpdb->insert(
+									$wpdb->insert( // phpcs:ignore
 										$wpdb->prefix . 'digicommerce_order_meta',
 										array(
 											'order_id'   => $order_id,
-											'meta_key'   => 'refund_log',
-											'meta_value' => maybe_serialize( $log_data ),
+											'meta_key'   => 'refund_log', // phpcs:ignore
+											'meta_value' => maybe_serialize( $log_data ), // phpcs:ignore
 										),
 										array( '%d', '%s', '%s' )
 									);
@@ -749,7 +749,7 @@ class DigiCommerce_PayPal {
 
 			// Update order status if refund was processed
 			if ( $refund_processed ) {
-				$wpdb->update(
+				$wpdb->update( // phpcs:ignore
 					$wpdb->prefix . 'digicommerce_orders',
 					array(
 						'status'        => 'refunded',

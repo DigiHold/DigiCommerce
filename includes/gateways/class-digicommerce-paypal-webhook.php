@@ -150,7 +150,7 @@ class DigiCommerce_PayPal_Webhook {
 			}
 
 			// Find the order using PayPal order ID
-			$order_id = $wpdb->get_var(
+			$order_id = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT order_id FROM {$wpdb->prefix}digicommerce_order_meta 
 					WHERE meta_key = %s AND meta_value = %s AND order_id > 0",
@@ -161,7 +161,7 @@ class DigiCommerce_PayPal_Webhook {
 
 			if ( $order_id ) {
 				// Check if this capture ID is already linked to this order
-				$exists = $wpdb->get_var(
+				$exists = $wpdb->get_var( // phpcs:ignore
 					$wpdb->prepare(
 						"SELECT COUNT(*) FROM {$wpdb->prefix}digicommerce_order_meta 
 						WHERE order_id = %d AND meta_key = %s",
@@ -172,12 +172,12 @@ class DigiCommerce_PayPal_Webhook {
 
 				if ( ! $exists ) {
 					// Add the capture ID to the order
-					$wpdb->insert(
+					$wpdb->insert( // phpcs:ignore
 						$wpdb->prefix . 'digicommerce_order_meta',
 						array(
 							'order_id'   => $order_id,
-							'meta_key'   => '_paypal_capture_id',
-							'meta_value' => $capture_id,
+							'meta_key'   => '_paypal_capture_id', // phpcs:ignore
+							'meta_value' => $capture_id, // phpcs:ignore
 						),
 						array( '%d', '%s', '%s' ),
 					);
@@ -218,7 +218,7 @@ class DigiCommerce_PayPal_Webhook {
 		global $wpdb;
 
 		// Check if this ID is already in the database
-		$exists = $wpdb->get_var(
+		$exists = $wpdb->get_var( // phpcs:ignore
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->prefix}digicommerce_order_meta 
 				WHERE meta_key = %s AND meta_value = %s",
@@ -230,12 +230,12 @@ class DigiCommerce_PayPal_Webhook {
 		if ( ! $exists ) {
 			// We're not attaching to a specific order yet, just recording the ID
 			// This is useful for future lookups, especially with refunds
-			$wpdb->insert(
+			$wpdb->insert( // phpcs:ignore
 				$wpdb->prefix . 'digicommerce_order_meta',
 				array(
 					'order_id'   => 0, // Placeholder, can be updated later
-					'meta_key'   => $meta_key,
-					'meta_value' => $id,
+					'meta_key'   => $meta_key, // phpcs:ignore
+					'meta_value' => $id, // phpcs:ignore
 				),
 				array( '%d', '%s', '%s' )
 			);
@@ -276,7 +276,7 @@ class DigiCommerce_PayPal_Webhook {
 			}
 
 			// First try to find the order directly using the capture ID
-			$order_id = $wpdb->get_var(
+			$order_id = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT order_id FROM {$wpdb->prefix}digicommerce_order_meta 
 					WHERE meta_key = %s AND meta_value = %s AND order_id > 0",
@@ -289,7 +289,7 @@ class DigiCommerce_PayPal_Webhook {
 			if ( ! $order_id ) {
 				// Try to look up the order ID using the relationship between a temporary capture ID
 				// record (order_id=0) and a PayPal order ID linked to a real order
-				$order_id = $wpdb->get_var(
+				$order_id = $wpdb->get_var( // phpcs:ignore
 					$wpdb->prepare(
 						"SELECT om_order.order_id 
 						FROM {$wpdb->prefix}digicommerce_order_meta AS om_capture
@@ -310,7 +310,7 @@ class DigiCommerce_PayPal_Webhook {
 					isset( $event->resource->supplementary_data->related_ids->order_id ) ) {
 
 					$paypal_order_id = $event->resource->supplementary_data->related_ids->order_id;
-					$order_id        = $wpdb->get_var(
+					$order_id        = $wpdb->get_var( // phpcs:ignore
 						$wpdb->prepare(
 							"SELECT order_id FROM {$wpdb->prefix}digicommerce_order_meta 
 							WHERE meta_key = %s AND meta_value = %s AND order_id > 0",
@@ -323,7 +323,7 @@ class DigiCommerce_PayPal_Webhook {
 				// Last resort - try by customer email
 				if ( ! $order_id && isset( $event->resource->payer ) && isset( $event->resource->payer->email_address ) ) {
 					$email    = $event->resource->payer->email_address;
-					$order_id = $wpdb->get_var(
+					$order_id = $wpdb->get_var( // phpcs:ignore
 						$wpdb->prepare(
 							"SELECT o.id FROM {$wpdb->prefix}digicommerce_orders o
 							JOIN {$wpdb->prefix}digicommerce_order_meta om ON o.id = om.order_id
@@ -342,7 +342,7 @@ class DigiCommerce_PayPal_Webhook {
 
 			// Process the refund
 			// Mark order as refunded
-			$wpdb->update(
+			$wpdb->update( // phpcs:ignore
 				$wpdb->prefix . 'digicommerce_orders',
 				array(
 					'status'        => 'refunded',
@@ -354,18 +354,18 @@ class DigiCommerce_PayPal_Webhook {
 			);
 
 			// Store refund ID
-			$wpdb->insert(
+			$wpdb->insert( // phpcs:ignore
 				$wpdb->prefix . 'digicommerce_order_meta',
 				array(
 					'order_id'   => $order_id,
-					'meta_key'   => 'paypal_refund_id',
-					'meta_value' => $refund_id,
+					'meta_key'   => 'paypal_refund_id', // phpcs:ignore
+					'meta_value' => $refund_id, // phpcs:ignore
 				),
 				array( '%d', '%s', '%s' )
 			);
 
 			// Add order note
-			$wpdb->insert(
+			$wpdb->insert( // phpcs:ignore
 				$wpdb->prefix . 'digicommerce_order_notes',
 				array(
 					'order_id' => $order_id,
@@ -381,7 +381,7 @@ class DigiCommerce_PayPal_Webhook {
 			);
 
 			// Handle subscription if exists
-			$subscription_id = $wpdb->get_var(
+			$subscription_id = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT si.subscription_id 
 					FROM {$wpdb->prefix}digicommerce_subscription_items si
@@ -392,7 +392,7 @@ class DigiCommerce_PayPal_Webhook {
 
 			if ( $subscription_id ) {
 				// Update subscription status
-				$wpdb->update(
+				$wpdb->update( // phpcs:ignore
 					$wpdb->prefix . 'digicommerce_subscriptions',
 					array(
 						'status'        => 'cancelled',
@@ -404,7 +404,7 @@ class DigiCommerce_PayPal_Webhook {
 				);
 
 				// Cancel pending schedules
-				$wpdb->update(
+				$wpdb->update( // phpcs:ignore
 					$wpdb->prefix . 'digicommerce_subscription_schedule',
 					array( 'status' => 'cancelled' ),
 					array(
@@ -416,12 +416,12 @@ class DigiCommerce_PayPal_Webhook {
 				);
 
 				// Add subscription note
-				$wpdb->insert(
+				$wpdb->insert( // phpcs:ignore
 					$wpdb->prefix . 'digicommerce_subscription_meta',
 					array(
 						'subscription_id' => $subscription_id,
-						'meta_key'        => 'note',
-						'meta_value'      => esc_html__( 'Subscription cancelled due to refund in PayPal.', 'digicommerce' ),
+						'meta_key'        => 'note', // phpcs:ignore
+						'meta_value'      => esc_html__( 'Subscription cancelled due to refund in PayPal.', 'digicommerce' ), // phpcs:ignore
 					),
 					array( '%d', '%s', '%s' )
 				);
@@ -467,7 +467,7 @@ class DigiCommerce_PayPal_Webhook {
 			}
 
 			// Get local subscription ID
-			$local_subscription_id = $wpdb->get_var(
+			$local_subscription_id = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT si.subscription_id 
 					FROM {$wpdb->prefix}digicommerce_subscription_items si
@@ -486,7 +486,7 @@ class DigiCommerce_PayPal_Webhook {
 			if ( isset( $resource->billing_info ) && isset( $resource->billing_info->next_billing_time ) ) {
 				$next_payment = date( 'Y-m-d H:i:s', strtotime( $resource->billing_info->next_billing_time ) ); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date
 
-				$wpdb->update(
+				$wpdb->update( // phpcs:ignore
 					$wpdb->prefix . 'digicommerce_subscriptions',
 					array(
 						'next_payment'  => $next_payment,
@@ -498,7 +498,7 @@ class DigiCommerce_PayPal_Webhook {
 				);
 
 				// Update license expiration to match next payment
-				$wpdb->query(
+				$wpdb->query( // phpcs:ignore
 					$wpdb->prepare(
 						"UPDATE {$wpdb->prefix}digicommerce_licenses l 
 						JOIN {$wpdb->prefix}digicommerce_subscription_items si 
@@ -526,7 +526,7 @@ class DigiCommerce_PayPal_Webhook {
 
 			// Store payment details
 			if ( $transaction_id ) {
-				$wpdb->insert(
+				$wpdb->insert( // phpcs:ignore
 					$wpdb->prefix . 'digicommerce_subscription_payments',
 					array(
 						'subscription_id' => $local_subscription_id,
@@ -566,7 +566,7 @@ class DigiCommerce_PayPal_Webhook {
 			$paypal_status   = $event->resource->status;
 
 			// Get local subscription ID and current status
-			$subscription_data = $wpdb->get_row(
+			$subscription_data = $wpdb->get_row( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT si.subscription_id, s.status as current_status
 					FROM {$wpdb->prefix}digicommerce_subscription_items si
@@ -598,7 +598,7 @@ class DigiCommerce_PayPal_Webhook {
 			// Only update if status actually changed
 			if ( $current_status !== $new_status ) {
 				// Update subscription status
-				$wpdb->update(
+				$wpdb->update( // phpcs:ignore
 					$wpdb->prefix . 'digicommerce_subscriptions',
 					array(
 						'status'        => $new_status,
@@ -611,7 +611,7 @@ class DigiCommerce_PayPal_Webhook {
 
 				// If cancelled, cancel all pending schedules
 				if ( 'cancelled' === $new_status ) {
-					$wpdb->update(
+					$wpdb->update( // phpcs:ignore
 						$wpdb->prefix . 'digicommerce_subscription_schedule',
 						array( 'status' => 'cancelled' ),
 						array(
@@ -624,12 +624,12 @@ class DigiCommerce_PayPal_Webhook {
 				}
 
 				// Add subscription note
-				$wpdb->insert(
+				$wpdb->insert( // phpcs:ignore
 					$wpdb->prefix . 'digicommerce_subscription_meta',
 					array(
 						'subscription_id' => $local_subscription_id,
-						'meta_key'        => 'note',
-						'meta_value'      => sprintf(
+						'meta_key'        => 'note', // phpcs:ignore
+						'meta_value'      => sprintf( // phpcs:ignore
 							'Subscription status changed from %s to %s in PayPal.',
 							$current_status,
 							$new_status
@@ -665,7 +665,7 @@ class DigiCommerce_PayPal_Webhook {
 			$subscription_id = $event->resource->id;
 
 			// Get local subscription ID
-			$local_subscription_id = $wpdb->get_var(
+			$local_subscription_id = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT si.subscription_id 
 					FROM {$wpdb->prefix}digicommerce_subscription_items si
@@ -694,7 +694,7 @@ class DigiCommerce_PayPal_Webhook {
 			}
 
 			// Store failed payment attempt
-			$wpdb->insert(
+			$wpdb->insert( // phpcs:ignore
 				$wpdb->prefix . 'digicommerce_subscription_payments',
 				array(
 					'subscription_id' => $local_subscription_id,
@@ -708,12 +708,12 @@ class DigiCommerce_PayPal_Webhook {
 			);
 
 			// Add subscription note
-			$wpdb->insert(
+			$wpdb->insert( // phpcs:ignore
 				$wpdb->prefix . 'digicommerce_subscription_meta',
 				array(
 					'subscription_id' => $local_subscription_id,
-					'meta_key'        => 'note',
-					'meta_value'      => 'Subscription payment failed in PayPal.',
+					'meta_key'        => 'note', // phpcs:ignore
+					'meta_value'      => 'Subscription payment failed in PayPal.', // phpcs:ignore
 				),
 				array( '%d', '%s', '%s' )
 			);

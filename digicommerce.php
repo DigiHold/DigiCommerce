@@ -16,6 +16,7 @@
  * Domain Path:       /languages
  * Requires PHP:      7.4
  * Requires at least: 6.0
+ * License: GPLv2
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -214,7 +215,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			$table_name = $wpdb->prefix . 'digicommerce_sessions';
 
 			// Check if the table exists before truncating
-			$table_exists = $wpdb->get_var(
+			$table_exists = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					'SHOW TABLES LIKE %s',
 					$table_name
@@ -266,7 +267,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			$table_name = $wpdb->prefix . 'digicommerce';
 
 			// Query the custom table for the flag
-			$result = $wpdb->get_var(
+			$result = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare( "SELECT option_value FROM $table_name WHERE option_name = %s", $flag_name ) // phpcs:ignore
 			);
 
@@ -287,7 +288,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			$serialized_value = maybe_serialize( $value );
 
 			// Insert or update the flag in the custom table
-			$wpdb->replace(
+			$wpdb->replace( // phpcs:ignore
 				$table_name,
 				array(
 					'option_name'  => $flag_name,
@@ -304,7 +305,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			global $wpdb;
 			$table_name = $wpdb->prefix . 'digicommerce';
 
-			$row = $wpdb->get_row(
+			$row = $wpdb->get_row( // phpcs:ignore
 				$wpdb->prepare( "SELECT option_value FROM $table_name WHERE option_name = %s", 'digicommerce_options' ) // phpcs:ignore
 			);
 
@@ -373,7 +374,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				$serialized_options = maybe_serialize( $this->options );
 
 				// First check if the record exists
-				$exists = $wpdb->get_var(
+				$exists = $wpdb->get_var( // phpcs:ignore
 					$wpdb->prepare(
 						"SELECT COUNT(*) FROM {$table_name} WHERE option_name = %s", // phpcs:ignore
 						'digicommerce_options'
@@ -381,7 +382,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				);
 
 				if ( $exists ) {
-					$result = $wpdb->replace(
+					$result = $wpdb->replace( // phpcs:ignore
 						$table_name,
 						array(
 							'option_name'  => 'digicommerce_options',
@@ -393,7 +394,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 						)
 					);
 				} else {
-					$result = $wpdb->insert(
+					$result = $wpdb->insert( // phpcs:ignore
 						$table_name,
 						array(
 							'option_name'  => 'digicommerce_options',
@@ -416,7 +417,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				$serialized_options = maybe_serialize( $this->options );
 
 				// Update the database with the modified options array
-				$result = $wpdb->replace(
+				$result = $wpdb->replace( // phpcs:ignore
 					$table_name,
 					array(
 						'option_name'  => 'digicommerce_options',

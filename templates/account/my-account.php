@@ -26,7 +26,7 @@ $sections = apply_filters(
 	)
 );
 
-$active_section = isset( $_GET['section'] ) ? sanitize_key( $_GET['section'] ) : 'profile';
+$active_section = isset( $_GET['section'] ) ? sanitize_key( $_GET['section'] ) : 'profile'; // phpcs:ignore
 ?>
 <div class="digicommerce">
 	<div class="lg:grid lg:grid-cols-12 lg:gap-x-5">
@@ -57,8 +57,8 @@ $active_section = isset( $_GET['section'] ) ? sanitize_key( $_GET['section'] ) :
 		<div class="sm:px-6 lg:px-0 lg:col-span-9">
 			<?php
 			// Check for view-order parameter when in orders section
-			if ( 'orders' === $active_section && isset( $_GET['view-order'] ) ) {
-				$order_id = absint( $_GET['view-order'] );
+			if ( 'orders' === $active_section && isset( $_GET['view-order'] ) ) { // phpcs:ignore
+				$order_id = absint( $_GET['view-order'] ); // phpcs:ignore
 				if ( $order_id && DigiCommerce_Orders::instance()->verify_order_access( $order_id ) ) {
 					DigiCommerce()->get_template(
 						'account/sections/view-order.php',

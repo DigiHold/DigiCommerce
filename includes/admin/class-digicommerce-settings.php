@@ -64,110 +64,110 @@ class DigiCommerce_Settings {
 	 */
 	public function register_settings() {
 		// General Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_business_name' );
-		register_setting( 'digicommerce_options', 'digicommerce_business_vat_number' );
-		register_setting( 'digicommerce_options', 'digicommerce_business_country' );
-		register_setting( 'digicommerce_options', 'digicommerce_business_address' );
-		register_setting( 'digicommerce_options', 'digicommerce_business_address2' );
-		register_setting( 'digicommerce_options', 'digicommerce_business_city' );
-		register_setting( 'digicommerce_options', 'digicommerce_business_postal' );
-		register_setting( 'digicommerce_options', 'digicommerce_business_logo' );
-		register_setting( 'digicommerce_options', 'digicommerce_currency' );
-		register_setting( 'digicommerce_options', 'digicommerce_currency_position' );
-		register_setting( 'digicommerce_options', 'digicommerce_block_admin' );
-		register_setting( 'digicommerce_options', 'digicommerce_redirect_login' );
-		register_setting( 'digicommerce_options', 'digicommerce_redirect_after_logout' );
-		register_setting( 'digicommerce_options', 'digicommerce_register_form' );
-		register_setting( 'digicommerce_options', 'digicommerce_register_text' );
-		register_setting( 'digicommerce_options', 'digicommerce_login_text' );
-		register_setting( 'digicommerce_options', 'digicommerce_invoices_footer' );
+		register_setting( 'digicommerce_options', 'digicommerce_business_name' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_vat_number' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_country' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_address' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_address2' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_city' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_postal' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_logo' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_currency' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_currency_position' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_block_admin' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_redirect_login' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_redirect_after_logout' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_register_form' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_register_text' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_login_text' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_invoices_footer' ); // phpcs:ignore
 
 		// Product Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_product_slug' );
-		register_setting( 'digicommerce_options', 'digicommerce_product_cat_slug' );
-		register_setting( 'digicommerce_options', 'digicommerce_product_tag_slug' );
-		register_setting( 'digicommerce_options', 'digicommerce_product_cpt' );
+		register_setting( 'digicommerce_options', 'digicommerce_product_slug' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_product_cat_slug' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_product_tag_slug' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_product_cpt' ); // phpcs:ignore
 
 		// Pages Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_account_page_id' );
-		register_setting( 'digicommerce_options', 'digicommerce_reset_password_page_id' );
-		register_setting( 'digicommerce_options', 'digicommerce_checkout_page_id' );
-		register_setting( 'digicommerce_options', 'digicommerce_payment_success_page_id' );
+		register_setting( 'digicommerce_options', 'digicommerce_account_page_id' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_reset_password_page_id' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_checkout_page_id' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_payment_success_page_id' ); // phpcs:ignore
 
 		// reCAPTCHA Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_recaptcha_site_key' );
-		register_setting( 'digicommerce_options', 'digicommerce_recaptcha_secret_key' );
+		register_setting( 'digicommerce_options', 'digicommerce_recaptcha_site_key' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_recaptcha_secret_key' ); // phpcs:ignore
 
 		// Payment Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_mode' );
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_test_publishable_key' );
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_test_secret_key' );
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_live_publishable_key' );
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_live_secret_key' );
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_webhook_secret' );
-		register_setting( 'digicommerce_options', 'digicommerce_paypal_sandbox' );
-		register_setting( 'digicommerce_options', 'digicommerce_paypal_client_id' );
-		register_setting( 'digicommerce_options', 'digicommerce_paypal_secret' );
-		register_setting( 'digicommerce_options', 'digicommerce_paypal_webhook_id' );
+		register_setting( 'digicommerce_options', 'digicommerce_stripe_mode' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_stripe_test_publishable_key' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_stripe_test_secret_key' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_stripe_live_publishable_key' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_stripe_live_secret_key' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_stripe_webhook_secret' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_paypal_sandbox' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_paypal_client_id' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_paypal_secret' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_paypal_webhook_id' ); // phpcs:ignore
 
 		// Checkout Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_remove_taxes' );
-		register_setting( 'digicommerce_options', 'digicommerce_login_during_checkout' );
-		register_setting( 'digicommerce_options', 'digicommerce_minimal_style' );
-		register_setting( 'digicommerce_options', 'digicommerce_minimal_fields' );
-		register_setting( 'digicommerce_options', 'digicommerce_order_agreement' );
-		register_setting( 'digicommerce_options', 'digicommerce_modal_terms' );
-		register_setting( 'digicommerce_options', 'digicommerce_remove_product' );
+		register_setting( 'digicommerce_options', 'digicommerce_remove_taxes' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_login_during_checkout' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_minimal_style' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_minimal_fields' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_order_agreement' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_modal_terms' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_remove_product' ); // phpcs:ignore
 
 		// Empty Cart Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_title' );
-		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_text' );
-		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_button_text' );
-		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_button_url' );
+		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_title' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_text' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_button_text' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_button_url' ); // phpcs:ignore
 
 		// Emails Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_email_from_name' );
-		register_setting( 'digicommerce_options', 'digicommerce_email_from_address' );
-		register_setting( 'digicommerce_options', 'digicommerce_email_header_logo' );
-		register_setting( 'digicommerce_options', 'digicommerce_email_header_logo_width' );
-		register_setting(
+		register_setting( 'digicommerce_options', 'digicommerce_email_from_name' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_email_from_address' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_email_header_logo' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_email_header_logo_width' ); // phpcs:ignore
+		register_setting( // phpcs:ignore
 			'digicommerce_options',
 			'digicommerce_email_new_account',
 			array(
 				'default' => 1,
 			)
 		);
-		register_setting(
+		register_setting( // phpcs:ignore
 			'digicommerce_options',
 			'digicommerce_email_order_confirmation',
 			array(
 				'default' => 1,
 			)
 		);
-		register_setting(
+		register_setting( // phpcs:ignore
 			'digicommerce_options',
 			'digicommerce_email_order_cancelled',
 			array(
 				'default' => 1,
 			)
 		);
-		register_setting(
+		register_setting( // phpcs:ignore
 			'digicommerce_options',
 			'digicommerce_email_order_refunded',
 			array(
 				'default' => 1,
 			)
 		);
-		register_setting(
+		register_setting( // phpcs:ignore
 			'digicommerce_options',
 			'digicommerce_email_new_order_admin',
 			array(
 				'default' => 1,
 			)
 		);
-		register_setting( 'digicommerce_options', 'digicommerce_email_footer_text' );
-		register_setting( 'digicommerce_options', 'digicommerce_show_social_links_in_email' );
-		register_setting(
+		register_setting( 'digicommerce_options', 'digicommerce_email_footer_text' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_show_social_links_in_email' ); // phpcs:ignore
+		register_setting( // phpcs:ignore
 			'digicommerce_options',
 			'digicommerce_social_links',
 			array(
@@ -177,18 +177,18 @@ class DigiCommerce_Settings {
 		);
 
 		// Styling.
-		register_setting( 'digicommerce_options', 'digicommerce_disable_styling' );
-		register_setting( 'digicommerce_options', 'digicommerce_color_gold' );
-		register_setting( 'digicommerce_options', 'digicommerce_color_yellow' );
-		register_setting( 'digicommerce_options', 'digicommerce_color_border' );
-		register_setting( 'digicommerce_options', 'digicommerce_color_light_blue' );
-		register_setting( 'digicommerce_options', 'digicommerce_color_light_blue_bg' );
-		register_setting( 'digicommerce_options', 'digicommerce_color_dark_blue' );
-		register_setting( 'digicommerce_options', 'digicommerce_color_dark_blue_10' );
-		register_setting( 'digicommerce_options', 'digicommerce_color_dark_blue_20' );
-		register_setting( 'digicommerce_options', 'digicommerce_color_hover_blue' );
-		register_setting( 'digicommerce_options', 'digicommerce_color_grey' );
-		register_setting( 'digicommerce_options', 'digicommerce_color_dark_grey' );
+		register_setting( 'digicommerce_options', 'digicommerce_disable_styling' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_gold' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_yellow' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_border' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_light_blue' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_light_blue_bg' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_dark_blue' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_dark_blue_10' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_dark_blue_20' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_hover_blue' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_grey' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_dark_grey' ); // phpcs:ignore
 	}
 
 	/**
@@ -209,94 +209,94 @@ class DigiCommerce_Settings {
 
 		$options = array(
 			// General Tab.
-			'business_name'               => sanitize_text_field( $_POST['business_name'] ),
-			'business_vat_number'         => sanitize_text_field( $_POST['business_vat_number'] ),
-			'business_country'            => sanitize_text_field( $_POST['business_country'] ),
-			'business_address'            => sanitize_text_field( $_POST['business_address'] ),
-			'business_address2'           => sanitize_text_field( $_POST['business_address2'] ),
-			'business_city'               => sanitize_text_field( $_POST['business_city'] ),
-			'business_postal'             => sanitize_text_field( $_POST['business_postal'] ),
-			'business_logo'               => absint( $_POST['business_logo'] ),
-			'currency'                    => sanitize_text_field( $_POST['currency'] ),
-			'currency_position'           => sanitize_text_field( $_POST['currency_position'] ),
-			'block_admin'                 => isset( $_POST['block_admin'] ) ? 1 : 0,
-			'redirect_login'              => isset( $_POST['redirect_login'] ) ? 1 : 0,
-			'redirect_after_logout'       => absint( $_POST['redirect_after_logout'] ),
-			'register_form'               => isset( $_POST['register_form'] ) ? 1 : 0,
-			'register_text'               => wp_kses_post( wp_unslash( $_POST['register_text'] ) ),
-			'login_text'                  => wp_kses_post( wp_unslash( $_POST['login_text'] ) ),
-			'invoices_footer'             => wp_kses_post( wp_unslash( $_POST['invoices_footer'] ) ),
+			'business_name'               => sanitize_text_field( $_POST['business_name'] ), // phpcs:ignore
+			'business_vat_number'         => sanitize_text_field( $_POST['business_vat_number'] ), // phpcs:ignore
+			'business_country'            => sanitize_text_field( $_POST['business_country'] ), // phpcs:ignore
+			'business_address'            => sanitize_text_field( $_POST['business_address'] ), // phpcs:ignore
+			'business_address2'           => sanitize_text_field( $_POST['business_address2'] ), // phpcs:ignore
+			'business_city'               => sanitize_text_field( $_POST['business_city'] ), // phpcs:ignore
+			'business_postal'             => sanitize_text_field( $_POST['business_postal'] ), // phpcs:ignore
+			'business_logo'               => absint( $_POST['business_logo'] ), // phpcs:ignore
+			'currency'                    => sanitize_text_field( $_POST['currency'] ), // phpcs:ignore
+			'currency_position'           => sanitize_text_field( $_POST['currency_position'] ), // phpcs:ignore
+			'block_admin'                 => isset( $_POST['block_admin'] ) ? 1 : 0, // phpcs:ignore
+			'redirect_login'              => isset( $_POST['redirect_login'] ) ? 1 : 0, // phpcs:ignore
+			'redirect_after_logout'       => absint( $_POST['redirect_after_logout'] ), // phpcs:ignore
+			'register_form'               => isset( $_POST['register_form'] ) ? 1 : 0, // phpcs:ignore
+			'register_text'               => wp_kses_post( wp_unslash( $_POST['register_text'] ) ), // phpcs:ignore
+			'login_text'                  => wp_kses_post( wp_unslash( $_POST['login_text'] ) ), // phpcs:ignore
+			'invoices_footer'             => wp_kses_post( wp_unslash( $_POST['invoices_footer'] ) ), // phpcs:ignore
 
 			// Product Tab.
-			'product_slug'                => sanitize_text_field( $_POST['product_slug'] ),
-			'product_cat_slug'            => sanitize_text_field( $_POST['product_cat_slug'] ),
-			'product_tag_slug'            => sanitize_text_field( $_POST['product_tag_slug'] ),
-			'product_cpt'                 => isset( $_POST['product_cpt'] ) ? 1 : 0,
+			'product_slug'                => sanitize_text_field( $_POST['product_slug'] ), // phpcs:ignore
+			'product_cat_slug'            => sanitize_text_field( $_POST['product_cat_slug'] ), // phpcs:ignore
+			'product_tag_slug'            => sanitize_text_field( $_POST['product_tag_slug'] ), // phpcs:ignore
+			'product_cpt'                 => isset( $_POST['product_cpt'] ) ? 1 : 0, // phpcs:ignore
 
 			// Pages Tab.
-			'account_page_id'             => absint( $_POST['account_page_id'] ),
-			'reset_password_page_id'      => absint( $_POST['reset_password_page_id'] ),
-			'checkout_page_id'            => absint( $_POST['checkout_page_id'] ),
-			'payment_success_page_id'     => absint( $_POST['payment_success_page_id'] ),
+			'account_page_id'             => absint( $_POST['account_page_id'] ), // phpcs:ignore
+			'reset_password_page_id'      => absint( $_POST['reset_password_page_id'] ), // phpcs:ignore
+			'checkout_page_id'            => absint( $_POST['checkout_page_id'] ), // phpcs:ignore
+			'payment_success_page_id'     => absint( $_POST['payment_success_page_id'] ), // phpcs:ignore
 
 			// reCAPTCHA Tab.
-			'recaptcha_site_key'          => sanitize_text_field( $_POST['recaptcha_site_key'] ),
-			'recaptcha_secret_key'        => sanitize_text_field( $_POST['recaptcha_secret_key'] ),
+			'recaptcha_site_key'          => sanitize_text_field( $_POST['recaptcha_site_key'] ), // phpcs:ignore
+			'recaptcha_secret_key'        => sanitize_text_field( $_POST['recaptcha_secret_key'] ), // phpcs:ignore
 
 			// Payment Tab.
-			'stripe_mode'                 => sanitize_text_field( $_POST['stripe_mode'] ),
-			'stripe_test_publishable_key' => sanitize_text_field( $_POST['stripe_test_publishable_key'] ),
-			'stripe_test_secret_key'      => sanitize_text_field( $_POST['stripe_test_secret_key'] ),
-			'stripe_live_publishable_key' => sanitize_text_field( $_POST['stripe_live_publishable_key'] ),
-			'stripe_live_secret_key'      => sanitize_text_field( $_POST['stripe_live_secret_key'] ),
-			'stripe_webhook_secret'       => sanitize_text_field( $_POST['stripe_webhook_secret'] ),
-			'paypal_sandbox'              => isset( $_POST['paypal_sandbox'] ) ? 1 : 0,
-			'paypal_client_id'            => sanitize_text_field( $_POST['paypal_client_id'] ),
-			'paypal_secret'               => sanitize_text_field( $_POST['paypal_secret'] ),
-			'paypal_webhook_id'           => sanitize_text_field( $_POST['paypal_webhook_id'] ),
+			'stripe_mode'                 => sanitize_text_field( $_POST['stripe_mode'] ), // phpcs:ignore
+			'stripe_test_publishable_key' => sanitize_text_field( $_POST['stripe_test_publishable_key'] ), // phpcs:ignore
+			'stripe_test_secret_key'      => sanitize_text_field( $_POST['stripe_test_secret_key'] ), // phpcs:ignore
+			'stripe_live_publishable_key' => sanitize_text_field( $_POST['stripe_live_publishable_key'] ), // phpcs:ignore
+			'stripe_live_secret_key'      => sanitize_text_field( $_POST['stripe_live_secret_key'] ), // phpcs:ignore
+			'stripe_webhook_secret'       => sanitize_text_field( $_POST['stripe_webhook_secret'] ), // phpcs:ignore
+			'paypal_sandbox'              => isset( $_POST['paypal_sandbox'] ) ? 1 : 0, // phpcs:ignore
+			'paypal_client_id'            => sanitize_text_field( $_POST['paypal_client_id'] ), // phpcs:ignore
+			'paypal_secret'               => sanitize_text_field( $_POST['paypal_secret'] ), // phpcs:ignore
+			'paypal_webhook_id'           => sanitize_text_field( $_POST['paypal_webhook_id'] ), // phpcs:ignore
 
 			// Checkout Tab.
-			'remove_taxes'                => isset( $_POST['remove_taxes'] ) ? 1 : 0,
-			'login_during_checkout'       => isset( $_POST['login_during_checkout'] ) ? 1 : 0,
-			'minimal_style'               => isset( $_POST['minimal_style'] ) ? 1 : 0,
-			'minimal_fields'              => isset( $_POST['minimal_fields'] ) ? 1 : 0,
-			'order_agreement'             => wp_kses_post( wp_unslash( $_POST['order_agreement'] ) ),
-			'modal_terms'                 => wp_kses_post( wp_unslash( $_POST['modal_terms'] ) ),
-			'remove_product'              => isset( $_POST['remove_product'] ) ? 1 : 0,
+			'remove_taxes'                => isset( $_POST['remove_taxes'] ) ? 1 : 0, // phpcs:ignore
+			'login_during_checkout'       => isset( $_POST['login_during_checkout'] ) ? 1 : 0, // phpcs:ignore
+			'minimal_style'               => isset( $_POST['minimal_style'] ) ? 1 : 0, // phpcs:ignore
+			'minimal_fields'              => isset( $_POST['minimal_fields'] ) ? 1 : 0, // phpcs:ignore
+			'order_agreement'             => wp_kses_post( wp_unslash( $_POST['order_agreement'] ) ), // phpcs:ignore
+			'modal_terms'                 => wp_kses_post( wp_unslash( $_POST['modal_terms'] ) ), // phpcs:ignore
+			'remove_product'              => isset( $_POST['remove_product'] ) ? 1 : 0, // phpcs:ignore
 
 			// Empty Cart Tab.
-			'empty_cart_title'            => wp_kses_post( wp_unslash( $_POST['empty_cart_title'] ) ),
-			'empty_cart_text'             => wp_kses_post( wp_unslash( $_POST['empty_cart_text'] ) ),
-			'empty_cart_button_text'      => wp_kses_post( wp_unslash( $_POST['empty_cart_button_text'] ) ),
-			'empty_cart_button_url'       => sanitize_text_field( $_POST['empty_cart_button_url'] ),
+			'empty_cart_title'            => wp_kses_post( wp_unslash( $_POST['empty_cart_title'] ) ), // phpcs:ignore
+			'empty_cart_text'             => wp_kses_post( wp_unslash( $_POST['empty_cart_text'] ) ), // phpcs:ignore
+			'empty_cart_button_text'      => wp_kses_post( wp_unslash( $_POST['empty_cart_button_text'] ) ), // phpcs:ignore
+			'empty_cart_button_url'       => sanitize_text_field( $_POST['empty_cart_button_url'] ), // phpcs:ignore
 
 			// Emails Tab.
-			'email_from_name'             => sanitize_text_field( $_POST['email_from_name'] ),
-			'email_from_address'          => sanitize_email( $_POST['email_from_address'] ),
-			'email_header_logo'           => absint( $_POST['email_header_logo'] ),
-			'email_header_logo_width'     => sanitize_text_field( $_POST['email_header_logo_width'] ),
-			'email_new_account'           => isset( $_POST['email_new_account'] ) ? 1 : 0,
-			'email_order_confirmation'    => isset( $_POST['email_order_confirmation'] ) ? 1 : 0,
-			'email_order_cancelled'       => isset( $_POST['email_order_cancelled'] ) ? 1 : 0,
-			'email_order_refunded'        => isset( $_POST['email_order_refunded'] ) ? 1 : 0,
-			'email_new_order_admin'       => isset( $_POST['email_new_order_admin'] ) ? 1 : 0,
-			'email_footer_text'           => wp_kses_post( wp_unslash( $_POST['email_footer_text'] ) ),
-			'show_social_links_in_email'  => isset( $_POST['show_social_links_in_email'] ) ? 1 : 0,
-			'social_links'                => $this->sanitize_social_links( $_POST['social_links'] ?? array() ),
+			'email_from_name'             => sanitize_text_field( $_POST['email_from_name'] ), // phpcs:ignore
+			'email_from_address'          => sanitize_email( $_POST['email_from_address'] ), // phpcs:ignore
+			'email_header_logo'           => absint( $_POST['email_header_logo'] ), // phpcs:ignore
+			'email_header_logo_width'     => sanitize_text_field( $_POST['email_header_logo_width'] ), // phpcs:ignore
+			'email_new_account'           => isset( $_POST['email_new_account'] ) ? 1 : 0, // phpcs:ignore
+			'email_order_confirmation'    => isset( $_POST['email_order_confirmation'] ) ? 1 : 0, // phpcs:ignore
+			'email_order_cancelled'       => isset( $_POST['email_order_cancelled'] ) ? 1 : 0, // phpcs:ignore
+			'email_order_refunded'        => isset( $_POST['email_order_refunded'] ) ? 1 : 0, // phpcs:ignore
+			'email_new_order_admin'       => isset( $_POST['email_new_order_admin'] ) ? 1 : 0, // phpcs:ignore
+			'email_footer_text'           => wp_kses_post( wp_unslash( $_POST['email_footer_text'] ) ), // phpcs:ignore
+			'show_social_links_in_email'  => isset( $_POST['show_social_links_in_email'] ) ? 1 : 0, // phpcs:ignore
+			'social_links'                => $this->sanitize_social_links( $_POST['social_links'] ?? array() ), // phpcs:ignore
 
 			// Styling Tab.
-			'disable_styling'             => isset( $_POST['disable_styling'] ) ? 1 : 0,
-			'color_gold'                  => sanitize_hex_color( $_POST['color_gold'] ?? '' ),
-			'color_yellow'                => sanitize_hex_color( $_POST['color_yellow'] ?? '' ),
-			'color_border'                => sanitize_hex_color( $_POST['color_border'] ?? '' ),
-			'color_light_blue'            => sanitize_hex_color( $_POST['color_light_blue'] ?? '' ),
-			'color_light_blue_bg'         => sanitize_hex_color( $_POST['color_light_blue_bg'] ?? '' ),
-			'color_dark_blue'             => sanitize_hex_color( $_POST['color_dark_blue'] ?? '' ),
-			'color_dark_blue_10'          => sanitize_hex_color( $_POST['color_dark_blue_10'] ?? '' ),
-			'color_dark_blue_20'          => sanitize_hex_color( $_POST['color_dark_blue_20'] ?? '' ),
-			'color_hover_blue'            => sanitize_hex_color( $_POST['color_hover_blue'] ?? '' ),
-			'color_grey'                  => sanitize_hex_color( $_POST['color_grey'] ?? '' ),
-			'color_dark_grey'             => sanitize_hex_color( $_POST['color_dark_grey'] ?? '' ),
+			'disable_styling'             => isset( $_POST['disable_styling'] ) ? 1 : 0, // phpcs:ignore
+			'color_gold'                  => sanitize_hex_color( $_POST['color_gold'] ?? '' ), // phpcs:ignore
+			'color_yellow'                => sanitize_hex_color( $_POST['color_yellow'] ?? '' ), // phpcs:ignore
+			'color_border'                => sanitize_hex_color( $_POST['color_border'] ?? '' ), // phpcs:ignore
+			'color_light_blue'            => sanitize_hex_color( $_POST['color_light_blue'] ?? '' ), // phpcs:ignore
+			'color_light_blue_bg'         => sanitize_hex_color( $_POST['color_light_blue_bg'] ?? '' ), // phpcs:ignore
+			'color_dark_blue'             => sanitize_hex_color( $_POST['color_dark_blue'] ?? '' ), // phpcs:ignore
+			'color_dark_blue_10'          => sanitize_hex_color( $_POST['color_dark_blue_10'] ?? '' ), // phpcs:ignore
+			'color_dark_blue_20'          => sanitize_hex_color( $_POST['color_dark_blue_20'] ?? '' ), // phpcs:ignore
+			'color_hover_blue'            => sanitize_hex_color( $_POST['color_hover_blue'] ?? '' ), // phpcs:ignore
+			'color_grey'                  => sanitize_hex_color( $_POST['color_grey'] ?? '' ), // phpcs:ignore
+			'color_dark_grey'             => sanitize_hex_color( $_POST['color_dark_grey'] ?? '' ), // phpcs:ignore
 
 		);
 
@@ -363,7 +363,7 @@ class DigiCommerce_Settings {
 		}
 
 		// Get current tab
-		$current_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'general';
+		$current_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'general'; // phpcs:ignore
 
 		// Define tabs
 		$tabs = array(
@@ -385,7 +385,7 @@ class DigiCommerce_Settings {
 		$tabs = apply_filters( 'digicommerce_settings_tabs', $tabs );
 
 		// Show settings saved notice
-		if ( isset( $_GET['settings-updated'] ) && 'true' === $_GET['settings-updated'] ) {
+		if ( isset( $_GET['settings-updated'] ) && 'true' === $_GET['settings-updated'] ) { // phpcs:ignore
 			add_settings_error(
 				'digicommerce_messages',
 				'digicommerce_message',

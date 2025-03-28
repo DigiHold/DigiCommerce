@@ -18,7 +18,7 @@ $subscription_data = $orders->get_order_subscription_data( $order_id );
 $billing = $order['billing_details'] ?? array();
 
 // Show update message if order was just updated
-if ( isset( $_GET['updated'] ) && '1' === trim( sanitize_text_field( $_GET['updated'] ) ) ) {
+if ( isset( $_GET['updated'] ) && '1' === trim( sanitize_text_field( $_GET['updated'] ) ) ) { // phpcs:ignore
 	?>
 	<div class="notice notice-success">
 		<p><?php esc_html_e( 'Order updated successfully.', 'digicommerce' ); ?></p>

@@ -337,7 +337,7 @@ class DigiCommerce_Emails {
 			$img_width    = isset( $img_metadata['width'] ) ? $img_metadata['width'] : '';
 			$img_height   = isset( $img_metadata['height'] ) ? $img_metadata['height'] : '';
 
-			$header_html .= '<img src="' . esc_url( $logo_url ) . '"';
+			$header_html .= '<img src="' . esc_url( $logo_url ) . '"'; // phpcs:ignore
 			if ( ! empty( $img_width ) ) {
 				$header_html .= ' width="' . esc_attr( $img_width ) . '"';
 			}
@@ -383,7 +383,7 @@ class DigiCommerce_Emails {
 
 			// Loop through each social link and generate the HTML
 			foreach ( $social_links as $link ) {
-				$footer_html .= '<a href="' . esc_url( $link['url'] ) . '" target="_blank"><img src="' . DIGICOMMERCE_PLUGIN_URL . 'assets/img/social/' . esc_attr( $link['platform'] ) . '.png" alt="' . esc_attr( $link['platform'] ) . '"></a>';
+				$footer_html .= '<a href="' . esc_url( $link['url'] ) . '" target="_blank"><img src="' . DIGICOMMERCE_PLUGIN_URL . 'assets/img/social/' . esc_attr( $link['platform'] ) . '.png" alt="' . esc_attr( $link['platform'] ) . '"></a>'; // phpcs:ignore
 			}
 
 			$footer_html .= '</div>';

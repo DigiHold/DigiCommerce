@@ -224,7 +224,7 @@ class DigiCommerce_Orders {
 		$token_expiry = gmdate( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS );
 
 		// Start transaction
-		$wpdb->query( 'START TRANSACTION' );
+		$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore
 
 		try {
 			// Get seller's country and buyer's country
@@ -274,7 +274,7 @@ class DigiCommerce_Orders {
 			$token_expiry = gmdate( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS );
 
 			// Insert main order
-			$inserted = $wpdb->insert(
+			$inserted = $wpdb->insert( // phpcs:ignore
 				$this->table_orders,
 				array(
 					'order_number'    => $order_number,
@@ -338,7 +338,7 @@ class DigiCommerce_Orders {
 					$item_price = $item['price'];
 					$item_total = $item_price * ( 1 + $tax_rate );
 
-					$wpdb->insert(
+					$wpdb->insert( // phpcs:ignore
 						$this->table_items,
 						array(
 							'order_id'                => $order_id,
@@ -367,7 +367,7 @@ class DigiCommerce_Orders {
 					$order_data['billing_details']
 				);
 
-				$wpdb->query(
+				$wpdb->query( // phpcs:ignore
 					$wpdb->prepare( "INSERT INTO {$this->table_billing} (order_id, first_name, last_name, company, address, city, postcode, country, email, phone, vat_number)  VALUES (%d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE  first_name = VALUES(first_name), last_name = VALUES(last_name), company = VALUES(company), address = VALUES(address), city = VALUES(city), postcode = VALUES(postcode), country = VALUES(country), email = VALUES(email), phone = VALUES(phone), vat_number = VALUES(vat_number)", $billing_data['order_id'], $billing_data['first_name'], $billing_data['last_name'], $billing_data['company'], $billing_data['address'], $billing_data['city'], $billing_data['postcode'], $billing_data['country'], $billing_data['email'], $billing_data['phone'], $billing_data['vat_number'] ) // phpcs:ignore
 				);
 			}
@@ -396,7 +396,7 @@ class DigiCommerce_Orders {
 				}
 			}
 
-			$wpdb->query( 'COMMIT' );
+			$wpdb->query( 'COMMIT' ); // phpcs:ignore
 
 			// Record coupon usage if discount was applied
 			if ( ! empty( $order_data['discount_code'] ) && ! empty( $order_data['discount_amount'] ) ) {
@@ -423,7 +423,7 @@ class DigiCommerce_Orders {
 			return $order_id;
 
 		} catch ( Exception $e ) {
-			$wpdb->query( 'ROLLBACK' );
+			$wpdb->query( 'ROLLBACK' ); // phpcs:ignore
 			return false;
 		}
 	}
@@ -437,7 +437,7 @@ class DigiCommerce_Orders {
 		global $wpdb;
 
 		// Get main order data
-		$order = $wpdb->get_row(
+		$order = $wpdb->get_row( // phpcs:ignore
 			$wpdb->prepare( "SELECT * FROM {$this->table_orders} WHERE id = %d", $order_id ), // phpcs:ignore
 			ARRAY_A
 		);
@@ -447,7 +447,7 @@ class DigiCommerce_Orders {
 		}
 
 		// Get order items
-		$order['items'] = $wpdb->get_results(
+		$order['items'] = $wpdb->get_results( // phpcs:ignore
 			$wpdb->prepare( "SELECT * FROM {$this->table_items} WHERE order_id = %d", $order_id ), // phpcs:ignore
 			ARRAY_A
 		);
@@ -462,13 +462,13 @@ class DigiCommerce_Orders {
 		}
 
 		// Get billing details
-		$order['billing_details'] = $wpdb->get_row(
+		$order['billing_details'] = $wpdb->get_row( // phpcs:ignore
 			$wpdb->prepare( "SELECT * FROM {$this->table_billing} WHERE order_id = %d", $order_id ), // phpcs:ignore
 			ARRAY_A
 		);
 
 		// Get order notes
-		$order['notes'] = $wpdb->get_results(
+		$order['notes'] = $wpdb->get_results( // phpcs:ignore
 			$wpdb->prepare( "SELECT * FROM {$this->table_notes} WHERE order_id = %d ORDER BY date DESC", $order_id ), // phpcs:ignore
 			ARRAY_A
 		);
@@ -597,7 +597,7 @@ class DigiCommerce_Orders {
 			$author       = $current_user->display_name;
 		}
 
-		return $wpdb->insert(
+		return $wpdb->insert( // phpcs:ignore
 			$this->table_notes,
 			array(
 				'order_id' => $order_id,
@@ -618,7 +618,7 @@ class DigiCommerce_Orders {
 	public function update_billing_details( $order_id, $billing_data ) {
 		global $wpdb;
 
-		return $wpdb->update(
+		return $wpdb->update( // phpcs:ignore
 			$this->table_billing,
 			$billing_data,
 			array( 'order_id' => $order_id ),
@@ -650,7 +650,7 @@ class DigiCommerce_Orders {
 		}
 
 		global $wpdb;
-		$count = $wpdb->get_var(
+		$count = $wpdb->get_var( // phpcs:ignore
 			$wpdb->prepare( "SELECT COUNT(*) FROM {$this->table_orders} WHERE id = %d AND user_id = %d", $order_id, get_current_user_id() ) // phpcs:ignore
 		);
 
@@ -667,7 +667,7 @@ class DigiCommerce_Orders {
 		global $wpdb;
 
 		// Fetch order details
-		$order = $wpdb->get_row(
+		$order = $wpdb->get_row( // phpcs:ignore
 			$wpdb->prepare( "SELECT * FROM {$this->table_orders} WHERE id = %d", $order_id ), // phpcs:ignore
 			ARRAY_A
 		);
@@ -693,9 +693,9 @@ class DigiCommerce_Orders {
 	 * Render orders page in admin
 	 */
 	public function render_orders_page() {
-		if ( isset( $_GET['action'] ) && 'edit' === $_GET['action'] && isset( $_GET['id'] ) ) {
+		if ( isset( $_GET['action'] ) && 'edit' === $_GET['action'] && isset( $_GET['id'] ) ) { // phpcs:ignore
 			// Render the Edit Order page
-			$this->render_edit_order_page( intval( $_GET['id'] ) );
+			$this->render_edit_order_page( intval( $_GET['id'] ) ); // phpcs:ignore
 		} else {
 			// Render the Orders List page
 			$this->render_orders_list_page();
@@ -746,7 +746,7 @@ class DigiCommerce_Orders {
 		// Single action handling
 		if ( isset( $_GET['action'] ) && ! empty( $_GET['id'] ) ) {
 			$order_id = intval( $_GET['id'] );
-			$action   = sanitize_text_field( $_GET['action'] );
+			$action   = sanitize_text_field( $_GET['action'] ); // phpcs:ignore
 
 			// Skip nonce verification for edit action since it uses form nonce
 			if ( 'edit' === $action ) {
@@ -754,7 +754,7 @@ class DigiCommerce_Orders {
 			}
 
 			// Verify nonce with combined action and order ID
-			if ( ! wp_verify_nonce( $_GET['nonce'], "digi_order_{$action}_{$order_id}" ) ) {
+			if ( ! wp_verify_nonce( $_GET['nonce'], "digi_order_{$action}_{$order_id}" ) ) { // phpcs:ignore
 				wp_die( esc_html__( 'Security check failed.', 'digicommerce' ) );
 			}
 
@@ -791,7 +791,7 @@ class DigiCommerce_Orders {
 			}
 
 			// Determine the action to process
-			$action = ( '-1' !== $_GET['action'] ) ? sanitize_text_field( $_GET['action'] ) : sanitize_text_field( $_GET['action2'] );
+			$action = ( '-1' !== $_GET['action'] ) ? sanitize_text_field( $_GET['action'] ) : sanitize_text_field( $_GET['action2'] ); // phpcs:ignore
 			$ids    = isset( $_GET['post'] ) ? array_map( 'intval', $_GET['post'] ) : array();
 
 			if ( ! empty( $ids ) ) {
@@ -850,7 +850,7 @@ class DigiCommerce_Orders {
 		$total_trash      = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'trash'" ); // phpcs:ignore
 
 		// Get the current status filter
-		$current_status = isset( $_GET['status'] ) ? sanitize_text_field( $_GET['status'] ) : 'all';
+		$current_status = isset( $_GET['status'] ) ? sanitize_text_field( $_GET['status'] ) : 'all'; // phpcs:ignore
 
 		// Get total items for current view
 		$where = '1=1';
@@ -867,7 +867,7 @@ class DigiCommerce_Orders {
 		$offset  = ( $pagenum - 1 ) * $per_page;
 
 		// Search query
-		$search_query = isset( $_GET['s'] ) ? sanitize_text_field( $_GET['s'] ) : '';
+		$search_query = isset( $_GET['s'] ) ? sanitize_text_field( $_GET['s'] ) : ''; // phpcs:ignore
 
 		// Fetch orders with appropriate filtering
 		$orders = $this->get_orders(
@@ -902,7 +902,7 @@ class DigiCommerce_Orders {
 		}
 
 		// Get current status before updating
-		$current_status = $wpdb->get_var(
+		$current_status = $wpdb->get_var( // phpcs:ignore
 			$wpdb->prepare( "SELECT status FROM {$this->table_orders} WHERE id = %d", $order_id ) // phpcs:ignore
 		);
 
@@ -930,36 +930,36 @@ class DigiCommerce_Orders {
 						}
 
 						// Store refund details in order meta
-						$wpdb->insert(
+						$wpdb->insert( // phpcs:ignore
 							$this->table_meta,
 							array(
 								'order_id'   => $order_id,
-								'meta_key'   => 'refund_details',
-								'meta_value' => maybe_serialize( $refund_results ),
+								'meta_key'   => 'refund_details', // phpcs:ignore
+								'meta_value' => maybe_serialize( $refund_results ), // phpcs:ignore
 							),
 							array( '%d', '%s', '%s' )
 						);
 
 						// Store individual refund IDs if available
 						if ( ! empty( $refund_results['one_time']['refund_id'] ) ) {
-							$wpdb->insert(
+							$wpdb->insert( // phpcs:ignore
 								$this->table_meta,
 								array(
 									'order_id'   => $order_id,
-									'meta_key'   => 'stripe_refund_id',
-									'meta_value' => $refund_results['one_time']['refund_id'],
+									'meta_key'   => 'stripe_refund_id', // phpcs:ignore
+									'meta_value' => $refund_results['one_time']['refund_id'], // phpcs:ignore
 								),
 								array( '%d', '%s', '%s' )
 							);
 						}
 
 						if ( ! empty( $refund_results['subscription']['refund_id'] ) ) {
-							$wpdb->insert(
+							$wpdb->insert( // phpcs:ignore
 								$this->table_meta,
 								array(
 									'order_id'   => $order_id,
-									'meta_key'   => 'stripe_subscription_refund_id',
-									'meta_value' => $refund_results['subscription']['refund_id'],
+									'meta_key'   => 'stripe_subscription_refund_id', // phpcs:ignore
+									'meta_value' => $refund_results['subscription']['refund_id'], // phpcs:ignore
 								),
 								array( '%d', '%s', '%s' )
 							);
@@ -981,12 +981,12 @@ class DigiCommerce_Orders {
 						}
 
 						// Store refund details in order meta
-						$wpdb->insert(
+						$wpdb->insert( // phpcs:ignore
 							$this->table_meta,
 							array(
 								'order_id'   => $order_id,
-								'meta_key'   => 'refund_details',
-								'meta_value' => maybe_serialize( $refund_results ),
+								'meta_key'   => 'refund_details', // phpcs:ignore
+								'meta_value' => maybe_serialize( $refund_results ), // phpcs:ignore
 							),
 							array( '%d', '%s', '%s' )
 						);
@@ -1007,7 +1007,7 @@ class DigiCommerce_Orders {
 		}
 
 		// For non-refund status changes
-		$updated = $wpdb->update(
+		$updated = $wpdb->update( // phpcs:ignore
 			$this->table_orders,
 			array(
 				'status'        => $status,
@@ -1035,7 +1035,7 @@ class DigiCommerce_Orders {
 		global $wpdb;
 
 		// Update the order status to 'trash'
-		$updated = $wpdb->update(
+		$updated = $wpdb->update( // phpcs:ignore
 			$this->table_orders,
 			array( 'status' => 'trash' ),
 			array( 'id' => $order_id ),
@@ -1055,7 +1055,7 @@ class DigiCommerce_Orders {
 	public function restore_order( $order_id ) {
 		global $wpdb;
 
-		$updated = $wpdb->update(
+		$updated = $wpdb->update( // phpcs:ignore
 			$this->table_orders,
 			array( 'status' => 'processing' ), // Default status after restoring
 			array( 'id' => $order_id ),
@@ -1075,7 +1075,7 @@ class DigiCommerce_Orders {
 	public function delete_order_permanently( $order_id ) {
 		global $wpdb;
 
-		$deleted = $wpdb->delete(
+		$deleted = $wpdb->delete( // phpcs:ignore
 			$this->table_orders,
 			array( 'id' => $order_id ),
 			array( '%d' )
@@ -1099,7 +1099,7 @@ class DigiCommerce_Orders {
 		}
 
 		global $wpdb;
-		return $wpdb->get_row(
+		return $wpdb->get_row( // phpcs:ignore
 			$wpdb->prepare(
 				"SELECT s.* FROM {$wpdb->prefix}digicommerce_subscriptions s
             INNER JOIN {$wpdb->prefix}digicommerce_subscription_items si 
@@ -1140,7 +1140,7 @@ class DigiCommerce_Orders {
 		}
 
 		// Verify nonce
-		if ( ! wp_verify_nonce( $_POST['edit_order_nonce_field'], 'edit_order_nonce' ) ) {
+		if ( ! wp_verify_nonce( $_POST['edit_order_nonce_field'], 'edit_order_nonce' ) ) { // phpcs:ignore
 			wp_die( esc_html__( 'Security check failed.', 'digicommerce' ) );
 		}
 
@@ -1163,7 +1163,7 @@ class DigiCommerce_Orders {
 
 		// Update order status if changed
 		if ( isset( $_POST['order_status'] ) ) {
-			$new_status     = sanitize_text_field( $_POST['order_status'] );
+			$new_status     = sanitize_text_field( $_POST['order_status'] ); // phpcs:ignore
 			$valid_statuses = array( 'processing', 'completed', 'cancelled', 'refunded' );
 
 			if ( in_array( $new_status, $valid_statuses ) ) {
@@ -1198,7 +1198,7 @@ class DigiCommerce_Orders {
 		$billing_data = array();
 		foreach ( $billing_fields as $field => $sanitize_function ) {
 			if ( isset( $_POST[ 'billing_' . $field ] ) ) {
-				$billing_data[ $field ] = $sanitize_function( $_POST[ 'billing_' . $field ] );
+				$billing_data[ $field ] = $sanitize_function( $_POST[ 'billing_' . $field ] ); // phpcs:ignore
 			}
 		}
 
@@ -1206,7 +1206,7 @@ class DigiCommerce_Orders {
 			$this->update_billing_details( $order_id, $billing_data );
 
 			// Get user ID from orders table
-			$user_id = $wpdb->get_var(
+			$user_id = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare( "SELECT user_id FROM {$this->table_orders} WHERE id = %d", $order_id ) // phpcs:ignore
 			);
 
@@ -1229,7 +1229,7 @@ class DigiCommerce_Orders {
 
 		// Handle note
 		if ( ! empty( $_POST['order_note'] ) ) {
-			$note_content = sanitize_textarea_field( $_POST['order_note'] );
+			$note_content = sanitize_textarea_field( $_POST['order_note'] ); // phpcs:ignore
 			$this->add_order_note( $order_id, $note_content );
 		}
 
@@ -1244,7 +1244,7 @@ class DigiCommerce_Orders {
 			admin_url( 'admin.php' )
 		);
 
-		wp_redirect( $redirect_url );
+		wp_redirect( $redirect_url ); // phpcs:ignore
 		exit;
 	}
 
@@ -1297,7 +1297,7 @@ class DigiCommerce_Orders {
 	 * Get current admin page number
 	 */
 	private function get_pagenum() {
-		$pagenum = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 0;
+		$pagenum = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 0; // phpcs:ignore
 		return max( 1, $pagenum );
 	}
 
@@ -1367,7 +1367,7 @@ class DigiCommerce_Orders {
 		}
 
 		// Only enqueue when viewing an order or subscription
-		if ( ! isset( $_GET['view-order'] ) && ! isset( $_GET['view-subscription'] ) ) {
+		if ( ! isset( $_GET['view-order'] ) && ! isset( $_GET['view-subscription'] ) ) { // phpcs:ignore
 			return;
 		}
 

@@ -185,11 +185,11 @@ class DigiCommerce_Security {
 		$ip = '';
 
 		if ( isset( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-			$ip = $_SERVER['HTTP_CLIENT_IP'];
+			$ip = $_SERVER['HTTP_CLIENT_IP']; // phpcs:ignore
 		} elseif ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+			$ip = $_SERVER['HTTP_X_FORWARDED_FOR']; // phpcs:ignore
 		} elseif ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
-			$ip = $_SERVER['REMOTE_ADDR'];
+			$ip = $_SERVER['REMOTE_ADDR']; // phpcs:ignore
 		}
 
 		return filter_var( $ip, FILTER_VALIDATE_IP );

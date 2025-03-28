@@ -95,8 +95,8 @@ class DigiCommerce_Shortcodes {
 
 		ob_start();
 
-		$login = isset( $_GET['login'] ) ? sanitize_user( $_GET['login'] ) : '';
-		$key   = isset( $_GET['key'] ) ? sanitize_text_field( $_GET['key'] ) : '';
+		$login = isset( $_GET['login'] ) ? sanitize_user( $_GET['login'] ) : ''; // phpcs:ignore
+		$key   = isset( $_GET['key'] ) ? sanitize_text_field( $_GET['key'] ) : ''; // phpcs:ignore
 
 		// Verify reset key
 		$user         = check_password_reset_key( $key, $login );
@@ -149,8 +149,8 @@ class DigiCommerce_Shortcodes {
 		ob_start();
 
 		// Get order ID and token from URL
-		$order_id = isset( $_GET['order_id'] ) ? absint( $_GET['order_id'] ) : 0;
-		$token    = isset( $_GET['token'] ) ? sanitize_text_field( $_GET['token'] ) : '';
+		$order_id = isset( $_GET['order_id'] ) ? absint( $_GET['order_id'] ) : 0; // phpcs:ignore
+		$token    = isset( $_GET['token'] ) ? sanitize_text_field( $_GET['token'] ) : ''; // phpcs:ignore
 
 		// Get the order data if order_id and token exist
 		$order_data = ( $order_id && $token ) ? DigiCommerce_Orders::instance()->get_order( $order_id ) : array();

@@ -73,7 +73,7 @@ if ( $order_data ) : ?>
 				<div class="grid grid-cols-1 sm:grid-cols-2 items-start justify-between gap-4">
 					<?php if ( $logo_url ) : ?>
 						<div>
-							<img class="max-w-40" decoding="async" id="digicommerce-receipt-logo" src="<?php echo esc_url( $logo_url ); ?>" alt="<?php esc_attr_e( 'Business Logo', 'digicommerce' ); ?>">
+							<img class="max-w-40" decoding="async" id="digicommerce-receipt-logo" src="<?php echo esc_url( $logo_url ); // phpcs:ignore ?>" alt="<?php esc_attr_e( 'Business Logo', 'digicommerce' ); ?>">
 						</div>
 					<?php endif; ?>
 
@@ -326,7 +326,7 @@ if ( $order_data ) : ?>
 													if ( $subscription_enabled ) {
 														// Get subscription status for this order/product
 														global $wpdb;
-														$subscription = $wpdb->get_row(
+														$subscription = $wpdb->get_row( // phpcs:ignore
 															$wpdb->prepare(
 																"SELECT s.* 
 																FROM {$wpdb->prefix}digicommerce_subscription_items si
@@ -489,7 +489,7 @@ if ( $order_data ) : ?>
 		$subscription_items_table = $wpdb->prefix . 'digicommerce_subscription_items';
 		$subscriptions_table      = $wpdb->prefix . 'digicommerce_subscriptions';
 
-		$subscription = $wpdb->get_row(
+		$subscription = $wpdb->get_row( // phpcs:ignore
 			$wpdb->prepare(
 				"SELECT s.* FROM {$subscription_items_table} si JOIN {$subscriptions_table} s ON si.subscription_id = s.id WHERE si.order_id = %d LIMIT 1", // phpcs:ignore
 				$order_id

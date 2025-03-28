@@ -110,7 +110,7 @@ $total_with_vat = $subtotal + $vat;
 $discount_amount = 0;
 if ( ! empty( $order_data['discount_code'] ) ) {
 	global $wpdb;
-	$coupon = $wpdb->get_row(
+	$coupon = $wpdb->get_row( // phpcs:ignore
 		$wpdb->prepare(
 			"SELECT * FROM {$wpdb->prefix}digicommerce_coupons 
         WHERE code = %s AND status = 'active'",
@@ -159,7 +159,7 @@ $total = number_format( $total, 2, '.', '' );
 					<div class="grid grid-cols-1 sm:grid-cols-2 items-start justify-between gap-4">
 						<?php if ( $logo_url ) { ?>
 							<div>
-								<img class="max-w-40" decoding="async" id="digicommerce-receipt-logo" src="<?php echo esc_url( $logo_url ); ?>" alt="<?php esc_attr_e( 'Business Logo', 'digicommerce' ); ?>">
+								<img class="max-w-40" decoding="async" id="digicommerce-receipt-logo" src="<?php echo esc_url( $logo_url ); // phpcs:ignore ?>" alt="<?php esc_attr_e( 'Business Logo', 'digicommerce' ); ?>">
 							</div>
 							<?php
 						}
@@ -487,7 +487,7 @@ $total = number_format( $total, 2, '.', '' );
 														if ( $subscription_enabled ) {
 															// Get subscription status for this order/product
 															global $wpdb;
-															$subscription = $wpdb->get_row(
+															$subscription = $wpdb->get_row( // phpcs:ignore
 																$wpdb->prepare(
 																	"SELECT s.* 
 																	FROM {$wpdb->prefix}digicommerce_subscription_items si

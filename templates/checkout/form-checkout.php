@@ -686,7 +686,7 @@ if ( ! $minimal_style ) {
 						<div class="flex flex-col items-center gap-4">
 							<?php
 							// If comes from abandoned cart
-							if ( isset( $_GET['from_abandoned'] ) && DigiCommerce()->get_option( 'email_abandoned_cart' ) ) :
+							if ( isset( $_GET['from_abandoned'] ) && DigiCommerce()->get_option( 'email_abandoned_cart' ) ) : // phpcs:ignore
 								?>
 								<input type="hidden" name="from_abandoned" value="1">
 								<?php

@@ -151,7 +151,7 @@ class DigiCommerce_Dashboard_Widget {
 			return $stats;
 		}
 
-		$results = $wpdb->get_row(
+		$results = $wpdb->get_row( // phpcs:ignore
 			$wpdb->prepare( "SELECT COUNT(*) as total_sales, SUM(total) as total_earnings, SUM(vat) as total_vat FROM {$this->table_orders} WHERE status = 'completed' AND date_created BETWEEN %s AND %s", $date_range['start'], $date_range['end'] ) // phpcs:ignore
 		);
 

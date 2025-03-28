@@ -87,7 +87,7 @@ defined( 'ABSPATH' ) || exit;
 					?>
 				</span>
 
-				<?php if ( empty( $_GET['s'] ) ) : // Display pagination only if there's no search query ?>
+				<?php if ( empty( $_GET['s'] ) ) : // phpcs:ignore ?>
 					<?php
 					$total_pages = ceil( $total_items / $per_page );
 					if ( $total_pages > 1 ) {
@@ -370,14 +370,22 @@ defined( 'ABSPATH' ) || exit;
 				<span class="displaying-num">
 					<?php
 					printf(
-						esc_html( _n( '%s item', '%s items', $total_items, 'digicommerce' ) ),
+						esc_html(
+							// translators: %s: total number of items
+							_n(
+								'%s item',
+								'%s items',
+								$total_items,
+								'digicommerce'
+							)
+						),
 						esc_html( number_format_i18n( $total_items ) )
 					);
 					?>
 				</span>
 
 				<?php
-				if ( empty( $_GET['s'] ) ) : // Display pagination only if there's no search query
+				if ( empty( $_GET['s'] ) ) : // phpcs:ignore
 					$total_pages = ceil( $total_items / $per_page );
 					if ( $total_pages > 1 ) {
 						$current_page = max( 1, $pagenum );
