@@ -60,12 +60,43 @@ class DigiCommerce_PayPal_Webhook {
 			// Parse the JSON payload
 			$event = json_decode( $payload );
 
-			// Validate event data
-			if ( empty( $event ) || ! isset( $event->event_type ) || ! isset( $event->resource ) ) {
+			// Check for JSON parsing errors
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
 				return new WP_REST_Response(
 					array(
 						'status'  => 'error',
-						'message' => 'Invalid payload format',
+						'message' => 'Invalid JSON: ' . json_last_error_msg(),
+					),
+					400
+				);
+			}
+
+			// Validate event data
+			if ( empty( $event ) ) {
+				return new WP_REST_Response(
+					array(
+						'status'  => 'error',
+						'message' => 'Empty payload',
+					),
+					400
+				);
+			}
+
+			if ( ! isset( $event->event_type ) ) {
+				return new WP_REST_Response(
+					array(
+						'status'  => 'error',
+						'message' => 'Missing event_type',
+					),
+					400
+				);
+			}
+
+			if ( ! isset( $event->resource ) ) {
+				return new WP_REST_Response(
+					array(
+						'status'  => 'error',
+						'message' => 'Missing resource',
 					),
 					400
 				);
@@ -75,14 +106,23 @@ class DigiCommerce_PayPal_Webhook {
 			$event_id   = $event->id ?? 'unknown';
 			$event_type = $event->event_type ?? 'unknown';
 
+			// Log basic resource info
+			if ( isset( $event->resource ) ) {
+				$resource_id = isset( $event->resource->id ) ? $event->resource->id : 'unknown';
+			}
+
 			// Process the event based on type
+			$processing_result = false;
 			switch ( $event_type ) {
 				case 'PAYMENT.CAPTURE.COMPLETED':
-					$this->process_payment_completed( $event );
+				case 'PAYMENT.SALE.COMPLETED':
+					$processing_result = $this->process_payment_completed( $event );
 					break;
 
+				// Refund events - both capture and sale formats
 				case 'PAYMENT.CAPTURE.REFUNDED':
-					$this->process_refund( $event );
+				case 'PAYMENT.SALE.REFUNDED':
+					$processing_result = $this->process_refund( $event );
 					break;
 
 				case 'BILLING.SUBSCRIPTION.ACTIVATED':
@@ -90,11 +130,11 @@ class DigiCommerce_PayPal_Webhook {
 				case 'BILLING.SUBSCRIPTION.CANCELLED':
 				case 'BILLING.SUBSCRIPTION.SUSPENDED':
 				case 'BILLING.SUBSCRIPTION.EXPIRED':
-					$this->process_subscription_status_change( $event );
+					$processing_result = $this->process_subscription_status_change( $event );
 					break;
 
 				case 'BILLING.SUBSCRIPTION.PAYMENT.FAILED':
-					$this->process_subscription_payment_failed( $event );
+					$processing_result = $this->process_subscription_payment_failed( $event );
 					break;
 
 				default:
@@ -132,11 +172,18 @@ class DigiCommerce_PayPal_Webhook {
 	private function process_payment_completed( $event ) {
 		try {
 			global $wpdb;
-			$resource = $event->resource;
+			$resource   = $event->resource;
+			$event_type = $event->event_type ?? 'unknown';
 
 			// Get the capture ID and PayPal order ID
 			$capture_id      = isset( $resource->id ) ? $resource->id : null;
 			$paypal_order_id = null;
+
+			// Use appropriate meta key based on event type
+			$id_meta_key = '_paypal_capture_id';
+			if ( 'PAYMENT.SALE.COMPLETED' === $event_type ) {
+				$id_meta_key = '_paypal_sale_id';
+			}
 
 			if ( isset( $resource->supplementary_data ) &&
 				isset( $resource->supplementary_data->related_ids ) &&
@@ -144,61 +191,70 @@ class DigiCommerce_PayPal_Webhook {
 				$paypal_order_id = $resource->supplementary_data->related_ids->order_id;
 			}
 
-			// We need both the capture ID and PayPal order ID to proceed
-			if ( ! $capture_id || ! $paypal_order_id ) {
+			// We need the capture ID to proceed
+			if ( ! $capture_id ) {
 				return false;
 			}
 
+			// Determine if this is a subscription-related payment
+			$is_subscription_payment = false;
+			$billing_agreement_id    = null;
+
+			// Check multiple possible locations for billing agreement ID
+			if ( isset( $resource->billing_agreement_id ) ) {
+				$billing_agreement_id    = $resource->billing_agreement_id;
+				$is_subscription_payment = true;
+			} elseif ( isset( $resource->supplementary_data ) &&
+					isset( $resource->supplementary_data->related_ids ) &&
+					isset( $resource->supplementary_data->related_ids->billing_agreement_id ) ) {
+				$billing_agreement_id    = $resource->supplementary_data->related_ids->billing_agreement_id;
+				$is_subscription_payment = true;
+			}
+
 			// Find the order using PayPal order ID
-			$order_id = $wpdb->get_var( // phpcs:ignore
-				$wpdb->prepare(
-					"SELECT order_id FROM {$wpdb->prefix}digicommerce_order_meta 
-					WHERE meta_key = %s AND meta_value = %s AND order_id > 0",
-					'_paypal_order_id',
-					$paypal_order_id
-				)
-			);
+			$order_id = null;
+			if ( $paypal_order_id ) {
+				$order_id = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT order_id FROM {$wpdb->prefix}digicommerce_order_meta 
+						WHERE meta_key = %s AND meta_value = %s AND order_id > 0",
+						'_paypal_order_id',
+						$paypal_order_id
+					)
+				);
+			}
 
 			if ( $order_id ) {
-				// Check if this capture ID is already linked to this order
-				$exists = $wpdb->get_var( // phpcs:ignore
+				// Check if this payment ID is already linked to this order
+				$exists = $wpdb->get_var(
 					$wpdb->prepare(
 						"SELECT COUNT(*) FROM {$wpdb->prefix}digicommerce_order_meta 
 						WHERE order_id = %d AND meta_key = %s",
 						$order_id,
-						'_paypal_capture_id'
+						$id_meta_key
 					)
 				);
 
 				if ( ! $exists ) {
-					// Add the capture ID to the order
-					$wpdb->insert( // phpcs:ignore
+					// Add the payment ID to the order
+					$wpdb->insert(
 						$wpdb->prefix . 'digicommerce_order_meta',
 						array(
 							'order_id'   => $order_id,
-							'meta_key'   => '_paypal_capture_id', // phpcs:ignore
-							'meta_value' => $capture_id, // phpcs:ignore
+							'meta_key'   => $id_meta_key,
+							'meta_value' => $capture_id,
 						),
-						array( '%d', '%s', '%s' ),
+						array( '%d', '%s', '%s' )
 					);
 				}
 			} else {
-				// Store the capture ID temporarily with order_id = 0
-				// This helps with refunds that may come in before we've processed the order
-				$this->store_paypal_id( $capture_id, '_paypal_capture_id' );
+				// Store the payment ID temporarily with order_id = 0
+				$this->store_paypal_id( $capture_id, $id_meta_key );
 			}
 
 			// Process subscription payment if applicable
-			$is_subscription_payment = false;
-			if ( isset( $resource->billing_agreement_id ) ||
-				( isset( $resource->supplementary_data ) &&
-				isset( $resource->supplementary_data->related_ids ) &&
-				isset( $resource->supplementary_data->related_ids->billing_agreement_id ) ) ) {
-				$is_subscription_payment = true;
-			}
-
-			if ( $is_subscription_payment ) {
-				$this->process_subscription_payment( $event );
+			if ( $is_subscription_payment && $billing_agreement_id ) {
+				$this->process_subscription_renewal_payment( $billing_agreement_id, $capture_id );
 			}
 
 			return true;
@@ -252,229 +308,243 @@ class DigiCommerce_PayPal_Webhook {
 		global $wpdb;
 
 		try {
-			// Get refund ID and amount
+			// Get refund ID
 			$refund_id = $event->resource->id ?? '';
-			$amount    = 0;
-			if ( isset( $event->resource->amount ) && isset( $event->resource->amount->value ) ) {
-				$amount = (float) $event->resource->amount->value;
+
+			// Handle different event types
+			$event_type = $event->event_type ?? '';
+			$payment_id = null;
+
+			if ( 'PAYMENT.SALE.REFUNDED' === $event_type ) {
+				// For subscription payments
+				$payment_id = $event->resource->sale_id ?? '';
+			} elseif ( 'PAYMENT.CAPTURE.REFUNDED' === $event_type ) {
+				// For regular payments
+				// Attempt to get ID from different possible fields
+				if ( isset( $event->resource->links ) ) {
+					foreach ( $event->resource->links as $link ) {
+						if ( isset( $link->rel ) && 'up' === $link->rel && isset( $link->href ) ) {
+							$parts      = explode( '/', $link->href );
+							$payment_id = end( $parts );
+							break;
+						}
+					}
+				}
+
+				// If not found in links, try other fields
+				if ( ! $payment_id && isset( $event->resource->parent_payment ) ) {
+					$payment_id = $event->resource->parent_payment;
+				}
+
+				if ( ! $payment_id && isset( $event->resource->parent_id ) ) {
+					$payment_id = $event->resource->parent_id;
+				}
 			}
 
-			// Extract capture ID from links
-			$capture_id = null;
-			if ( isset( $event->resource->links ) && is_array( $event->resource->links ) ) {
-				foreach ( $event->resource->links as $link ) {
-					if ( isset( $link->rel ) && 'up' === $link->rel && isset( $link->href ) ) {
-						$href_parts = explode( '/', $link->href );
-						$capture_id = end( $href_parts );
+			if ( empty( $payment_id ) ) {
+				return false;
+			}
+
+			// SIMPLE APPROACH: Find the order by searching for the payment ID in ANY PayPal-related meta field
+			$meta_rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT order_id, meta_key, meta_value 
+					FROM {$wpdb->prefix}digicommerce_order_meta 
+					WHERE meta_value = %s OR meta_value LIKE %s",
+					$payment_id,
+					'%' . $wpdb->esc_like( $payment_id ) . '%'
+				)
+			);
+
+			// Also search for payments recently processed
+			$recent_orders = $wpdb->get_results(
+				"SELECT o.id, om.meta_key, om.meta_value 
+				FROM {$wpdb->prefix}digicommerce_orders o
+				JOIN {$wpdb->prefix}digicommerce_order_meta om ON o.id = om.order_id
+				WHERE o.payment_method = 'paypal' 
+				AND o.date_created > DATE_SUB(NOW(), INTERVAL 1 DAY)
+				AND om.meta_key LIKE '%paypal%'
+				ORDER BY o.date_created DESC
+				LIMIT 10"
+			);
+
+			// Find order ID from meta search
+			$order_id = null;
+
+			// Approach 1: Direct search in database
+			if ( ! empty( $meta_rows ) ) {
+				foreach ( $meta_rows as $row ) {
+					if ( $row->order_id > 0 ) {
+						$order_id = $row->order_id;
 						break;
 					}
 				}
 			}
 
-			if ( ! $capture_id ) {
+			// Approach 2: Get the most recently updated order with this PayPal ID
+			if ( ! $order_id && ! empty( $recent_orders ) ) {
+				foreach ( $recent_orders as $row ) {
+					if ( $row->id > 0 ) {
+						$order_id = $row->id;
+
+						// Store the payment ID with this order
+						$wpdb->insert(
+							$wpdb->prefix . 'digicommerce_order_meta',
+							array(
+								'order_id'   => $order_id,
+								'meta_key'   => ( 'PAYMENT.CAPTURE.REFUNDED' === $event_type ) ? '_paypal_capture_id' : '_paypal_sale_id',
+								'meta_value' => $payment_id,
+							),
+							array( '%d', '%s', '%s' )
+						);
+						break;
+					}
+				}
+			}
+
+			if ( ! $order_id ) {
 				return false;
 			}
 
-			// First try to find the order directly using the capture ID
-			$order_id = $wpdb->get_var( // phpcs:ignore
+			// Verify order exists
+			$order = $wpdb->get_row(
 				$wpdb->prepare(
-					"SELECT order_id FROM {$wpdb->prefix}digicommerce_order_meta 
-					WHERE meta_key = %s AND meta_value = %s AND order_id > 0",
-					'_paypal_capture_id',
-					$capture_id,
-				)
-			);
-
-			// If we couldn't find the order directly, try some alternative lookup methods
-			if ( ! $order_id ) {
-				// Try to look up the order ID using the relationship between a temporary capture ID
-				// record (order_id=0) and a PayPal order ID linked to a real order
-				$order_id = $wpdb->get_var( // phpcs:ignore
-					$wpdb->prepare(
-						"SELECT om_order.order_id 
-						FROM {$wpdb->prefix}digicommerce_order_meta AS om_capture
-						JOIN {$wpdb->prefix}digicommerce_order_meta AS om_order ON om_capture.meta_value = %s
-						WHERE om_capture.meta_key = %s 
-						AND om_order.meta_key = %s
-						AND om_order.order_id > 0
-						LIMIT 1",
-						$capture_id,
-						'_paypal_capture_id',
-						'_paypal_order_id'
-					)
-				);
-
-				// If still no order, try to find by PayPal order ID from the resource if available
-				if ( ! $order_id && isset( $event->resource->supplementary_data ) &&
-					isset( $event->resource->supplementary_data->related_ids ) &&
-					isset( $event->resource->supplementary_data->related_ids->order_id ) ) {
-
-					$paypal_order_id = $event->resource->supplementary_data->related_ids->order_id;
-					$order_id        = $wpdb->get_var( // phpcs:ignore
-						$wpdb->prepare(
-							"SELECT order_id FROM {$wpdb->prefix}digicommerce_order_meta 
-							WHERE meta_key = %s AND meta_value = %s AND order_id > 0",
-							'_paypal_order_id',
-							$paypal_order_id
-						)
-					);
-				}
-
-				// Last resort - try by customer email
-				if ( ! $order_id && isset( $event->resource->payer ) && isset( $event->resource->payer->email_address ) ) {
-					$email    = $event->resource->payer->email_address;
-					$order_id = $wpdb->get_var( // phpcs:ignore
-						$wpdb->prepare(
-							"SELECT o.id FROM {$wpdb->prefix}digicommerce_orders o
-							JOIN {$wpdb->prefix}digicommerce_order_meta om ON o.id = om.order_id
-							WHERE om.meta_key = 'billing_email' AND om.meta_value = %s
-							ORDER BY o.id DESC LIMIT 1",
-							$email
-						)
-					);
-				}
-			}
-
-			// If no order found, log it but don't error
-			if ( ! $order_id ) {
-				return true;
-			}
-
-			// Process the refund
-			// Mark order as refunded
-			$wpdb->update( // phpcs:ignore
-				$wpdb->prefix . 'digicommerce_orders',
-				array(
-					'status'        => 'refunded',
-					'date_modified' => current_time( 'mysql' ),
-				),
-				array( 'id' => $order_id ),
-				array( '%s', '%s' ),
-				array( '%d' )
-			);
-
-			// Store refund ID
-			$wpdb->insert( // phpcs:ignore
-				$wpdb->prefix . 'digicommerce_order_meta',
-				array(
-					'order_id'   => $order_id,
-					'meta_key'   => 'paypal_refund_id', // phpcs:ignore
-					'meta_value' => $refund_id, // phpcs:ignore
-				),
-				array( '%d', '%s', '%s' )
-			);
-
-			// Add order note
-			$wpdb->insert( // phpcs:ignore
-				$wpdb->prefix . 'digicommerce_order_notes',
-				array(
-					'order_id' => $order_id,
-					'content'  => sprintf(
-						// translators: %s: refund ID
-						esc_html__( 'Order refunded in PayPal. Refund ID: %s', 'digicommerce' ),
-						$refund_id
-					),
-					'author'   => 'PayPal',
-					'date'     => current_time( 'mysql' ),
-				),
-				array( '%d', '%s', '%s', '%s' )
-			);
-
-			// Handle subscription if exists
-			$subscription_id = $wpdb->get_var( // phpcs:ignore
-				$wpdb->prepare(
-					"SELECT si.subscription_id 
-					FROM {$wpdb->prefix}digicommerce_subscription_items si
-					WHERE si.order_id = %d",
+					"SELECT id, status FROM {$wpdb->prefix}digicommerce_orders WHERE id = %d",
 					$order_id
 				)
 			);
 
-			if ( $subscription_id ) {
-				// Update subscription status
-				$wpdb->update( // phpcs:ignore
-					$wpdb->prefix . 'digicommerce_subscriptions',
+			if ( ! $order ) {
+				return false;
+			}
+
+			// Start transaction
+			$wpdb->query( 'START TRANSACTION' );
+
+			try {
+				// Update order status to refunded
+				$updated = $wpdb->update(
+					$wpdb->prefix . 'digicommerce_orders',
 					array(
-						'status'        => 'cancelled',
+						'status'        => 'refunded',
 						'date_modified' => current_time( 'mysql' ),
 					),
-					array( 'id' => $subscription_id ),
+					array( 'id' => $order_id ),
 					array( '%s', '%s' ),
 					array( '%d' )
 				);
 
-				// Cancel pending schedules
-				$wpdb->update( // phpcs:ignore
-					$wpdb->prefix . 'digicommerce_subscription_schedule',
-					array( 'status' => 'cancelled' ),
+				// Store refund ID
+				$wpdb->insert(
+					$wpdb->prefix . 'digicommerce_order_meta',
 					array(
-						'subscription_id' => $subscription_id,
-						'status'          => 'pending',
-					),
-					array( '%s' ),
-					array( '%d', '%s' )
-				);
-
-				// Add subscription note
-				$wpdb->insert( // phpcs:ignore
-					$wpdb->prefix . 'digicommerce_subscription_meta',
-					array(
-						'subscription_id' => $subscription_id,
-						'meta_key'        => 'note', // phpcs:ignore
-						'meta_value'      => esc_html__( 'Subscription cancelled due to refund in PayPal.', 'digicommerce' ), // phpcs:ignore
+						'order_id'   => $order_id,
+						'meta_key'   => 'paypal_refund_id',
+						'meta_value' => $refund_id,
 					),
 					array( '%d', '%s', '%s' )
 				);
 
-				do_action( 'digicommerce_subscription_cancelled', $subscription_id );
+				// Add order note
+				$wpdb->insert(
+					$wpdb->prefix . 'digicommerce_order_notes',
+					array(
+						'order_id' => $order_id,
+						'content'  => sprintf(
+							'Order refunded in PayPal. Refund ID: %s, Payment ID: %s',
+							$refund_id,
+							$payment_id
+						),
+						'author'   => 'PayPal',
+						'date'     => current_time( 'mysql' ),
+					),
+					array( '%d', '%s', '%s', '%s' )
+				);
+
+				// Check for subscription
+				$subscription_id = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT si.subscription_id 
+						FROM {$wpdb->prefix}digicommerce_subscription_items si
+						WHERE si.order_id = %d",
+						$order_id
+					)
+				);
+
+				if ( $subscription_id ) {
+					// Update subscription status
+					$wpdb->update(
+						$wpdb->prefix . 'digicommerce_subscriptions',
+						array(
+							'status'        => 'cancelled',
+							'date_modified' => current_time( 'mysql' ),
+						),
+						array( 'id' => $subscription_id ),
+						array( '%s', '%s' ),
+						array( '%d' )
+					);
+
+					// Cancel pending schedules
+					$wpdb->update(
+						$wpdb->prefix . 'digicommerce_subscription_schedule',
+						array( 'status' => 'cancelled' ),
+						array(
+							'subscription_id' => $subscription_id,
+							'status'          => 'pending',
+						),
+						array( '%s' ),
+						array( '%d', '%s' )
+					);
+
+					// Add subscription note
+					$wpdb->insert(
+						$wpdb->prefix . 'digicommerce_subscription_meta',
+						array(
+							'subscription_id' => $subscription_id,
+							'meta_key'        => 'note',
+							'meta_value'      => 'Subscription cancelled due to refund in PayPal.',
+						),
+						array( '%d', '%s', '%s' )
+					);
+
+					do_action( 'digicommerce_subscription_cancelled', $subscription_id );
+				}
+
+				$wpdb->query( 'COMMIT' );
+
+				// Trigger refund action
+				do_action( 'digicommerce_order_refunded', $order_id, 0 );
+				return true;
+			} catch ( Exception $e ) {
+				$wpdb->query( 'ROLLBACK' );
+				return false;
 			}
-
-			// Trigger refund action
-			do_action( 'digicommerce_order_refunded', $order_id, $amount );
-
-			return true;
-
 		} catch ( Exception $e ) {
 			return false;
 		}
 	}
 
 	/**
-	 * Process a subscription payment event
+	 * Process a subscription renewal payment
 	 *
-	 * @param object $event The webhook event.
+	 * @param string $billing_agreement_id The PayPal billing agreement ID.
+	 * @param string $capture_id The capture/sale ID for this payment.
 	 * @return bool Success status.
+	 * @throws Exception If it fails.
 	 */
-	private function process_subscription_payment( $event ) {
+	private function process_subscription_renewal_payment( $billing_agreement_id, $capture_id ) {
 		global $wpdb;
 
 		try {
-			// Extract subscription ID
-			$resource        = $event->resource;
-			$subscription_id = null;
-
-			// Try to extract billing agreement ID from different PayPal formats
-			if ( isset( $resource->billing_agreement_id ) ) {
-				$subscription_id = $resource->billing_agreement_id;
-			} elseif ( isset( $resource->supplementary_data ) &&
-					isset( $resource->supplementary_data->related_ids ) &&
-					isset( $resource->supplementary_data->related_ids->billing_agreement_id ) ) {
-				$subscription_id = $resource->supplementary_data->related_ids->billing_agreement_id;
-			}
-
-			if ( ! $subscription_id ) {
-				return false;
-			}
-
 			// Get local subscription ID
-			$local_subscription_id = $wpdb->get_var( // phpcs:ignore
+			$local_subscription_id = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT si.subscription_id 
 					FROM {$wpdb->prefix}digicommerce_subscription_items si
 					JOIN {$wpdb->prefix}digicommerce_order_meta om ON si.order_id = om.order_id
 					WHERE om.meta_key IN ('_paypal_subscription_id', 'paypal_subscription_id') 
 					AND om.meta_value = %s",
-					$subscription_id
+					$billing_agreement_id
 				)
 			);
 
@@ -482,67 +552,115 @@ class DigiCommerce_PayPal_Webhook {
 				return false;
 			}
 
-			// Update next payment date if available
-			if ( isset( $resource->billing_info ) && isset( $resource->billing_info->next_billing_time ) ) {
-				$next_payment = date( 'Y-m-d H:i:s', strtotime( $resource->billing_info->next_billing_time ) ); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date
+			// Get the PayPal instance
+			$paypal = DigiCommerce_PayPal::instance();
 
-				$wpdb->update( // phpcs:ignore
+			try {
+				// Get access token
+				$access_token = $paypal->get_access_token();
+
+				// Get subscription details from PayPal API
+				$api_url = $paypal->get_api_url() . "/v1/billing/subscriptions/{$billing_agreement_id}";
+
+				$response = wp_remote_get(
+					$api_url,
+					array(
+						'headers' => array(
+							'Authorization' => 'Bearer ' . $access_token,
+							'Content-Type'  => 'application/json',
+						),
+					)
+				);
+
+				if ( is_wp_error( $response ) ) {
+					return false;
+				}
+
+				$subscription = json_decode( wp_remote_retrieve_body( $response ), true );
+
+				if ( ! isset( $subscription['billing_info'] ) || ! isset( $subscription['billing_info']['next_billing_time'] ) ) {
+					return false;
+				}
+
+				// Get the next payment date
+				$next_payment = date( 'Y-m-d H:i:s', strtotime( $subscription['billing_info']['next_billing_time'] ) ); // phpcs:ignore
+			} catch ( Exception $e ) {
+				// Fallback: Calculate next payment as 1 month from now if API call fails
+				$next_payment = date( 'Y-m-d H:i:s', strtotime( '+1 month' ) ); // phpcs:ignore
+			}
+
+			// Begin transaction
+			$wpdb->query( 'START TRANSACTION' );
+
+			try {
+				// Update subscription next payment date
+				$wpdb->update(
 					$wpdb->prefix . 'digicommerce_subscriptions',
 					array(
 						'next_payment'  => $next_payment,
 						'date_modified' => current_time( 'mysql' ),
+						'status'        => 'active',
 					),
 					array( 'id' => $local_subscription_id ),
-					array( '%s', '%s' ),
+					array( '%s', '%s', '%s' ),
 					array( '%d' )
 				);
 
-				// Update license expiration to match next payment
-				$wpdb->query( // phpcs:ignore
+				// Get all orders for this subscription
+				$order_ids = $wpdb->get_col(
 					$wpdb->prepare(
-						"UPDATE {$wpdb->prefix}digicommerce_licenses l 
-						JOIN {$wpdb->prefix}digicommerce_subscription_items si 
-						ON l.order_id = si.order_id AND l.product_id = si.product_id 
-						SET l.expires_at = %s 
-						WHERE si.subscription_id = %d",
-						$next_payment,
+						"SELECT order_id FROM {$wpdb->prefix}digicommerce_subscription_items 
+						WHERE subscription_id = %d",
 						$local_subscription_id
 					)
 				);
-			}
 
-			// Extract transaction ID and amount
-			$transaction_id = isset( $resource->id ) ? $resource->id : null;
-			$amount         = 0;
-			$currency       = '';
+				if ( ! empty( $order_ids ) ) {
+					// Update all licenses associated with these orders
+					$order_ids_placeholders = implode( ',', array_fill( 0, count( $order_ids ), '%d' ) );
+					$query_params           = array_merge(
+						array( $next_payment, 'active', current_time( 'mysql' ) ),
+						$order_ids
+					);
 
-			if ( isset( $resource->amount ) ) {
-				$amount = isset( $resource->amount->value ) ? $resource->amount->value :
-							( isset( $resource->amount->total ) ? $resource->amount->total : 0 );
+					$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}digicommerce_licenses SET expires_at = %s, status = %s, date_modified = %s WHERE order_id IN ($order_ids_placeholders)", $query_params ) ); // phpcs:ignore
+				}
 
-				$currency = isset( $resource->amount->currency_code ) ? $resource->amount->currency_code :
-							( isset( $resource->amount->currency ) ? $resource->amount->currency : '' );
-			}
-
-			// Store payment details
-			if ( $transaction_id ) {
-				$wpdb->insert( // phpcs:ignore
-					$wpdb->prefix . 'digicommerce_subscription_payments',
+				// Record payment in subscription meta
+				$wpdb->insert(
+					$wpdb->prefix . 'digicommerce_subscription_meta',
 					array(
 						'subscription_id' => $local_subscription_id,
-						'transaction_id'  => $transaction_id,
-						'amount'          => $amount,
-						'currency'        => $currency,
-						'status'          => 'completed',
-						'date_created'    => current_time( 'mysql' ),
+						'meta_key'        => 'payment_transaction',
+						'meta_value'      => wp_json_encode(
+							array(
+								'transaction_id' => $capture_id,
+								'date'           => current_time( 'mysql' ),
+								'status'         => 'completed',
+							)
+						),
 					),
-					array( '%d', '%s', '%f', '%s', '%s', '%s' )
+					array( '%d', '%s', '%s' )
 				);
+
+				// Add subscription note
+				$wpdb->insert(
+					$wpdb->prefix . 'digicommerce_subscription_meta',
+					array(
+						'subscription_id' => $local_subscription_id,
+						'meta_key'        => 'note',
+						'meta_value'      => 'Subscription payment received. License expiration extended to ' . $next_payment,
+					),
+					array( '%d', '%s', '%s' )
+				);
+
+				$wpdb->query( 'COMMIT' );
+				do_action( 'digicommerce_subscription_renewal_processed', $local_subscription_id, $next_payment );
+				return true;
+			} catch ( Exception $e ) {
+				$wpdb->query( 'ROLLBACK' );
+				throw $e;
 			}
-
-			do_action( 'digicommerce_subscription_payment_success', $local_subscription_id );
-			return true;
-
 		} catch ( Exception $e ) {
 			return false;
 		}
