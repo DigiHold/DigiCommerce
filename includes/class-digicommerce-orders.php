@@ -497,30 +497,36 @@ class DigiCommerce_Orders {
 
 		$args = wp_parse_args( $args, $defaults );
 
-		$where = $wpdb->prepare( 'WHERE o.user_id = %d', $user_id );
-
-		if ( ! empty( $args['status'] ) ) {
-			if ( is_array( $args['status'] ) ) {
-				$placeholders = implode( ',', array_fill( 0, count( $args['status'] ), '%s' ) );
-				$where       .= " AND o.status IN ($placeholders)";
-				$statuses     = array_map( 'esc_sql', $args['status'] );
-				$wpdb->prepare( $where, ...$statuses ); // phpcs:ignore
-			} else {
-				$where .= $wpdb->prepare( ' AND o.status = %s', $args['status'] );
-			}
-		}
-
 		$orderby = esc_sql( $args['orderby'] );
 		$order   = esc_sql( $args['order'] );
 		$limit   = $args['limit'] > 0 ? 'LIMIT ' . intval( $args['limit'] ) : '';
 		$offset  = $args['offset'] > 0 ? 'OFFSET ' . intval( $args['offset'] ) : '';
 
-		// Get orders with billing info
-		$query = "SELECT o.id as order_id, o.*, b.id as billing_id, b.* FROM {$this->table_orders} o 
-				LEFT JOIN {$this->table_billing} b ON o.id = b.order_id 
-				{$where} 
-				ORDER BY o.{$orderby} {$order}
-				{$limit} {$offset}";
+		// Start building the query
+		$select = "SELECT o.id as order_id, o.*, b.id as billing_id, b.* FROM {$this->table_orders} o 
+				LEFT JOIN {$this->table_billing} b ON o.id = b.order_id";
+
+		// Handle status filtering
+		if ( ! empty( $args['status'] ) ) {
+			if ( is_array( $args['status'] ) ) {
+				// For array of statuses, we need to handle the IN clause specially
+				$status_placeholders = array();
+				$status_values       = array();
+
+				foreach ( $args['status'] as $status ) {
+					$status_placeholders[] = '%s';
+					$status_values[]       = $status;
+				}
+
+				$query = $wpdb->prepare( "$select WHERE o.user_id = %d AND o.status IN (" . implode( ',', $status_placeholders ) . ") ORDER BY o.{$orderby} {$order} {$limit} {$offset}", array_merge( array( $user_id ), $status_values ) ); // phpcs:ignore
+			} else {
+				// Single status
+				$query = $wpdb->prepare( "$select WHERE o.user_id = %d AND o.status = %s ORDER BY o.{$orderby} {$order} {$limit} {$offset}", $user_id, $args['status'] ); // phpcs:ignore
+			}
+		} else {
+			// No status filter
+			$query = $wpdb->prepare( "$select WHERE o.user_id = %d ORDER BY o.{$orderby} {$order} {$limit} {$offset}", $user_id ); // phpcs:ignore
+		}
 
 		$results = $wpdb->get_results( $query, ARRAY_A ); // phpcs:ignore
 
@@ -539,7 +545,7 @@ class DigiCommerce_Orders {
 		// Safely construct the query for items
 		$placeholders = implode( ',', array_fill( 0, count( $order_ids ), '%d' ) );
 		$items_query  = $wpdb->prepare( "SELECT * FROM {$this->table_items} WHERE order_id IN ($placeholders)", ...$order_ids ); // phpcs:ignore
-		$items        = $wpdb->get_results( $items_query, ARRAY_A ); // phpcs:ignore
+		$items = $wpdb->get_results( $items_query, ARRAY_A ); // phpcs:ignore
 
 		// Organize items by order
 		$items_by_order = array();
