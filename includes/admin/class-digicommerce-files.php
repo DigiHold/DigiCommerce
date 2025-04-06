@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * DigiCommerce Files Handler
  *
@@ -231,7 +233,7 @@ Options -Indexes
 			}
 
 			// Get and validate token data
-			$token_data = get_transient( 'digi_download_' . $token );
+			$token_data = get_transient( 'digicommerce_download_' . $token );
 
 			if ( ! $token_data || ! is_array( $token_data ) ) {
 				wp_die( esc_html__( 'Download link has expired. Please click the download button again.', 'digicommerce' ) );
@@ -240,7 +242,7 @@ Options -Indexes
 
 			// Check expiration
 			if ( time() > $token_data['expires'] ) {
-				delete_transient( 'digi_download_' . $token );
+				delete_transient( 'digicommerce_download_' . $token );
 				wp_die( esc_html__( 'Download link has expired. Please click the download button again.', 'digicommerce' ) );
 				return;
 			}
@@ -271,7 +273,7 @@ Options -Indexes
 			$file_path = $this->get_file_path( $token_data['file_id'] );
 
 			if ( ! $file_path ) {
-				delete_transient( 'digi_download_' . $token );
+				delete_transient( 'digicommerce_download_' . $token );
 				wp_die( esc_html__( 'File not available. Please contact support.', 'digicommerce' ) );
 				return;
 			}
@@ -291,7 +293,7 @@ Options -Indexes
 
 			// Log and cleanup after successful download
 			$this->log_download( $token_data['file_id'], $token_data['order_id'], $token_data['user_id'] ?? 0 );
-			delete_transient( 'digi_download_' . $token );
+			delete_transient( 'digicommerce_download_' . $token );
 			exit;
 
 		} catch ( Exception $e ) {
@@ -458,7 +460,7 @@ Options -Indexes
 		}
 
 		// Disable max execution time
-		set_time_limit( 0 ); // phpcs:ignore
+		@set_time_limit( 0 ); // phpcs:ignore
 
 		// Send file contents
 		while ( ! feof( $fp ) ) {
@@ -561,21 +563,22 @@ Options -Indexes
 
 		// If S3 is enabled, upload to S3
 		if ( $this->pro && $this->s3 && DigiCommerce()->get_option( 'enable_s3' ) ) {
-			$s3_key = 'digicommerce/' . $relative_path;
-
-			// First move to temp location
-			if ( ! move_uploaded_file( $file['tmp_name'], $full_path ) ) { // phpcs:ignore
-				return new WP_Error( 'move_error', __( 'Failed to move uploaded file', 'digicommerce' ) );
+			// First use WordPress functions to handle upload
+			$upload_overrides = array( 'test_form' => false );
+			$moved_file       = wp_handle_upload( $file, $upload_overrides );
+			if ( ! $moved_file || isset( $moved_file['error'] ) ) {
+				return new WP_Error( 'move_error', $moved_file['error'] ?? __( 'Failed to move uploaded file', 'digicommerce' ) );
 			}
 
-			// Upload to S3
-			$s3_url = $this->s3->upload_file( $full_path, $s3_key );
+			// Copy the file from WordPress location to S3
+			$s3_key = 'digicommerce/' . $relative_path;
+			$s3_url = $this->s3->upload_file( $moved_file['file'], $s3_key );
 			if ( ! $s3_url ) {
 				return new WP_Error( 's3_upload_error', __( 'Failed to upload file to S3', 'digicommerce' ) );
 			}
 
-			// Delete local file and cleanup empty directories
-			@unlink( $full_path ); // phpcs:ignore
+			// Delete the local file WordPress created
+			@unlink( $moved_file['file'] ); // phpcs:ignore
 			$this->cleanup_empty_directories( $month_dir );
 			$this->cleanup_empty_directories( $year_dir );
 
@@ -589,10 +592,17 @@ Options -Indexes
 			);
 		}
 
-		// Regular local upload
-		if ( ! move_uploaded_file( $file['tmp_name'], $full_path ) ) { // phpcs:ignore
-			return new WP_Error( 'move_error', __( 'Failed to move uploaded file', 'digicommerce' ) );
+		// Regular local upload using WordPress functions
+		$upload_overrides = array( 'test_form' => false );
+		$moved_file       = wp_handle_upload( $file, $upload_overrides );
+		if ( ! $moved_file || isset( $moved_file['error'] ) ) {
+			return new WP_Error( 'move_error', $moved_file['error'] ?? __( 'Failed to move uploaded file', 'digicommerce' ) );
 		}
+
+		// Copy from WordPress upload location to our desired location
+		$full_path = trailingslashit( $this->upload_dir ) . $relative_path;
+		copy( $moved_file['file'], $full_path );
+		@unlink( $moved_file['file'] ); // phpcs:ignore
 
 		return array(
 			'id'   => $file_id,
@@ -715,8 +725,8 @@ Options -Indexes
 			return false;
 		}
 
-		// Set time limit to 0 for large files
-		set_time_limit( 0 ); // phpcs:ignore
+		// Set time limit to 0 only for the file streaming operation
+		@set_time_limit( 0 ); // phpcs:ignore
 
 		// Set initial position for range requests
 		if ( $range ) {
@@ -833,11 +843,11 @@ Options -Indexes
 			'user_id'    => $user_id,
 			'ip'         => $this->get_client_ip(),
 			'date'       => current_time( 'mysql' ),
-			'user_agent' => $_SERVER['HTTP_USER_AGENT'], // phpcs:ignore
+			'user_agent' => isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '',
 		);
 
 		// Rate limiting check
-		$rate_limit_key = 'download_rate_' . $user_id . '_' . $file_id;
+		$rate_limit_key = 'digicommerce_download_rate_' . $user_id . '_' . $file_id;
 		$download_count = get_transient( $rate_limit_key );
 
 		if ( false === $download_count ) {
@@ -882,12 +892,12 @@ Options -Indexes
 		$count     = wp_cache_get( $cache_key, $this->cache_group );
 
 		if ( false === $count ) {
-			$count = get_option( 'digi_download_count_' . $file_id, 0 );
+			$count = get_option( 'digicommerce_download_count_' . $file_id, 0 );
 		}
 
 		++$count;
 		wp_cache_set( $cache_key, $count, $this->cache_group, 3600 );
-		update_option( 'digi_download_count_' . $file_id, $count, false );
+		update_option( 'digicommerce_download_count_' . $file_id, $count, false );
 	}
 
 	/**
@@ -908,7 +918,7 @@ Options -Indexes
 
 		foreach ( $ip_headers as $header ) {
 			if ( ! empty( $_SERVER[ $header ] ) ) {
-				$ip = explode( ',', $_SERVER[ $header ] ); // phpcs:ignore
+				$ip = explode( ',', isset( $_SERVER[ $header ] ) ? sanitize_text_field( wp_unslash( $_SERVER[ $header ] ) ) : '' );
 				$ip = trim( reset( $ip ) );
 				if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
 					return $ip;
@@ -1027,7 +1037,7 @@ Options -Indexes
 		);
 
 		// Store token
-		$stored = set_transient( 'digi_download_' . $token, $token_data, $this->token_expiry );
+		$stored = set_transient( 'digicommerce_download_' . $token, $token_data, $this->token_expiry );
 
 		$url = home_url( "download/{$token}" );
 

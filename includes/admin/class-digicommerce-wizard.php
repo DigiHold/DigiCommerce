@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Setup Wizard
  *
@@ -367,8 +369,8 @@ class DigiCommerce_Setup_Wizard {
 			}
 
 			// Handle newsletter subscription.
-			if ( isset( $_POST['subscribe_newsletter'] ) && 'true' === $_POST['subscribe_newsletter'] ) {
-				$email = $_POST['email_from_address']; // phpcs:ignore
+			if ( isset( $_POST['subscribe_newsletter'] ) && 'true' === $_POST['subscribe_newsletter'] && isset( $_POST['email_from_address'] ) ) {
+				$email = sanitize_email( wp_unslash( $_POST['email_from_address'] ) );
 				$this->subscribe_to_mailchimp( $email );
 			}
 

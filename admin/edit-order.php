@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 $orders  = DigiCommerce_Orders::instance();
 $product = DigiCommerce_Product::instance();
 
@@ -77,15 +79,15 @@ if ( isset( $_GET['updated'] ) && '1' === trim( sanitize_text_field( $_GET['upda
 									<tr>
 										<td><?php echo esc_html( $item['name'] ); ?></td>
 										<td><?php echo esc_html( $item['variation_name'] ?? '—' ); ?></td>
-										<td><?php echo $product->format_price( $base_price, 'price' ); // phpcs:ignore ?></td>
+										<td><?php echo wp_kses_post( $product->format_price( $base_price, 'price' ) ); ?></td>
 										<?php
 										if ( ! DigiCommerce()->get_option( 'remove_taxes' ) ) {
 											?>
-											<td><?php echo $product->format_price( $vat_amount, 'vat' ); // phpcs:ignore ?></td>
+											<td><?php echo wp_kses_post( $product->format_price( $vat_amount, 'vat' ) ); ?></td>
 											<?php
 										}
 										?>
-										<td><?php echo $product->format_price( $base_price + $vat_amount, 'total' ); // phpcs:ignore ?></td>
+										<td><?php echo wp_kses_post( $product->format_price( $base_price + $vat_amount, 'total' ) ); ?></td>
 									</tr>
 									<?php
 									// Show subscription info if needed
@@ -165,15 +167,15 @@ if ( isset( $_GET['updated'] ) && '1' === trim( sanitize_text_field( $_GET['upda
 										);
 										?>
 									</th>
-									<th><?php echo $product->format_price( $total_base_price, 'price' ); // phpcs:ignore ?></th>
+									<th><?php echo wp_kses_post( $product->format_price( $total_base_price, 'price' ) ); ?></th>
 									<?php
 									if ( ! DigiCommerce()->get_option( 'remove_taxes' ) ) {
 										?>
-										<th><?php echo $product->format_price( $total_vat, 'vat' ); // phpcs:ignore ?></th>
+										<th><?php echo wp_kses_post( $product->format_price( $total_vat, 'vat' ) ); ?></th>
 										<?php
 									}
 									?>
-									<th><?php echo $product->format_price( $total_with_vat, 'total' ); // phpcs:ignore ?></th>
+									<th><?php echo wp_kses_post( $product->format_price( $total_with_vat, 'total' ) ); ?></th>
 								</tr>
 								<?php if ( ! empty( $order['discount_amount'] ) && $order['discount_amount'] > 0 ) : ?>
 								<tr>
@@ -187,12 +189,12 @@ if ( isset( $_GET['updated'] ) && '1' === trim( sanitize_text_field( $_GET['upda
 										);
 										?>
 									</th>
-									<th>-<?php echo $product->format_price( $order['discount_amount'], 'discount' ); // phpcs:ignore ?></th>
+									<th>-<?php echo wp_kses_post( $product->format_price( $order['discount_amount'], 'discount' ) ); ?></th>
 								</tr>
 								<tr>
 									<th colspan="2"><?php esc_html_e( 'Final Total', 'digicommerce' ); ?></th>
-									<th colspan="2"><?php echo $product->format_price( $total_base_price, 'price' ); // phpcs:ignore ?></th>
-									<th><?php echo $product->format_price( $total_with_vat - $order['discount_amount'], 'total' ); // phpcs:ignore ?></th>
+									<th colspan="2"><?php echo wp_kses_post( $product->format_price( $total_base_price, 'price' ) ); ?></th>
+									<th><?php echo wp_kses_post( $product->format_price( $total_with_vat - $order['discount_amount'], 'total' ) ); ?></th>
 								</tr>
 								<?php endif; ?>
 							</tfoot>

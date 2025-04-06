@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Plugin Security Management
  */
@@ -93,7 +95,7 @@ class DigiCommerce_Security {
 	 * @param string $ip IP address.
 	 */
 	public function check_rate_limit( $action, $ip ) {
-		$attempts = get_transient( "{$action}_attempts_{$ip}" );
+		$attempts = get_transient( "digicommerce_{$action}_attempts_{$ip}" );
 		return ! $attempts || $attempts < self::MAX_LOGIN_ATTEMPTS;
 	}
 
@@ -104,10 +106,10 @@ class DigiCommerce_Security {
 	 * @param string $ip IP address.
 	 */
 	public function increment_rate_limit( $action, $ip ) {
-		$transient_value = get_transient( "{$action}_attempts_{$ip}" );
+		$transient_value = get_transient( "digicommerce_{$action}_attempts_{$ip}" );
 		$attempts        = false !== $transient_value ? $transient_value : 0;
 		set_transient(
-			"{$action}_attempts_{$ip}",
+			"digicommerce_{$action}_attempts_{$ip}",
 			$attempts + 1,
 			self::LOCKOUT_DURATION
 		);
@@ -120,7 +122,7 @@ class DigiCommerce_Security {
 	 * @param string $ip IP address.
 	 */
 	public function reset_rate_limit( $action, $ip ) {
-		delete_transient( "{$action}_attempts_{$ip}" );
+		delete_transient( "digicommerce_{$action}_attempts_{$ip}" );
 	}
 
 	/**
@@ -136,7 +138,7 @@ class DigiCommerce_Security {
 		}
 
 		$ip       = $this->get_client_ip();
-		$attempts = get_transient( 'login_attempts_' . $ip );
+		$attempts = get_transient( 'digicommerce_login_attempts_' . $ip );
 
 		if ( $attempts && $attempts >= self::MAX_LOGIN_ATTEMPTS ) {
 			return new WP_Error(
@@ -157,11 +159,11 @@ class DigiCommerce_Security {
 	 * @param string $ip IP address.
 	 */
 	private function handle_failed_login( $ip ) {
-		$attempts = get_transient( 'login_attempts_' . $ip );
+		$attempts = get_transient( 'digicommerce_login_attempts_' . $ip );
 		$attempts = $attempts ? $attempts + 1 : 1;
 
 		set_transient(
-			'login_attempts_' . $ip,
+			'digicommerce_login_attempts_' . $ip,
 			$attempts,
 			self::LOCKOUT_DURATION
 		);
@@ -175,7 +177,7 @@ class DigiCommerce_Security {
 	 * @param string $ip IP address.
 	 */
 	private function reset_login_attempts( $ip ) {
-		delete_transient( 'login_attempts_' . $ip );
+		delete_transient( 'digicommerce_login_attempts_' . $ip );
 	}
 
 	/**
@@ -185,11 +187,11 @@ class DigiCommerce_Security {
 		$ip = '';
 
 		if ( isset( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-			$ip = $_SERVER['HTTP_CLIENT_IP']; // phpcs:ignore
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
 		} elseif ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$ip = $_SERVER['HTTP_X_FORWARDED_FOR']; // phpcs:ignore
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
 		} elseif ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
-			$ip = $_SERVER['REMOTE_ADDR']; // phpcs:ignore
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 		}
 
 		return filter_var( $ip, FILTER_VALIDATE_IP );

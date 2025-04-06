@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Handles all account related functionalities with enhanced security
  */
@@ -84,7 +86,7 @@ class DigiCommerce_Account {
 
 			// Get and sanitize login data
 			$username = isset( $_POST['username'] ) ? sanitize_user( $_POST['username'] ) : ''; // phpcs:ignore
-			$password = isset( $_POST['password'] ) ? wp_unslash( $_POST['password'] ) : ''; // phpcs:ignore
+			$password = isset( $_POST['password'] ) ? sanitize_text_field( wp_unslash( $_POST['password'] ) ) : '';
 			$remember = isset( $_POST['remember'] ) ? (bool) $_POST['remember'] : false;
 
 			if ( empty( $username ) || empty( $password ) ) {
@@ -325,9 +327,9 @@ class DigiCommerce_Account {
 				throw new Exception( esc_html__( 'Security check failed.', 'digicommerce' ) );
 			}
 
-			$rp_key   = isset( $_POST['rp_key'] ) ? sanitize_text_field( $_POST['rp_key'] ) : ''; // phpcs:ignore
-			$rp_login = isset( $_POST['rp_login'] ) ? sanitize_text_field( $_POST['rp_login'] ) : ''; // phpcs:ignore
-			$password = isset( $_POST['password'] ) ? wp_unslash( $_POST['password'] ) : ''; // phpcs:ignore
+			$rp_key   = isset( $_POST['rp_key'] ) ? sanitize_text_field( wp_unslash( $_POST['rp_key'] ) ) : '';
+			$rp_login = isset( $_POST['rp_login'] ) ? sanitize_user( wp_unslash( $_POST['rp_login'] ) ) : '';
+			$password = isset( $_POST['password'] ) ? sanitize_text_field( wp_unslash( $_POST['password'] ) ) : '';
 
 			// Check if reset link has expired
 			$expires = isset( $_POST['expires'] ) ? (int) $_POST['expires'] : 0;

@@ -1,10 +1,10 @@
 === DigiCommerce ===
-Contributors: digicommerce
+Contributors: digicommercewp
 Tags: ecommerce, shop, bookings, appointments, sell online
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -95,6 +95,13 @@ Grow your mailing list effortlessly by automatically adding customers to your fa
 * [Documentation](https://docs.digicommerce.me?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)
 * [Pro Version](https://digicommerce.me/pricing?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)
 
+= Source Code =
+The non-compressed source code for JavaScript and CSS files can be found in our public GitHub repository: https://github.com/DigiCommerceWP/DigiCommerce/tree/main/resources
+
+All minified and compressed assets used in the plugin are built from the source files located in the `resources` directory of our repository, which is not included in the production plugin to maintain optimal performance and file size.
+
+For developers interested in contributing or customizing the plugin, we use npm as our build tool. Build instructions are available in the repository's README.md file.
+
 == Installation ==
 
 1. **Upload & Activate**
@@ -162,6 +169,38 @@ DigiCommerce includes built-in VAT handling for EU customers, with automatic VAT
 2. Product & Service Management
 3. Customer Account
 4. Sales Reports
+
+== External services ==
+
+This plugin utilizes several external services to provide enhanced functionality:
+
+= Mailchimp =
+* Used for newsletter subscriptions when users opt-in during setup wizard
+* Data sent: Email address and tags ("Wizard")
+* Only sent when a user explicitly checks the newsletter subscription option
+* Mailchimp Terms of Service: https://mailchimp.com/legal/terms/
+* Mailchimp Privacy Policy: https://mailchimp.com/legal/privacy/
+
+= Stripe =
+* Used for processing credit card payments when Stripe is enabled as a payment gateway
+* Data sent: Order details, transaction amounts, customer payment information necessary for payment processing
+* Only sent when a customer chooses to pay with a credit card via Stripe or when processing refunds for Stripe transactions
+* Stripe Terms of Service: https://stripe.com/legal/ssa
+* Stripe Privacy Policy: https://stripe.com/privacy
+
+= PayPal =
+* Used for processing payments when PayPal is enabled as a payment gateway
+* Data sent: Order details, transaction amounts, customer information necessary for payment processing
+* Only sent when a customer chooses to pay with PayPal or when processing refunds for PayPal transactions
+* PayPal Terms of Service: https://www.paypal.com/us/webapps/mpp/ua/legalhub-full
+* PayPal Privacy Policy: https://www.paypal.com/us/webapps/mpp/ua/privacy-full
+
+= Google reCAPTCHA =
+* Used to protect forms from spam and abuse
+* Data sent: reCAPTCHA token for verification
+* Only sent when forms protected by reCAPTCHA are submitted
+* Google reCAPTCHA Terms of Service: https://policies.google.com/terms
+* Google reCAPTCHA Privacy Policy: https://policies.google.com/privacy
 
 == Changelog ==
 

@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * DigiCommerce blocks
  */
@@ -307,10 +309,10 @@ class DigiCommerce_Blocks {
 														<span class="from"><?php esc_html_e( 'From:', 'digicommerce' ); ?></span>
 														<?php
 														if ( $lowest_sale && $lowest_sale < $lowest_regular ) {
-															echo $product->format_price( $lowest_sale, 'normal-price' );// phpcs:ignore
-															echo $product->format_price( $lowest_regular, 'regular-price' );// phpcs:ignore
+															echo wp_kses_post( $product->format_price( $lowest_sale, 'normal-price' ) );
+															echo wp_kses_post( $product->format_price( $lowest_regular, 'regular-price' ) );
 														} else {
-															echo $product->format_price( $lowest_regular, 'normal-price' );// phpcs:ignore
+															echo wp_kses_post( $product->format_price( $lowest_regular, 'normal-price' ) );
 														}
 														?>
 													</div>
@@ -325,13 +327,13 @@ class DigiCommerce_Blocks {
 												?>
 												<div class="product-prices">
 													<?php
-													echo $product->format_price( $sale_price, 'normal-price' ); // phpcs:ignore
-													echo $product->format_price( $price, 'regular-price' ); // phpcs:ignore
+													echo wp_kses_post( $product->format_price( $sale_price, 'normal-price' ) );
+													echo wp_kses_post( $product->format_price( $price, 'regular-price' ) );
 													?>
 												</div>
 												<?php
 											else :
-												echo $product->format_price( $price, 'normal-price' ); // phpcs:ignore
+												echo wp_kses_post( $product->format_price( $price, 'normal-price' ) );
 											endif;
 										endif;
 									endif;

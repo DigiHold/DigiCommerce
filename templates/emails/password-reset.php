@@ -6,11 +6,7 @@
  * @var string $user_login
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
-
-$styles = DigiCommerce_Emails::instance()->get_styles();
+defined( 'ABSPATH' ) || exit;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -19,7 +15,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title><?php esc_html_e( 'Password Reset Request', 'digicommerce' ); ?></title>
 	<style type="text/css">
-		<?php echo $styles; // phpcs:ignore ?>
+		<?php echo wp_strip_all_tags( DigiCommerce_Emails::instance()->get_styles() ); // phpcs:ignore ?>
 	</style>
 </head>
 <body>

@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Stripe Payment Gateway for DigiCommerce
  */
@@ -77,8 +79,7 @@ class DigiCommerce_Stripe {
 			check_ajax_referer( 'digicommerce_process_checkout', 'nonce' );
 
 			// Get stripe payment data from request
-			$stripe_payment_data = isset( $_POST['stripe_payment_data'] ) ?
-				json_decode( stripslashes( $_POST['stripe_payment_data'] ), true ) : null; // phpcs:ignore
+			$stripe_payment_data = isset( $_POST['stripe_payment_data'] ) ? json_decode( stripslashes( sanitize_text_field( wp_unslash( $_POST['stripe_payment_data'] ) ) ), true ) : null;
 
 			// Get cart and session data
 			$cart         = DigiCommerce_Checkout::instance();
@@ -252,9 +253,8 @@ class DigiCommerce_Stripe {
 							'default_payment_method' => $stripe_payment_data['payment_method'],
 							'items'                  => $this->prepare_subscription_items( $cart_items, $billing_data ),
 							'metadata'               => $this->prepare_metadata( $cart_items, $billing_data ),
-							'expand'                 => [ 'latest_invoice.payment_intent' ], // phpcs:ignore
 							'payment_settings'       => [ // phpcs:ignore
-								'payment_method_types' => [ 'card' ], // phpcs:ignore
+								'payment_method_types'        => [ 'card' ], // phpcs:ignore
 								'save_default_payment_method' => 'on_subscription',
 							],
 							'collection_method'      => 'charge_automatically',
@@ -281,8 +281,8 @@ class DigiCommerce_Stripe {
 							$subscription_params['proration_behavior']   = 'none';
 						} elseif ( $subscription_products_total > 0 && $initial_payment == 0 ) { // phpcs:ignore
 							// Only subscription products with no initial payment
-							// Use default_incomplete so we can confirm the payment manually
-							$subscription_params['payment_behavior'] = 'default_incomplete';
+							// Use allow_incomplete so we can confirm the payment manually
+							$subscription_params['payment_behavior'] = 'allow_incomplete';
 
 							// Handle discount for subscription-only payments with no initial payment
 							if ( ! empty( $session_data['discount'] ) ) {
@@ -300,8 +300,10 @@ class DigiCommerce_Stripe {
 									]
 								);
 
-								// Add coupon to subscription
-								$subscription_params['coupon'] = $coupon->id;
+								// Add discount to subscription using the discounts array parameter
+								$subscription_params['discounts'] = [ // phpcs:ignore
+									[ 'coupon' => $coupon->id ], // phpcs:ignore
+								];
 							}
 						}
 
@@ -417,9 +419,9 @@ class DigiCommerce_Stripe {
 
 			// Retrieve and check subscription status
 			$subscription = \Stripe\Subscription::retrieve(
+				$subscription_id,
 				[ // phpcs:ignore
-					'id'     => $subscription_id,
-					'expand' => ['latest_invoice.payment_intent'], // phpcs:ignore
+					'expand' => [ 'latest_invoice.payment_intent' ], // phpcs:ignore
 				]
 			);
 

@@ -6,9 +6,7 @@
  * @var array $order_data
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 // Get product instance for price formatting
 $product = DigiCommerce_Product::instance();
@@ -34,8 +32,6 @@ $payment_method = $order_data['payment_method'];
 if ( 'stripe' === $payment_method ) {
 	$payment_method = esc_html__( 'Credit Card', 'digicommerce' );
 }
-
-$styles = DigiCommerce_Emails::instance()->get_styles();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -52,7 +48,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 		?>
 	</title>
 	<style type="text/css">
-		<?php echo $styles; // phpcs:ignore ?>
+		<?php echo wp_strip_all_tags( DigiCommerce_Emails::instance()->get_styles() ); // phpcs:ignore ?>
 		.admin-note {
 			margin: 20px 0;
 			padding: 20px;
@@ -218,7 +214,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 								}
 								?>
 							</td>
-							<td><?php echo $product->format_price( $item['price'], 'item' ); // phpcs:ignore ?></td>
+							<td><?php echo wp_kses_post( $product->format_price( $item['price'], 'item' ) ); ?></td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>
@@ -227,7 +223,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 			<div class="order-total">
 				<p>
 					<strong><?php esc_html_e( 'Subtotal:', 'digicommerce' ); ?></strong>
-					<?php echo $product->format_price( $order_data['subtotal'] ); // phpcs:ignore ?>
+					<?php echo wp_kses_post( $product->format_price( $order_data['subtotal'] ) ); ?>
 				</p>
 				<p>
 					<strong>
@@ -239,17 +235,17 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 						);
 						?>
 					</strong>
-					<?php echo $product->format_price( $order_data['vat'] ); // phpcs:ignore ?>
+					<?php echo wp_kses_post( $product->format_price( $order_data['vat'] ) ); ?>
 				</p>
 				<?php if ( ! empty( $order_data['discount_code'] ) ) : ?>
 					<p>
 						<strong><?php esc_html_e( 'Discount:', 'digicommerce' ); ?></strong>
-						-<?php echo $product->format_price( $order_data['discount_amount'] ); // phpcs:ignore ?>
+						-<?php echo wp_kses_post( $product->format_price( $order_data['discount_amount'] ) ); ?>
 					</p>
 				<?php endif; ?>
 				<p>
 					<strong><?php esc_html_e( 'Total:', 'digicommerce' ); ?></strong>
-					<?php echo $product->format_price( $order_data['total'] ); // phpcs:ignore ?>
+					<?php echo wp_kses_post( $product->format_price( $order_data['total'] ) ); ?>
 				</p>
 			</div>
 

@@ -106,9 +106,6 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			// Clean up sessions are deactivation.
 			register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
 
-			// Internationalization.
-			add_action( 'plugins_loaded', array( $this, 'load_plugin_textdomain' ) );
-
 			// Scripts and styles.
 			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
@@ -433,17 +430,6 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			}
 
 			return true;
-		}
-
-		/**
-		 * Load translations
-		 */
-		public function load_plugin_textdomain() {
-			load_plugin_textdomain(
-				'digicommerce',
-				false,
-				dirname( plugin_basename( __FILE__ ) ) . '/languages/'
-			);
 		}
 
 		/**
@@ -1283,7 +1269,7 @@ DigiCommerce();
 /**
  * Global functions for ease of use
  */
-function is_digicommerce_login() {
+function digicommerce_login() {
 	$instance = DigiCommerce::instance();
 	return method_exists( $instance, 'is_login_page' ) ? $instance->is_login_page() : false;
 }
@@ -1291,7 +1277,7 @@ function is_digicommerce_login() {
 /**
  * Check if we are on the account page
  */
-function is_digicommerce_account() {
+function digicommerce_account() {
 	$instance = DigiCommerce::instance();
 	return method_exists( $instance, 'is_account_page' ) ? $instance->is_account_page() : false;
 }
@@ -1299,7 +1285,7 @@ function is_digicommerce_account() {
 /**
  * Check if we are on the password reset page
  */
-function is_digicommerce_reset_pass() {
+function digicommerce_reset_pass() {
 	$instance = DigiCommerce::instance();
 	return method_exists( $instance, 'is_reset_password_page' ) ? $instance->is_reset_password_page() : false;
 }
@@ -1307,7 +1293,7 @@ function is_digicommerce_reset_pass() {
 /**
  * Check if we are on the checkout page
  */
-function is_digicommerce_checkout() {
+function digicommerce_checkout() {
 	$instance = DigiCommerce::instance();
 	return method_exists( $instance, 'is_checkout_page' ) ? $instance->is_checkout_page() : false;
 }
@@ -1315,7 +1301,7 @@ function is_digicommerce_checkout() {
 /**
  * Check if we are on the payment success page
  */
-function is_digicommerce_payment_success() {
+function digicommerce_payment_success() {
 	$instance = DigiCommerce::instance();
 	return method_exists( $instance, 'is_payment_success_page' ) ? $instance->is_payment_success_page() : false;
 }
@@ -1323,7 +1309,7 @@ function is_digicommerce_payment_success() {
 /**
  * Check if we are on the single product page
  */
-function is_digicommerce_single_product() {
+function digicommerce_single_product() {
 	$instance = DigiCommerce::instance();
 	return method_exists( $instance, 'is_single_product' ) ? $instance->is_single_product() : false;
 }

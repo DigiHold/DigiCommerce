@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Administration options management for DigiCommerce
  */
@@ -63,132 +65,211 @@ class DigiCommerce_Settings {
 	 * Register settings
 	 */
 	public function register_settings() {
+		$text = array(
+			'type'              => 'string',
+			'sanitize_callback' => array( $this, 'sanitize_text_field_callback' ),
+		);
+
+		$email = array(
+			'type'              => 'string',
+			'sanitize_callback' => array( $this, 'sanitize_email_callback' ),
+		);
+
+		$absint = array(
+			'type'              => 'integer',
+			'sanitize_callback' => array( $this, 'sanitize_absint_callback' ),
+		);
+
+		$kses = array(
+			'type'              => 'string',
+			'sanitize_callback' => array( $this, 'sanitize_kses_callback' ),
+		);
+
+		$bool = array(
+			'type'              => 'boolean',
+			'sanitize_callback' => array( $this, 'sanitize_bool_callback' ),
+		);
+
+		$email_bool = array(
+			'type'              => 'boolean',
+			'sanitize_callback' => array( $this, 'sanitize_bool_callback' ),
+			'default'           => 1,
+		);
+
+		$hex = array(
+			'type'              => 'string',
+			'sanitize_callback' => array( $this, 'sanitize_hex_callback' ),
+		);
+
+		$raw = array(
+			'type'              => 'string',
+			'sanitize_callback' => array( $this, 'sanitize_url_callback' ),
+		);
+
+		$social = array(
+			'type'              => 'array',
+			'sanitize_callback' => array( $this, 'sanitize_social_links' ),
+		);
+
 		// General Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_business_name' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_business_vat_number' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_business_country' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_business_address' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_business_address2' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_business_city' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_business_postal' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_business_logo' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_currency' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_currency_position' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_block_admin' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_redirect_login' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_redirect_after_logout' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_register_form' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_register_text' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_login_text' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_invoices_footer' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_name', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_vat_number', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_country', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_address', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_address2', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_city', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_postal', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_business_logo', $absint ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_currency', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_currency_position', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_block_admin', $bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_redirect_login', $bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_redirect_after_logout', $absint ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_register_form', $bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_register_text', $kses ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_login_text', $kses ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_invoices_footer', $kses ); // phpcs:ignore
 
 		// Product Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_product_slug' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_product_cat_slug' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_product_tag_slug' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_product_cpt' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_product_slug', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_product_cat_slug', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_product_tag_slug', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_product_cpt', $bool ); // phpcs:ignore
 
 		// Pages Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_account_page_id' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_reset_password_page_id' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_checkout_page_id' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_payment_success_page_id' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_account_page_id', $absint ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_reset_password_page_id', $absint ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_checkout_page_id', $absint ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_payment_success_page_id', $absint ); // phpcs:ignore
 
 		// reCAPTCHA Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_recaptcha_site_key' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_recaptcha_secret_key' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_recaptcha_site_key', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_recaptcha_secret_key', $text ); // phpcs:ignore
 
 		// Payment Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_mode' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_test_publishable_key' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_test_secret_key' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_live_publishable_key' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_live_secret_key' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_stripe_webhook_secret' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_paypal_sandbox' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_paypal_client_id' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_paypal_secret' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_paypal_webhook_id' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_stripe_mode', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_stripe_test_publishable_key', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_stripe_test_secret_key', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_stripe_live_publishable_key', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_stripe_live_secret_key', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_stripe_webhook_secret', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_paypal_sandbox', $bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_paypal_client_id', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_paypal_secret', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_paypal_webhook_id', $text ); // phpcs:ignore
 
 		// Checkout Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_remove_taxes' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_login_during_checkout' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_minimal_style' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_minimal_fields' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_order_agreement' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_modal_terms' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_remove_product' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_remove_taxes', $bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_login_during_checkout', $bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_minimal_style', $bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_minimal_fields', $bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_order_agreement', $kses ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_modal_terms', $kses ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_remove_product', $bool ); // phpcs:ignore
 
 		// Empty Cart Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_title' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_text' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_button_text' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_button_url' ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_title', $kses ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_text', $kses ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_button_text', $kses ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_empty_cart_button_url', $raw ); // phpcs:ignore
 
 		// Emails Tab.
-		register_setting( 'digicommerce_options', 'digicommerce_email_from_name' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_email_from_address' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_email_header_logo' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_email_header_logo_width' ); // phpcs:ignore
-		register_setting( // phpcs:ignore
-			'digicommerce_options',
-			'digicommerce_email_new_account',
-			array(
-				'default' => 1,
-			)
-		);
-		register_setting( // phpcs:ignore
-			'digicommerce_options',
-			'digicommerce_email_order_confirmation',
-			array(
-				'default' => 1,
-			)
-		);
-		register_setting( // phpcs:ignore
-			'digicommerce_options',
-			'digicommerce_email_order_cancelled',
-			array(
-				'default' => 1,
-			)
-		);
-		register_setting( // phpcs:ignore
-			'digicommerce_options',
-			'digicommerce_email_order_refunded',
-			array(
-				'default' => 1,
-			)
-		);
-		register_setting( // phpcs:ignore
-			'digicommerce_options',
-			'digicommerce_email_new_order_admin',
-			array(
-				'default' => 1,
-			)
-		);
-		register_setting( 'digicommerce_options', 'digicommerce_email_footer_text' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_show_social_links_in_email' ); // phpcs:ignore
-		register_setting( // phpcs:ignore
-			'digicommerce_options',
-			'digicommerce_social_links',
-			array(
-				'type'              => 'array',
-				'sanitize_callback' => array( $this, 'sanitize_social_links' ),
-			)
-		);
+		register_setting( 'digicommerce_options', 'digicommerce_email_from_name', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_email_from_address', $email ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_email_header_logo', $absint ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_email_header_logo_width', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_email_new_account', $email_bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_email_order_confirmation', $email_bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_email_order_cancelled', $email_bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_email_order_refunded', $email_bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_email_new_order_admin', $email_bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_email_footer_text', $kses ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_show_social_links_in_email', $bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_social_links', $social ); // phpcs:ignore
 
-		// Styling.
-		register_setting( 'digicommerce_options', 'digicommerce_disable_styling' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_color_gold' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_color_yellow' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_color_border' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_color_light_blue' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_color_light_blue_bg' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_color_dark_blue' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_color_dark_blue_10' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_color_dark_blue_20' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_color_hover_blue' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_color_grey' ); // phpcs:ignore
-		register_setting( 'digicommerce_options', 'digicommerce_color_dark_grey' ); // phpcs:ignore
+		// Styling Tab.
+		register_setting( 'digicommerce_options', 'digicommerce_disable_styling', $bool ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_gold', $hex ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_yellow', $hex ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_border', $hex ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_light_blue', $hex ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_light_blue_bg', $hex ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_dark_blue', $hex ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_dark_blue_10', $hex ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_dark_blue_20', $hex ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_hover_blue', $hex ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_grey', $hex ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_color_dark_grey', $hex ); // phpcs:ignore
+	}
+
+	/**
+	 * Sanitize text fields.
+	 *
+	 * @param string $input Text to sanitize.
+	 * @return string
+	 */
+	public function sanitize_text_field_callback( $input ) {
+		return sanitize_text_field( $input );
+	}
+
+	/**
+	 * Sanitize email fields.
+	 *
+	 * @param string $input Email to sanitize.
+	 * @return string
+	 */
+	public function sanitize_email_callback( $input ) {
+		return sanitize_email( $input );
+	}
+
+	/**
+	 * Sanitize integer fields.
+	 *
+	 * @param mixed $input Value to convert to integer.
+	 * @return int
+	 */
+	public function sanitize_absint_callback( $input ) {
+		return absint( $input );
+	}
+
+	/**
+	 * Sanitize HTML content with allowed tags.
+	 *
+	 * @param string $input HTML content to sanitize.
+	 * @return string
+	 */
+	public function sanitize_kses_callback( $input ) {
+		return wp_kses_post( $input );
+	}
+
+	/**
+	 * Sanitize boolean values.
+	 *
+	 * @param mixed $input Value to convert to boolean.
+	 * @return int 0 or 1
+	 */
+	public function sanitize_bool_callback( $input ) {
+		return isset( $input ) && 1 === (int) $input ? 1 : 0;
+	}
+
+	/**
+	 * Sanitize URL fields.
+	 *
+	 * @param string $input URL to sanitize.
+	 * @return string
+	 */
+	public function sanitize_url_callback( $input ) {
+		return esc_url_raw( $input );
+	}
+
+	/**
+	 * Sanitize hex color values.
+	 *
+	 * @param string $input Color hex code to sanitize.
+	 * @return string
+	 */
+	public function sanitize_hex_callback( $input ) {
+		return sanitize_hex_color( $input );
 	}
 
 	/**
@@ -300,7 +381,7 @@ class DigiCommerce_Settings {
 
 		);
 
-		$options = apply_filters( 'digicommerce_process_settings_options', $options, $_POST );
+		$options = apply_filters( 'digicommerce_process_settings_options', $options, $options );
 
 		foreach ( $options as $key => $value ) {
 			DigiCommerce()->set_option( $key, $value );
@@ -320,7 +401,7 @@ class DigiCommerce_Settings {
 		$old_tag_slug     = DigiCommerce()->get_option( 'product_tag_slug' );
 
 		// Redirect to the settings page with a success message
-		wp_redirect(
+		wp_safe_redirect(
 			add_query_arg(
 				array(
 					'page'             => 'digicommerce-settings',
@@ -528,7 +609,7 @@ class DigiCommerce_Settings {
 							)
 						);
 						?>
-									" class="digicommerce-tab cursor-pointer flex justify-start w-full no-underline text-dark-blue hover:text-dark-blue bg-light-blue hover:bg-[#f2f5ff] select-none text-center box-border p-4 text-medium border-0 border-b border-solid border-[rgba(0,0,0,0.05)] first:2xl:rounded-[.375rem_0_0] last:2xl:rounded-[0_0_0_.375rem] last:border-b-0 default-transition <?php echo $current_tab === $tab_id ? 'active' : ''; ?>" data-tab="<?php echo esc_attr( $tab_id ); ?>">
+									" class="digicommerce-tab cursor-pointer flex justify-start w-full no-underline text-dark-blue hover:text-dark-blue bg-light-blue hover:bg-[#f2f5ff] select-none text-center box-border p-4 text-medium border-0 border-b border-solid border-[rgba(0,0,0,0.05)] first:2xl:rounded-[.375rem_0_0] last:2xl:rounded-[0_0_0_.375rem] last:border-b-0 default-transition <?php echo esc_attr( $current_tab === $tab_id ? 'active' : '' ); ?>" data-tab="<?php echo esc_attr( $tab_id ); ?>">
 							<span class="relative">
 								<?php echo esc_html( $tab_label ); ?>
 
@@ -550,7 +631,7 @@ class DigiCommerce_Settings {
 
 						<!-- Tab Contents -->
 						<?php foreach ( $tabs as $tab_id => $tab_label ) : ?>
-							<div id="<?php echo esc_attr( $tab_id ); ?>" class="digicommerce-tab-content hidden gap-10 <?php echo $current_tab === $tab_id ? 'active' : ''; ?>">
+							<div id="<?php echo esc_attr( $tab_id ); ?>" class="digicommerce-tab-content hidden gap-10 <?php echo esc_attr( $current_tab === $tab_id ? 'active' : '' ); ?>">
 								<?php $this->render_tab_content( $tab_id ); ?>
 							</div>
 						<?php endforeach; ?>
@@ -678,7 +759,7 @@ class DigiCommerce_Settings {
 					<?php
 					$logo_id = $options['business_logo'];
 					?>
-					<div class="image-preview <?php echo $logo_id ? 'flex' : 'hidden'; ?>">
+					<div class="image-preview <?php echo esc_attr( $logo_id ? 'flex' : 'hidden' ); ?>">
 						<?php
 						if ( $logo_id ) {
 							echo wp_get_attachment_image( $logo_id, 'medium', false, array( 'class' => 'max-w-64' ) );
@@ -1472,7 +1553,7 @@ class DigiCommerce_Settings {
 					<?php
 					$logo_id = $options['email_header_logo'];
 					?>
-					<div class="image-preview <?php echo $logo_id ? 'flex' : 'hidden'; ?>">
+					<div class="image-preview <?php echo esc_attr( $logo_id ? 'flex' : 'hidden' ); ?>">
 						<?php
 						if ( $logo_id ) {
 							echo wp_get_attachment_image( $logo_id, 'medium', false, array( 'class' => 'max-w-64' ) );
@@ -2054,12 +2135,12 @@ class DigiCommerce_Settings {
 			$text = sprintf(
 				/* translators: %1$s: Plugin review link */
 				esc_html__( 'Please rate %2$sDigiCommerce%3$s %4$s&#9733;&#9733;&#9733;&#9733;&#9733;%5$s on %6$sWordPress.org%7$s to help us spread the word.', 'digicommerce' ),
-				'https://wordpress.org/support/plugin/digicommerce/reviews/?filter=5#new-post',
+				'https://wordpress.org/support/plugin/digicommerce/reviews/#new-post',
 				'<strong>',
 				'</strong>',
-				'<a href="https://wordpress.org/support/plugin/digicommerce/reviews/?filter=5#new-post" target="_blank" rel="noopener noreferrer">',
+				'<a href="https://wordpress.org/support/plugin/digicommerce/reviews/#new-post" target="_blank" rel="noopener noreferrer">',
 				'</a>',
-				'<a href="https://wordpress.org/support/plugin/digicommerce/reviews/?filter=5#new-post" target="_blank" rel="noopener noreferrer">',
+				'<a href="https://wordpress.org/support/plugin/digicommerce/reviews/#new-post" target="_blank" rel="noopener noreferrer">',
 				'</a>'
 			);
 		}

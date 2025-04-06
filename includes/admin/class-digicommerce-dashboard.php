@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * DigiCommerce Dashboard Widget: Sales Summary
  */
@@ -254,7 +256,7 @@ class DigiCommerce_Dashboard_Widget {
 					<div class="stats">
 						<div class="earnings">
 							<?php esc_html_e( 'Earnings', 'digicommerce' ); ?>
-							<span class="price"><?php echo $this->format_price( $month_stats['earnings'] ); // phpcs:ignore ?></span>
+							<span class="price"><?php echo wp_kses_post( $this->format_price( $month_stats['earnings'] ) ); ?></span>
 						</div>
 						<div class="sales">
 							<?php esc_html_e( 'Sales', 'digicommerce' ); ?>
@@ -270,7 +272,7 @@ class DigiCommerce_Dashboard_Widget {
 					<div class="stats">
 						<div class="earnings">
 							<?php esc_html_e( 'Earnings', 'digicommerce' ); ?>
-							<span class="price"><?php echo $this->format_price( $today_stats['earnings'] ); // phpcs:ignore ?></span>
+							<span class="price"><?php echo wp_kses_post( $this->format_price( $today_stats['earnings'] ) ); ?></span>
 						</div>
 						<div class="sales">
 							<?php esc_html_e( 'Sales', 'digicommerce' ); ?>
@@ -286,7 +288,7 @@ class DigiCommerce_Dashboard_Widget {
 					<div class="stats">
 						<div class="earnings">
 							<?php esc_html_e( 'Earnings', 'digicommerce' ); ?>
-							<span class="price"><?php echo $this->format_price( $last_month_stats['earnings'] ); // phpcs:ignore ?></span>
+							<span class="price"><?php echo wp_kses_post( $this->format_price( $last_month_stats['earnings'] ) ); ?></span>
 						</div>
 						<div class="sales">
 							<?php esc_html_e( 'Sales', 'digicommerce' ); ?>
@@ -302,7 +304,7 @@ class DigiCommerce_Dashboard_Widget {
 					<div class="stats">
 						<div class="earnings">
 							<?php esc_html_e( 'Earnings', 'digicommerce' ); ?>
-							<span class="price"><?php echo $this->format_price( $all_time_stats['earnings'] ); // phpcs:ignore ?></span>
+							<span class="price"><?php echo wp_kses_post( $this->format_price( $all_time_stats['earnings'] ) ); ?></span>
 						</div>
 						<div class="sales">
 							<?php esc_html_e( 'Sales', 'digicommerce' ); ?>

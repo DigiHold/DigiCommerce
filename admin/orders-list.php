@@ -3,7 +3,6 @@
  * Orders list table
  */
 
-// Prevent direct access
 defined( 'ABSPATH' ) || exit;
 ?>
 
@@ -55,6 +54,8 @@ defined( 'ABSPATH' ) || exit;
 		<p class="search-box">
 			<label class="screen-reader-text" for="post-search-input"><?php esc_html_e( 'Search Orders', 'digicommerce' ); ?></label>
 			<input type="search" id="post-search-input" name="s" value="<?php echo esc_attr( $search_query ); ?>">
+			<?php wp_nonce_field( 'digicommerce_orders_search', 'search_nonce' ); ?>
+			<input type="hidden" name="is_search" value="1">
 			<input type="submit" id="search-submit" class="button" value="<?php esc_attr_e( 'Search Orders', 'digicommerce' ); ?>">
 		</p>
 
@@ -204,8 +205,9 @@ defined( 'ABSPATH' ) || exit;
 								<?php
 								$edit_link = add_query_arg(
 									array(
-										'action' => 'edit',
-										'id'     => $order['id'],
+										'action'   => 'edit',
+										'id'       => $order['id'],
+										'_wpnonce' => wp_create_nonce( 'edit_order_' . $order['id'] ),
 									),
 									admin_url( 'admin.php?page=digi-orders' )
 								);

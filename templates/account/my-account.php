@@ -35,7 +35,7 @@ $active_section = isset( $_GET['section'] ) ? sanitize_key( $_GET['section'] ) :
 			<nav class="space-y-1">
 				<?php foreach ( $sections as $key => $section ) : ?>
 					<a href="?section=<?php echo esc_attr( $key ); ?>" 
-					class="<?php echo $active_section === $key ? 'bg-light-blue-bg text-dark-blue' : 'text-gray-800 hover:text-dark-blue hover:bg-light-blue-bg'; ?> group rounded-md px-3 py-2 flex items-center text-sm font-medium transition-colors">
+					class="<?php echo esc_attr( $active_section === $key ? 'bg-light-blue-bg text-dark-blue' : 'text-gray-800 hover:text-dark-blue hover:bg-light-blue-bg' ); ?> group rounded-md px-3 py-2 flex items-center text-sm font-medium transition-colors">
 						<?php echo wp_kses( $section['icon'], DigiCommerce::instance()->allowed_svg_el() ); ?>
 						<span class="truncate ltr:ml-3 rtl:mr-3"><?php echo esc_html( $section['title'] ); ?></span>
 					</a>

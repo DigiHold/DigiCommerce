@@ -103,7 +103,7 @@ defined( 'ABSPATH' ) || exit;
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
 				</button>
 
-				<input type="hidden" name="expires" value="<?php echo esc_attr( $_GET['expires'] ); // phpcs:ignore ?>">
+				<input type="hidden" name="expires" value="<?php echo isset( $_GET['expires'] ) ? esc_attr( sanitize_text_field( wp_unslash( $_GET['expires'] ) ) ) : ''; // phpcs:ignore ?>">
 
 				<?php wp_nonce_field( 'digicommerce_reset_password_nonce', 'digicommerce_reset_password_nonce' ); ?>
 			</form>

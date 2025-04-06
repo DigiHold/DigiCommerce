@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Stripe Webhook Handler class
  */
@@ -40,6 +42,8 @@ class DigiCommerce_Stripe_Webhook {
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'handle_webhook' ),
+				// Permission callback intentionally returns true for payment webhooks
+				// Security is handled via signature verification inside the handler
 				'permission_callback' => '__return_true',
 				'args'                => array(
 					'type' => array(

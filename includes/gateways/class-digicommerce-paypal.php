@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * PayPal Payment Gateway for DigiCommerce
  */

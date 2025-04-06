@@ -7,11 +7,7 @@
  * @var string $login_url
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
-
-$styles = DigiCommerce_Emails::instance()->get_styles();
+defined( 'ABSPATH' ) || exit;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -28,7 +24,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 		?>
 	</title>
 	<style type="text/css">
-		<?php echo $styles; // phpcs:ignore ?>
+		<?php echo wp_strip_all_tags( DigiCommerce_Emails::instance()->get_styles() ); // phpcs:ignore ?>
 	</style>
 </head>
 <body>

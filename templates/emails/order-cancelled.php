@@ -6,9 +6,7 @@
  * @var array $billing_details Billing information
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 $order = DigiCommerce_Orders::instance()->get_order( $order_id ); // phpcs:ignore
 if ( ! $order ) {
@@ -32,8 +30,6 @@ $billing_postcode     = ! empty( $data ) ? $data['postcode'] : '';
 $vat_number           = ! empty( $data ) ? $data['vat_number'] : '';
 $billing_country      = ! empty( $data ) ? $data['country'] : '';
 $billing_country_name = isset( $countries[ $billing_country ] ) ? $countries[ $billing_country ]['name'] : $billing_country;
-
-$styles = DigiCommerce_Emails::instance()->get_styles();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -50,7 +46,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 		?>
 	</title>
 	<style type="text/css">
-		<?php echo $styles; // phpcs:ignore ?>
+		<?php echo wp_strip_all_tags( DigiCommerce_Emails::instance()->get_styles() ); // phpcs:ignore ?>
 		.status-badge {
 			display: inline-block;
 			padding: 8px 16px;
@@ -127,7 +123,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 									?>
 								</div>
 							</td>
-							<td><?php echo $product->format_price( $item['price'] ); // phpcs:ignore ?></td>
+							<td><?php echo wp_kses_post( $product->format_price( $item['price'] ) ); ?></td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>
@@ -136,7 +132,7 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 			<div class="order-total">
 				<p>
 					<strong><?php esc_html_e( 'Subtotal:', 'digicommerce' ); ?></strong>
-					<?php echo $product->format_price( $order['subtotal'] ); // phpcs:ignore ?>
+					<?php echo wp_kses_post( $product->format_price( $order['subtotal'] ) ); ?>
 				</p>
 				<?php if ( ! empty( $order['vat'] ) ) : ?>
 					<p>
@@ -149,20 +145,20 @@ $styles = DigiCommerce_Emails::instance()->get_styles();
 							);
 							?>
 						</strong>
-						<?php echo $product->format_price( $order['vat'] ); // phpcs:ignore ?>
+						<?php echo wp_kses_post( $product->format_price( $order['vat'] ) ); ?>
 					</p>
 				<?php endif; ?>
 
 				<?php if ( ! empty( $order['discount_code'] ) ) : ?>
 					<p>
 						<strong><?php esc_html_e( 'Discount:', 'digicommerce' ); ?></strong>
-						-<?php echo $product->format_price( $order['discount_amount'] ); // phpcs:ignore ?>
+						-<?php echo wp_kses_post( $product->format_price( $order['discount_amount'] ) ); ?>
 					</p>
 				<?php endif; ?>
 
 				<p>
 					<strong><?php esc_html_e( 'Total:', 'digicommerce' ); ?></strong>
-					<?php echo $product->format_price( $order['total'] ); // phpcs:ignore ?>
+					<?php echo wp_kses_post( $product->format_price( $order['total'] ) ); ?>
 				</p>
 			</div>
 

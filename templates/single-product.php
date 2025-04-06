@@ -252,7 +252,7 @@ $allowed_html = array(
 											</span>
 										<?php else : ?>
 											<span class="leading-none">
-												<?php echo $product->format_price( $variation['price'], 'variation-price' ); // phpcs:ignore ?>
+												<?php echo wp_kses_post( $product->format_price( $variation['price'], 'variation-price' ) ); ?>
 											</span>
 										<?php endif; ?>
 									</label>

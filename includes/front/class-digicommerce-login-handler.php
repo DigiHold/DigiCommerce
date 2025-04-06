@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Handles DigiCommerce login/admin redirections
  */
@@ -65,12 +67,25 @@ class DigiCommerce_Login_Handler {
 		if ( in_array( $pagenow, $restricted_pages ) ) {
 			// Preserve action (reset password, register, etc.) as parameter
 			if ( isset( $_GET['action'] ) ) { // phpcs:ignore
-				$redirect_url = add_query_arg( 'action', $_GET['action'], $redirect_url ); // phpcs:ignore
+				// Sanitize the action parameter
+				$action = sanitize_key( $_GET['action'] ); // phpcs:ignore
+
+				// Validate the action against allowed values
+				$allowed_actions = array( 'register', 'lostpassword', 'rp', 'resetpass' );
+				if ( in_array( $action, $allowed_actions ) ) {
+					$redirect_url = add_query_arg( 'action', $action, $redirect_url );
+				}
 			}
 
 			// Preserve redirect parameter if it exists
 			if ( isset( $_GET['redirect_to'] ) ) { // phpcs:ignore
-				$redirect_url = add_query_arg( 'redirect_to', urlencode( $_GET['redirect_to'] ), $redirect_url ); // phpcs:ignore
+				// Sanitize the redirect URL - ensure it's a local URL to prevent open redirect vulnerabilities
+				$redirect_to = esc_url_raw( wp_unslash( $_GET['redirect_to'] ) ); // phpcs:ignore
+
+				// Only use the redirect if it's to the same site
+				if ( wp_validate_redirect( $redirect_to ) ) {
+					$redirect_url = add_query_arg( 'redirect_to', urlencode( $redirect_to ), $redirect_url );
+				}
 			}
 
 			wp_safe_redirect( $redirect_url );

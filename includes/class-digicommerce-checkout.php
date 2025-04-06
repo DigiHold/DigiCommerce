@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Checkout class for DigiCommerce
  */
@@ -155,8 +157,13 @@ class DigiCommerce_Checkout {
 	 * Initialize
 	 */
 	public function init() {
-		if ( isset( $_GET['add-to-cart'] ) ) { // phpcs:ignore
-			$this->add_to_cart( $_GET['add-to-cart'] ); // phpcs:ignore
+		if ( isset( $_GET['add-to-cart'] ) ) {
+			// Verify nonce when adding to cart via GET request
+			if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_key( $_GET['_wpnonce'] ), 'digicommerce_add_to_cart' ) ) {
+				wp_die( esc_html__( 'Security check failed.', 'digicommerce' ) );
+			}
+
+			$this->add_to_cart( intval( wp_unslash( $_GET['add-to-cart'] ) ) );
 			$this->maybe_set_cart_cookies();
 		}
 
@@ -236,9 +243,8 @@ class DigiCommerce_Checkout {
 	 * Generate session key
 	 */
 	private function generate_session_key() {
-		require_once ABSPATH . 'wp-includes/class-phpass.php';
-		$hasher = new PasswordHash( 8, false );
-		return 't_' . substr( md5( $hasher->get_random_bytes( 32 ) ), 2 );
+		$random_string = wp_generate_password( 32, true, true );
+		return 't_' . substr( md5( $random_string ), 2 );
 	}
 
 	/**
@@ -584,7 +590,7 @@ class DigiCommerce_Checkout {
 
 			// Get and sanitize login data
 			$username = isset( $_POST['username'] ) ? sanitize_user( $_POST['username'] ) : ''; // phpcs:ignore
-			$password = isset( $_POST['password'] ) ? wp_unslash( $_POST['password'] ) : ''; // phpcs:ignore
+			$password = isset( $_POST['password'] ) ? sanitize_text_field( wp_unslash( $_POST['password'] ) ) : '';
 
 			if ( empty( $username ) || empty( $password ) ) {
 				throw new Exception( esc_html__( 'Please enter both username and password.', 'digicommerce' ) );
@@ -792,15 +798,15 @@ class DigiCommerce_Checkout {
 	 */
 	private function maybe_handle_direct_checkout() {
 		// Check for POST upgrade request first
-		if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['upgrade_license'] ) && isset( $_POST['upgrade_path'] ) ) { // phpcs:ignore
+		if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['upgrade_license'] ) && isset( $_POST['upgrade_path'] ) ) {
 			// Verify nonce
-			if ( ! isset( $_POST['upgrade_nonce'] ) || ! wp_verify_nonce( $_POST['upgrade_nonce'], 'digicommerce_upgrade_license' ) ) { // phpcs:ignore
+			if ( ! isset( $_POST['upgrade_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['upgrade_nonce'] ) ), 'digicommerce_upgrade_license' ) ) {
 				wp_die( 'Security check failed', 'Security Error', array( 'response' => 403 ) );
 				return;
 			}
 
 			$license_id           = intval( $_POST['upgrade_license'] );
-			$upgrade_variation_id = sanitize_text_field( $_POST['upgrade_path'] ); // phpcs:ignore
+			$upgrade_variation_id = sanitize_text_field( wp_unslash( $_POST['upgrade_path'] ) );
 
 			// Get license details
 			$license = DigiCommerce_Pro_License::instance()->get_license_by_id( $license_id );
@@ -1109,7 +1115,39 @@ class DigiCommerce_Checkout {
 		// Verify nonce
 		check_ajax_referer( 'digicommerce_process_checkout', 'checkout_nonce' );
 
-		$data           = $_POST;
+		$data            = array();
+		$required_fields = array(
+			'country',
+			'email',
+			'first_name',
+			'last_name',
+			'phone',
+			'company',
+			'address',
+			'city',
+			'postcode',
+			'vat_number',
+			'payment_method',
+			'setup_intent_id',
+			'payment_intent_id',
+			'order_notes',
+			'from_abandoned',
+		);
+
+		foreach ( $required_fields as $field ) {
+			if ( isset( $_POST[ $field ] ) ) {
+				// Apply appropriate sanitization based on field type
+				if ( 'email' === $field ) {
+					$data[ $field ] = sanitize_email( wp_unslash( $_POST[ $field ] ) );
+				} elseif ( in_array( $field, array( 'order_notes' ), true ) ) {
+					$data[ $field ] = sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) );
+				} elseif ( 'from_abandoned' === $field ) {
+					$data[ $field ] = (bool) $_POST[ $field ];
+				} else {
+					$data[ $field ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+				}
+			}
+		}
 		$minimal_fields = DigiCommerce()->get_option( 'minimal_fields' );
 
 		try {
@@ -1295,7 +1333,7 @@ class DigiCommerce_Checkout {
 			switch ( $payment_method ) {
 				case 'stripe':
 					// Get stripe payment data from form submission
-					$stripe_payment_data = isset( $_POST['stripe_payment_data'] ) ? json_decode( stripslashes( $_POST['stripe_payment_data'] ), true ) : null; // phpcs:ignore
+					$stripe_payment_data = isset( $_POST['stripe_payment_data'] ) ? json_decode( stripslashes( sanitize_text_field( wp_unslash( $_POST['stripe_payment_data'] ) ) ), true ) : null;
 
 					if ( ! $stripe_payment_data ) {
 						throw new Exception( esc_html__( 'Payment data not found', 'digicommerce' ) );
@@ -1382,8 +1420,9 @@ class DigiCommerce_Checkout {
 
 						$payment_result = $this->process_paypal_payment(
 							$order_id,
-							isset( $_POST['paypal_order_id'] ) ? $_POST['paypal_order_id'] : null, // phpcs:ignore
-							$_POST['paypal_subscription_id'] // phpcs:ignore
+							isset( $_POST['paypal_order_id'] )
+								? sanitize_text_field( wp_unslash( $_POST['paypal_order_id'] ) )
+								: sanitize_text_field( wp_unslash( $_POST['paypal_subscription_id'] ) )
 						);
 					} else {
 						// Regular one-time payment

@@ -1,4 +1,6 @@
 <?php
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Orders class for DigiCommerce
  * Handles all order-related functionality using custom database tables
@@ -499,8 +501,10 @@ class DigiCommerce_Orders {
 
 		if ( ! empty( $args['status'] ) ) {
 			if ( is_array( $args['status'] ) ) {
-				$statuses = array_map( 'esc_sql', $args['status'] );
-				$where   .= " AND o.status IN ('" . implode( "','", $statuses ) . "')";
+				$placeholders = implode( ',', array_fill( 0, count( $args['status'] ), '%s' ) );
+				$where       .= " AND o.status IN ($placeholders)";
+				$statuses     = array_map( 'esc_sql', $args['status'] );
+				$wpdb->prepare( $where, ...$statuses ); // phpcs:ignore
 			} else {
 				$where .= $wpdb->prepare( ' AND o.status = %s', $args['status'] );
 			}
@@ -533,9 +537,9 @@ class DigiCommerce_Orders {
 		}
 
 		// Safely construct the query for items
-		$items_query = "SELECT * FROM {$this->table_items} 
-                        WHERE order_id IN (" . implode( ',', $order_ids ) . ')';
-		$items       = $wpdb->get_results( $items_query, ARRAY_A ); // phpcs:ignore
+		$placeholders = implode( ',', array_fill( 0, count( $order_ids ), '%d' ) );
+		$items_query  = $wpdb->prepare( "SELECT * FROM {$this->table_items} WHERE order_id IN ($placeholders)", ...$order_ids ); // phpcs:ignore
+		$items        = $wpdb->get_results( $items_query, ARRAY_A ); // phpcs:ignore
 
 		// Organize items by order
 		$items_by_order = array();
@@ -693,7 +697,18 @@ class DigiCommerce_Orders {
 	 * Render orders page in admin
 	 */
 	public function render_orders_page() {
+		// Add permission check
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to view orders.', 'digicommerce' ) );
+		}
+
+		// Handle actions
 		if ( isset( $_GET['action'] ) && 'edit' === $_GET['action'] && isset( $_GET['id'] ) ) { // phpcs:ignore
+			// Verify nonce when accessing the edit page
+			if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_key( $_GET['_wpnonce'] ), 'edit_order_' . intval( $_GET['id'] ) ) ) {
+				wp_die( esc_html__( 'Security check failed.', 'digicommerce' ) );
+			}
+
 			// Render the Edit Order page
 			$this->render_edit_order_page( intval( $_GET['id'] ) ); // phpcs:ignore
 		} else {
@@ -754,7 +769,7 @@ class DigiCommerce_Orders {
 			}
 
 			// Verify nonce with combined action and order ID
-			if ( ! wp_verify_nonce( $_GET['nonce'], "digi_order_{$action}_{$order_id}" ) ) { // phpcs:ignore
+			if ( ! isset( $_GET['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['nonce'] ) ), "digi_order_{$action}_{$order_id}" ) ) {
 				wp_die( esc_html__( 'Security check failed.', 'digicommerce' ) );
 			}
 
@@ -850,7 +865,7 @@ class DigiCommerce_Orders {
 		$total_trash      = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'trash'" ); // phpcs:ignore
 
 		// Get the current status filter
-		$current_status = isset( $_GET['status'] ) ? sanitize_text_field( $_GET['status'] ) : 'all'; // phpcs:ignore
+		$current_status = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : 'all';
 
 		// Get total items for current view
 		$where = '1=1';
@@ -866,8 +881,18 @@ class DigiCommerce_Orders {
 		$pagenum = $this->get_pagenum();
 		$offset  = ( $pagenum - 1 ) * $per_page;
 
-		// Search query
-		$search_query = isset( $_GET['s'] ) ? sanitize_text_field( $_GET['s'] ) : ''; // phpcs:ignore
+		// Get search query with nonce verification if search is performed
+		$search_query = '';
+		if ( isset( $_GET['s'] ) && isset( $_GET['is_search'] ) ) {
+			// When performing a dedicated search, verify the nonce
+			if ( ! isset( $_GET['search_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['search_nonce'] ) ), 'digicommerce_orders_search' ) ) {
+				wp_die( esc_html__( 'Security check failed.', 'digicommerce' ) );
+			}
+			$search_query = sanitize_text_field( wp_unslash( $_GET['s'] ) );
+		} elseif ( isset( $_GET['s'] ) ) {
+			// For other parts of pagination or filter that might carry over the search param
+			$search_query = sanitize_text_field( wp_unslash( $_GET['s'] ) );
+		}
 
 		// Fetch orders with appropriate filtering
 		$orders = $this->get_orders(
@@ -1140,7 +1165,7 @@ class DigiCommerce_Orders {
 		}
 
 		// Verify nonce
-		if ( ! wp_verify_nonce( $_POST['edit_order_nonce_field'], 'edit_order_nonce' ) ) { // phpcs:ignore
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['edit_order_nonce_field'] ) ), 'edit_order_nonce' ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'digicommerce' ) );
 		}
 
@@ -1287,8 +1312,13 @@ class DigiCommerce_Orders {
 			);
 		}
 
-		// Construct the query
-		$query = $wpdb->prepare( "SELECT o.*, b.first_name, b.last_name  FROM {$this->table_orders} o  LEFT JOIN {$this->table_billing} b ON o.id = b.order_id  $where  ORDER BY o.{$args['orderby']} {$args['order']} LIMIT %d OFFSET %d", $args['limit'], $args['offset'] ); // phpcs:ignore
+		// Sanitize orderby and order parameters
+		$allowed_orderby = array( 'id', 'order_number', 'user_id', 'status', 'total', 'date_created', 'date_modified' );
+		$orderby_column  = in_array( $args['orderby'], $allowed_orderby ) ? $args['orderby'] : 'date_created';
+		$order_direction = strtoupper( $args['order'] ) === 'ASC' ? 'ASC' : 'DESC';
+
+		// Construct the query with fully prepared SQL
+		$query = $wpdb->prepare( "SELECT o.*, b.first_name, b.last_name FROM {$this->table_orders} o LEFT JOIN {$this->table_billing} b ON o.id = b.order_id $where ORDER BY o." . $orderby_column . " " . $order_direction . " LIMIT %d OFFSET %d", $args['limit'], $args['offset'] ); // phpcs:ignore
 
 		return $wpdb->get_results( $query, ARRAY_A ); // phpcs:ignore
 	}
@@ -1362,7 +1392,7 @@ class DigiCommerce_Orders {
 	 */
 	public function enqueue_frontend_assets( $hook ) {
 		// Only enqueue on account page
-		if ( ! is_digicommerce_account() ) {
+		if ( ! digicommerce_account() ) {
 			return;
 		}
 
@@ -1375,7 +1405,7 @@ class DigiCommerce_Orders {
 			'pdfmake',
 			DIGICOMMERCE_PLUGIN_URL . 'assets/js/vendor/pdfmake.js',
 			array(),
-			'0.2.7',
+			'0.2.18',
 			true
 		);
 
@@ -1383,7 +1413,7 @@ class DigiCommerce_Orders {
 			'pdfmake-fonts',
 			DIGICOMMERCE_PLUGIN_URL . 'assets/js/vendor/vfs_fonts.js',
 			array( 'pdfmake' ),
-			'0.2.7',
+			'0.2.18',
 			true
 		);
 
@@ -1491,12 +1521,12 @@ class DigiCommerce_Orders {
 			$text = sprintf(
 				/* translators: %1$s: Plugin review link */
 				esc_html__( 'Please rate %2$sDigiCommerce%3$s %4$s&#9733;&#9733;&#9733;&#9733;&#9733;%5$s on %6$sWordPress.org%7$s to help us spread the word.', 'digicommerce' ),
-				'https://wordpress.org/support/plugin/digicommerce/reviews/?filter=5#new-post',
+				'https://wordpress.org/support/plugin/digicommerce/reviews/#new-post',
 				'<strong>',
 				'</strong>',
-				'<a href="https://wordpress.org/support/plugin/digicommerce/reviews/?filter=5#new-post" target="_blank" rel="noopener noreferrer">',
+				'<a href="https://wordpress.org/support/plugin/digicommerce/reviews/#new-post" target="_blank" rel="noopener noreferrer">',
 				'</a>',
-				'<a href="https://wordpress.org/support/plugin/digicommerce/reviews/?filter=5#new-post" target="_blank" rel="noopener noreferrer">',
+				'<a href="https://wordpress.org/support/plugin/digicommerce/reviews/#new-post" target="_blank" rel="noopener noreferrer">',
 				'</a>'
 			);
 		}
