@@ -183,38 +183,90 @@ class DigiCommerce_Stripe_Webhook {
 
 		try {
 			$charge         = $event->data->object;
-			$payment_intent = $charge->payment_intent;
+			$payment_intent = $charge->payment_intent ?? null;
 
 			// Get order ID from various possible meta keys
 			$order_id = null;
 
 			// Try payment intent first
 			if ( $payment_intent ) {
-				$order_id = $wpdb->get_var( // phpcs:ignore
-					$wpdb->prepare(
-						"SELECT order_id FROM {$wpdb->prefix}digicommerce_order_meta 
-						WHERE meta_key IN ('_stripe_payment_intent_id', '_stripe_initial_payment_intent_id') 
-						AND meta_value = %s",
-						$payment_intent
-					)
+				$query    = $wpdb->prepare(
+					"SELECT order_id FROM {$wpdb->prefix}digicommerce_order_meta 
+					WHERE meta_key IN ('_stripe_payment_intent_id', '_stripe_initial_payment_intent_id') 
+					AND meta_value = %s",
+					$payment_intent
 				);
+				$order_id = $wpdb->get_var( $query ); // phpcs:ignore
 			}
 
-			// If still no order_id, try to find it from charge metadata
-			if ( ! $order_id && isset( $charge->metadata->order_id ) ) {
-				$order_id = intval( $charge->metadata->order_id );
+			// If still no order_id, try to find it from invoice
+			if ( ! $order_id && isset( $charge->invoice ) ) {
+				$invoice_id = $charge->invoice;
+
+				$query      = $wpdb->prepare(
+					"SELECT order_id FROM {$wpdb->prefix}digicommerce_order_meta 
+					WHERE meta_key = '_stripe_invoice_id' AND meta_value = %s",
+					$invoice_id
+				);
+				$order_id  = $wpdb->get_var( $query ); // phpcs:ignore
+			}
+
+			// If still no order_id, try to find by charge ID
+			if ( ! $order_id ) {
+				$query    = $wpdb->prepare(
+					"SELECT order_id FROM {$wpdb->prefix}digicommerce_order_meta 
+					WHERE meta_key = '_stripe_charge_id' AND meta_value = %s",
+					$charge->id
+				);
+				$order_id = $wpdb->get_var( $query ); // phpcs:ignore
+			}
+
+			// If still no order_id, try to find by customer ID
+			if ( ! $order_id && isset( $charge->customer ) ) {
+				$customer_id = $charge->customer;
+
+				$query = $wpdb->prepare(
+					"SELECT o.id 
+					FROM {$wpdb->prefix}digicommerce_orders o
+					JOIN {$wpdb->prefix}digicommerce_order_meta m ON o.id = m.order_id 
+					WHERE m.meta_key = '_stripe_customer_id' 
+					AND m.meta_value = %s 
+					ORDER BY o.date_created DESC 
+					LIMIT 1",
+					$customer_id
+				);
+				$order_id = $wpdb->get_var( $query ); // phpcs:ignore
+			}
+
+			// As a last resort, try to find the order by amount
+			if ( ! $order_id && isset( $charge->amount ) ) {
+				$amount   = $charge->amount / 100; // Convert from cents
+
+				$query    = $wpdb->prepare(
+					"SELECT id FROM {$wpdb->prefix}digicommerce_orders 
+					WHERE total = %f AND date_created > DATE_SUB(NOW(), INTERVAL 30 DAY)
+					ORDER BY date_created DESC 
+					LIMIT 1",
+					$amount
+				);
+				$order_id = $wpdb->get_var( $query ); // phpcs:ignore
 			}
 
 			if ( ! $order_id ) {
 				return;
 			}
 
+			// Verify the charge is actually refunded
+			if ( empty( $charge->refunded ) || ! $charge->refunded ) {
+				return;
+			}
+
 			// Start transaction
-			$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore
+			$wpdb->query( 'START TRANSACTION' );
 
 			try {
 				// Update order status to refunded
-				$wpdb->update( // phpcs:ignore
+				$update_result = $wpdb->update(
 					$wpdb->prefix . 'digicommerce_orders',
 					array(
 						'status'        => 'refunded',
@@ -225,29 +277,65 @@ class DigiCommerce_Stripe_Webhook {
 					array( '%d' )
 				);
 
-				// Get refund details using Stripe API
-				$refunds   = \Stripe\Refund::all( array( 'charge' => $charge->id ) );
-				$refund_id = ! empty( $refunds->data ) ? $refunds->data[0]->id : null;
+				if ( false === $update_result ) {
+					throw new Exception( 'Failed to update order status' );
+				}
+
+				// Get refund ID directly from the refund data if available
+				$refund_id = null;
+
+				// Try to get refund ID from the event data
+				if ( ! empty( $charge->refunds ) && ! empty( $charge->refunds->data ) && is_array( $charge->refunds->data ) ) {
+					$refund_id = $charge->refunds->data[0]->id;
+				} else {
+					// Fall back to API call
+					$refunds   = \Stripe\Refund::all( [ 'charge' => $charge->id ] ); // phpcs:ignore
+					$refund_id = ! empty( $refunds->data ) && is_array( $refunds->data ) ? $refunds->data[0]->id : null;
+				}
 
 				if ( $refund_id ) {
-					// Store refund details in order meta
-					$wpdb->insert( // phpcs:ignore
-						$wpdb->prefix . 'digicommerce_order_meta',
-						array(
-							'order_id'   => $order_id,
-							'meta_key'   => '_stripe_refund_id', // phpcs:ignore
-							'meta_value' => $refund_id, // phpcs:ignore
-						),
-						array( '%d', '%s', '%s' )
+					// Check if refund ID already exists
+					$existing_refund = $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT id FROM {$wpdb->prefix}digicommerce_order_meta 
+							WHERE order_id = %d AND meta_key = '_stripe_refund_id' AND meta_value = %s",
+							$order_id,
+							$refund_id
+						)
+					);
+
+					if ( ! $existing_refund ) {
+						// Store refund details in order meta
+						$wpdb->insert(
+							$wpdb->prefix . 'digicommerce_order_meta',
+							array(
+								'order_id'   => $order_id,
+								'meta_key'   => '_stripe_refund_id',
+								'meta_value' => $refund_id,
+							),
+							array( '%d', '%s', '%s' )
+						);
+					}
+
+					// Also store in the main order table's refund_id field
+					$wpdb->update(
+						$wpdb->prefix . 'digicommerce_orders',
+						array( 'refund_id' => $refund_id ),
+						array( 'id' => $order_id ),
+						array( '%s' ),
+						array( '%d' )
 					);
 				}
 
 				// Add order note
 				$note_content = $refund_id ?
-					sprintf( 'Order refunded in Stripe. Refund ID: %s', $refund_id ) :
-					'Order refunded in Stripe.';
+					sprintf(
+						// Translators: %s is the refund ID
+						esc_html__( 'Order refunded in Stripe. Refund ID: %s', 'digicommerce' ),
+						$refund_id
+					) : esc_html__( 'Order refunded in Stripe.', 'digicommerce' );
 
-				$wpdb->insert( // phpcs:ignore
+				$wpdb->insert(
 					$wpdb->prefix . 'digicommerce_order_notes',
 					array(
 						'order_id' => $order_id,
@@ -259,10 +347,7 @@ class DigiCommerce_Stripe_Webhook {
 				);
 
 				// Handle subscription if exists
-				$subscription_id = null;
-
-				// First, try to get subscription ID directly from subscription items
-				$subscription_id = $wpdb->get_var( // phpcs:ignore
+				$subscription_id = $wpdb->get_var(
 					$wpdb->prepare(
 						"SELECT si.subscription_id 
 						FROM {$wpdb->prefix}digicommerce_subscription_items si
@@ -271,44 +356,15 @@ class DigiCommerce_Stripe_Webhook {
 					)
 				);
 
-				// If not found and this is an initial subscription payment
-				if ( ! $subscription_id && isset( $charge->metadata->is_subscription_initial ) && 'true' === $charge->metadata->is_subscription_initial ) {
-					// Try to get from metadata order ID
-					$metadata_order_id = isset( $charge->metadata->order_id ) ? intval( $charge->metadata->order_id ) : null;
-
-					if ( $metadata_order_id ) {
-						$subscription_id = $wpdb->get_var( // phpcs:ignore
-							$wpdb->prepare(
-								"SELECT si.subscription_id 
-								FROM {$wpdb->prefix}digicommerce_subscription_items si
-								WHERE si.order_id = %d",
-								$metadata_order_id
-							)
-						);
-					}
-				}
-
 				if ( $subscription_id ) {
 					// Handle subscription cancellation
-					// Get Stripe subscription ID
-					$stripe_subscription_id = $wpdb->get_var( // phpcs:ignore
+					$stripe_subscription_id = $wpdb->get_var(
 						$wpdb->prepare(
 							"SELECT meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
 							WHERE order_id = %d AND meta_key = '_stripe_subscription_id'",
 							$order_id
 						)
 					);
-
-					if ( ! $stripe_subscription_id && isset( $charge->metadata->order_id ) ) {
-						// Try to get from metadata order ID
-						$stripe_subscription_id = $wpdb->get_var( // phpcs:ignore
-							$wpdb->prepare(
-								"SELECT meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
-								WHERE order_id = %d AND meta_key = '_stripe_subscription_id'",
-								$charge->metadata->order_id
-							)
-						);
-					}
 
 					if ( $stripe_subscription_id ) {
 						$stripe_subscription = \Stripe\Subscription::retrieve( $stripe_subscription_id );
@@ -318,7 +374,7 @@ class DigiCommerce_Stripe_Webhook {
 					}
 
 					// Update subscription status
-					$wpdb->update( // phpcs:ignore
+					$wpdb->update(
 						$wpdb->prefix . 'digicommerce_subscriptions',
 						array(
 							'status'        => 'cancelled',
@@ -326,11 +382,11 @@ class DigiCommerce_Stripe_Webhook {
 						),
 						array( 'id' => $subscription_id ),
 						array( '%s', '%s' ),
-						array( '%d' ),
+						array( '%d' )
 					);
 
 					// Cancel pending schedules
-					$wpdb->update( // phpcs:ignore
+					$wpdb->update(
 						$wpdb->prefix . 'digicommerce_subscription_schedule',
 						array( 'status' => 'cancelled' ),
 						array(
@@ -338,28 +394,28 @@ class DigiCommerce_Stripe_Webhook {
 							'status'          => 'pending',
 						),
 						array( '%s' ),
-						array( '%d', '%s' ),
+						array( '%d', '%s' )
 					);
 
 					// Add subscription note
-					$wpdb->insert( // phpcs:ignore
+					$wpdb->insert(
 						$wpdb->prefix . 'digicommerce_subscription_meta',
 						array(
 							'subscription_id' => $subscription_id,
-							'meta_key'        => 'note', // phpcs:ignore
-							'meta_value'      => 'Subscription cancelled due to order refund in Stripe.', // phpcs:ignore
+							'meta_key'        => 'note',
+							'meta_value'      => 'Subscription cancelled due to order refund in Stripe.',
 						),
-						array( '%d', '%s', '%s' ),
+						array( '%d', '%s', '%s' )
 					);
 
 					do_action( 'digicommerce_subscription_cancelled', $subscription_id );
 				}
 
-				$wpdb->query( 'COMMIT' ); // phpcs:ignore
+				$wpdb->query( 'COMMIT' );
 				do_action( 'digicommerce_order_refunded', $order_id, $charge->amount_refunded / 100 );
 
 			} catch ( Exception $e ) {
-				$wpdb->query( 'ROLLBACK' ); // phpcs:ignore
+				$wpdb->query( 'ROLLBACK' );
 				throw $e;
 			}
 		} catch ( Exception $e ) {

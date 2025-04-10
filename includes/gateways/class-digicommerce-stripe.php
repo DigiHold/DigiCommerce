@@ -310,7 +310,7 @@ class DigiCommerce_Stripe {
 						// Create subscription
 						$subscription = \Stripe\Subscription::create( $subscription_params );
 
-						// Check if subscription payment requires authentication
+						// Check if subscription has a trial period or delayed billing
 						if ( ! empty( $subscription_params['trial_period_days'] ) ||
 							! empty( $subscription_params['billing_cycle_anchor'] ) ) {
 							// No payment needed for trial subscriptions or when using billing_cycle_anchor
@@ -319,22 +319,62 @@ class DigiCommerce_Stripe {
 							return;
 						}
 
-						// For non-trial, immediate payment subscriptions, check if payment requires action
-						if ( isset( $subscription->latest_invoice->payment_intent ) &&
-							( 'requires_action' === $subscription->latest_invoice->payment_intent->status ||
-							'requires_confirmation' === $subscription->latest_invoice->payment_intent->status ) ) {
+						// For immediate payment subscriptions, handle the invoice properly
+						if ( $subscription->latest_invoice ) {
+							// Retrieve the invoice
+							$invoice = \Stripe\Invoice::retrieve( $subscription->latest_invoice );
 
-							wp_send_json_success(
-								[ // phpcs:ignore
-									'subscriptionId' => $subscription->id,
-									'requiresAction' => true,
-									'clientSecret'   => $subscription->latest_invoice->payment_intent->client_secret,
-								]
-							);
-							return;
+							// Check if subscription has a pending payment
+							if ( 'open' === $invoice->status ) {
+								// Retrieve the payment intent ID from the invoice
+								// The latest Stripe API might provide it in different ways
+								$payment_intent_id = null;
+
+								if ( isset( $invoice->payment_intent ) ) {
+									$payment_intent_id = $invoice->payment_intent;
+								} else if ( method_exists( $invoice, 'get' ) && $invoice->get( 'payment_intent' ) ) {
+									$payment_intent_id = $invoice->get( 'payment_intent' );
+								} else {
+									// If we can't get the payment intent, try to pay the invoice directly
+									try {
+										// Note: pay() is an instance method, not static
+										$invoice = $invoice->pay();
+
+										// If payment was successful, continue
+										if ( 'paid' === $invoice->status ) {
+											$response['data']['subscriptionId'] = $subscription->id;
+											wp_send_json_success( $response['data'] );
+											return;
+										}
+									} catch ( \Exception $e ) { // phpcs:ignore
+										// If there's an error paying the invoice, continue to handle it below
+										// by informing the client to perform the payment confirmation
+									}
+								}
+
+								// If we have a payment intent ID, retrieve it and send the client secret
+								if ( $payment_intent_id ) {
+									try {
+										$payment_intent = \Stripe\PaymentIntent::retrieve( $payment_intent_id );
+
+										// Force the client to confirm the payment
+										wp_send_json_success(
+											[ // phpcs:ignore
+												'subscriptionId' => $subscription->id,
+												'requiresAction' => true,
+												'clientSecret'   => $payment_intent->client_secret,
+											]
+										);
+										return;
+									} catch ( \Exception $e ) {
+										wp_send_json_error( [ 'message' => 'Error retrieving payment intent: ' . $e->getMessage() ] ); // phpcs:ignore
+										return;
+									}
+								}
+							}
 						}
 
-						// Return subscription ID for successful subscriptions
+						// If we reach here, no special handling was needed
 						$response['data']['subscriptionId'] = $subscription->id;
 					}
 
@@ -388,8 +428,9 @@ class DigiCommerce_Stripe {
 					);
 
 					$response['data']['paymentIntent'] = [ // phpcs:ignore
-						'client_secret' => $payment_intent->client_secret,
-						'id'            => $payment_intent->id,
+						'client_secret'  => $payment_intent->client_secret,
+						'id'             => $payment_intent->id,
+						'requiresAction' => in_array( $payment_intent->status, [ 'requires_action', 'requires_confirmation', 'requires_capture' ] ), // phpcs:ignore
 					];
 				}
 			}
