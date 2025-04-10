@@ -30,7 +30,17 @@ if ( isset( $_GET['updated'] ) && '1' === trim( sanitize_text_field( $_GET['upda
 ?>
 <div class="wrap">
 	<h1><?php esc_html_e( 'Edit Order', 'digicommerce' ); ?> <?php echo esc_html( $order['order_number'] ); ?></h1>
-	<form id="edit-order-form" method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=digi-orders&action=edit&id=' . $order_id ) ); ?>">
+	<?php
+	$action_link = add_query_arg(
+		array(
+			'action'   => 'edit',
+			'id'       => $order_id,
+			'_wpnonce' => wp_create_nonce( 'edit_order_' . $order_id ),
+		),
+		admin_url( 'admin.php?page=digi-orders' )
+	);
+	?>
+	<form id="edit-order-form" method="post" action="<?php echo esc_url( $action_link ); ?>">
 		<?php wp_nonce_field( 'edit_order_nonce', 'edit_order_nonce_field' ); ?>
 		<div id="poststuff">
 			<!-- Order Details -->

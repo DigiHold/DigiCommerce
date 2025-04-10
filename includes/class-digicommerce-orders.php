@@ -1267,10 +1267,11 @@ class DigiCommerce_Orders {
 		// Set update message
 		$redirect_url = add_query_arg(
 			array(
-				'page'    => 'digi-orders',
-				'action'  => 'edit',
-				'id'      => $order_id,
-				'updated' => '1',
+				'page'     => 'digi-orders',
+				'action'   => 'edit',
+				'id'       => $order_id,
+				'_wpnonce' => wp_create_nonce( 'edit_order_' . $order_id ),
+				'updated'  => '1',
 			),
 			admin_url( 'admin.php' )
 		);
