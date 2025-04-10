@@ -277,10 +277,21 @@ if ( isset( $_GET['updated'] ) && '1' === trim( sanitize_text_field( $_GET['upda
 								<tr>
 									<td><strong><?php esc_html_e( 'Subscription ID:', 'digicommerce' ); ?></strong></td>
 									<td class="edit-order">
-										<a href="<?php echo esc_url( admin_url( 'admin.php?page=digi-subscriptions&action=edit&id=' . $subscription_data['id'] ) ); ?>">
+										<?php
+										$subscription_edit_link = add_query_arg(
+											array(
+												'page'   => 'digi-subscriptions',
+												'action' => 'edit',
+												'id'     => $subscription_data['id'],
+												'_wpnonce' => wp_create_nonce( 'edit_subscription_' . $subscription_data['id'] ),
+											),
+											admin_url( 'admin.php' )
+										);
+										?>
+										<a href="<?php echo esc_url( $subscription_edit_link ); ?>">
 											#<?php echo esc_html( $subscription_data['subscription_number'] ); ?>
 										</a>
-										<a href="<?php echo esc_url( admin_url( 'admin.php?page=digi-subscriptions&action=edit&id=' . $subscription_data['id'] ) ); ?>" class="button">
+										<a href="<?php echo esc_url( $subscription_edit_link ); ?>" class="button">
 											<?php esc_html_e( 'Edit Subscription', 'digicommerce' ); ?>
 										</a>
 									</td>
