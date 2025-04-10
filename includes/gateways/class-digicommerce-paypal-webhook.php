@@ -559,6 +559,7 @@ class DigiCommerce_PayPal_Webhook {
 			// Get the PayPal instance
 			$paypal = DigiCommerce_PayPal::instance();
 
+			// First verify the payment with PayPal API
 			try {
 				// Get access token
 				$access_token = $paypal->get_access_token();
@@ -573,7 +574,7 @@ class DigiCommerce_PayPal_Webhook {
 							'Authorization' => 'Bearer ' . $access_token,
 							'Content-Type'  => 'application/json',
 						),
-					)
+					),
 				);
 
 				if ( is_wp_error( $response ) ) {
@@ -582,16 +583,30 @@ class DigiCommerce_PayPal_Webhook {
 
 				$subscription = json_decode( wp_remote_retrieve_body( $response ), true );
 
-				if ( ! isset( $subscription['billing_info'] ) || ! isset( $subscription['billing_info']['next_billing_time'] ) ) {
+				// Verify subscription is active
+				if ( ! isset( $subscription['status'] ) || 'ACTIVE' !== $subscription['status'] ) {
 					return false;
 				}
-
-				// Get the next payment date
-				$next_payment = date( 'Y-m-d H:i:s', strtotime( $subscription['billing_info']['next_billing_time'] ) ); // phpcs:ignore
 			} catch ( Exception $e ) {
-				// Fallback: Calculate next payment as 1 month from now if API call fails
-				$next_payment = date( 'Y-m-d H:i:s', strtotime( '+1 month' ) ); // phpcs:ignore
+				// If we can't verify with PayPal, don't proceed
+				return false;
 			}
+
+			// Get subscription details from database to determine billing period
+			$db_subscription = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}digicommerce_subscriptions WHERE id = %d",
+					$local_subscription_id
+				)
+			);
+
+			if ( ! $db_subscription ) {
+				return false;
+			}
+
+			// Calculate next payment date based on billing period
+			$billing_period = $db_subscription->billing_period;
+			$next_payment = date( 'Y-m-d H:i:s', strtotime( "+1 {$billing_period}" ) ); // phpcs:ignore
 
 			// Begin transaction
 			$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore

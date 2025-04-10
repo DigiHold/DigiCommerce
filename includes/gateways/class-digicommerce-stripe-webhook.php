@@ -400,9 +400,25 @@ class DigiCommerce_Stripe_Webhook {
 			}
 
 			if ( 'invoice.payment_succeeded' === $event->type ) {
-				// Update next payment date
-				$subscription = \Stripe\Subscription::retrieve( $invoice->subscription );
-				$next_payment = date( 'Y-m-d H:i:s', $subscription->current_period_end ); // phpcs:ignore
+				// First, verify the payment with Stripe
+				$stripe_subscription = \Stripe\Subscription::retrieve( $invoice->subscription );
+
+				// Get our database subscription details to determine the correct billing period
+				$db_subscription = $wpdb->get_row(
+					$wpdb->prepare(
+						"SELECT * FROM {$wpdb->prefix}digicommerce_subscriptions WHERE id = %d",
+						$subscription_id
+					)
+				);
+
+				if ( ! $db_subscription ) {
+					return;
+				}
+
+				// Calculate the next payment date based on the current date and billing period
+				// This ensures it advances by exactly one period from today
+				$billing_period = $db_subscription->billing_period;
+				$next_payment = date( 'Y-m-d H:i:s', strtotime( "+1 {$billing_period}" ) ); // phpcs:ignore
 
 				// Update subscription next payment date
 				$result1 = $wpdb->update( // phpcs:ignore
@@ -435,7 +451,7 @@ class DigiCommerce_Stripe_Webhook {
 						$order_ids
 					);
 
-					$result2 = $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}digicommerce_licenses  SET expires_at = %s, status = %s, date_modified = %s WHERE order_id IN ($order_ids_placeholders)", $query_params ) ); // phpcs:ignore
+					$result2 = $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}digicommerce_licenses SET expires_at = %s, status = %s, date_modified = %s WHERE order_id IN ($order_ids_placeholders)", $query_params ) ); // phpcs:ignore
 				}
 
 				do_action( 'digicommerce_subscription_payment_success', $subscription_id );
