@@ -95,21 +95,25 @@ const DigiStripe = {
 	
 			// Step 3: Handle regular PaymentIntent if present
 			if (setupResult.data.paymentIntent) {
-				const paymentConfirmData = finalData.payment_method ? 
-					{ payment_method: finalData.payment_method } : paymentData;
-	
+				// Always confirm the payment intent with stripe.confirmCardPayment
+				// This ensures proper payment confirmation regardless of 3D Secure
 				const { paymentIntent, error: paymentError } = await stripeInstance.confirmCardPayment(
 					setupResult.data.paymentIntent.client_secret,
-					paymentConfirmData
+					finalData.payment_method ? 
+						{ payment_method: finalData.payment_method } : 
+						paymentData
 				);
-	
+			
 				if (paymentError) {
 					throw new Error(paymentError.message);
 				}
-	
+				
+				// Store the confirmed payment intent ID
 				finalData.payment_intent_id = paymentIntent.id;
-				if (!finalData.payment_method) {
-					finalData.payment_method = paymentIntent.payment_method;
+				
+				// Make sure the payment is complete
+				if (paymentIntent.status !== 'succeeded') {
+					throw new Error('Payment verification failed. Please try again.');
 				}
 			}
 	
