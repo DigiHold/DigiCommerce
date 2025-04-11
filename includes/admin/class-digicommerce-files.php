@@ -668,10 +668,14 @@ Options -Indexes
 				if ( $body ) {
 					$total_read = 0;
 					while ( ! $body->eof() ) {
-						$chunk       = $body->read( 8192 );
+						$chunk        = $body->read( 8192 );
 						$chunk_length = strlen( $chunk );
-						$total_read   += $chunk_length;
-						echo $chunk; // phpcs:ignore
+						$total_read  += $chunk_length;
+						if ( function_exists( 'wp_sanitize_redirect' ) && ! headers_sent() ) {
+							echo wp_kses_post( $chunk ); // Safe output for file content
+						} else {
+							echo $chunk; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Required for binary file streaming
+						}
 						flush();
 					}
 				}

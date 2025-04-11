@@ -293,7 +293,7 @@ defined( 'ABSPATH' ) || exit;
 								</span>
 							</td>
 							<td class="column-total">
-								<?php echo DigiCommerce_Product::instance()->format_price( $order['total'], 'total' ); // phpcs:ignore ?>
+								<?php echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $order['total'], 'total' ) ); ?>
 							</td>
 							<td class="column-billing">
 								<?php

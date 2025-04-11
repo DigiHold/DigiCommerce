@@ -947,7 +947,15 @@ class DigiCommerce_Checkout {
 
 		// Check for abandoned cart
 		if ( isset( $_GET['from_abandoned'] ) && '1' === $_GET['from_abandoned'] && isset( $_GET['customer_email'] ) && class_exists( 'DigiCommerce_Pro' ) ) {
-			$email = sanitize_email( urldecode( $_GET['customer_email'] ) ); // phpcs:ignore
+			$email = '';
+			if ( isset( $_GET['customer_email'] ) ) {
+				$email = sanitize_email( wp_unslash( $_GET['customer_email'] ) );
+			}
+
+			// Add security check to prevent abuse
+			if ( empty( $email ) || ! is_email( $email ) ) {
+				return;
+			}
 
 			// Check if cart is empty (session expired or new session)
 			if ( empty( $this->cart_items ) ) {

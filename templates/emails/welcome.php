@@ -19,12 +19,12 @@ defined( 'ABSPATH' ) || exit;
 		printf(
 			// translators: %s: website
 			esc_html__( 'Welcome to %s', 'digicommerce' ),
-			get_bloginfo( 'name' ) // phpcs:ignore
+			esc_html( get_bloginfo( 'name' ) )
 		);
 		?>
 	</title>
 	<style type="text/css">
-		<?php echo wp_strip_all_tags( DigiCommerce_Emails::instance()->get_styles() ); // phpcs:ignore ?>
+		<?php echo wp_strip_all_tags( DigiCommerce_Emails::instance()->get_styles() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS content needs to remain unescaped for email styling to work properly ?>
 	</style>
 </head>
 <body>
@@ -37,7 +37,7 @@ defined( 'ABSPATH' ) || exit;
 				printf(
 					// translators: %s: Site title.
 					esc_html__( 'Welcome to %s', 'digicommerce' ),
-					get_bloginfo( 'name' ) // phpcs:ignore
+					esc_html( get_bloginfo( 'name' ) )
 				);
 				?>
 			</h2>
@@ -47,7 +47,7 @@ defined( 'ABSPATH' ) || exit;
 				printf(
 					// translators: %s: Site title.
 					esc_html__( 'Thanks for creating an account on %s. Your account has been successfully created, and you can now log in using the following credentials:', 'digicommerce' ),
-					get_bloginfo( 'name' ) // phpcs:ignore
+					esc_html( get_bloginfo( 'name' ) )
 				);
 				?>
 			</p>

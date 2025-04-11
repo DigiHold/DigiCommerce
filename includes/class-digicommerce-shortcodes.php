@@ -154,14 +154,17 @@ class DigiCommerce_Shortcodes {
 		$order_id = isset( $_GET['order_id'] ) ? absint( $_GET['order_id'] ) : 0; // phpcs:ignore
 		$token    = isset( $_GET['token'] ) ? sanitize_text_field( $_GET['token'] ) : ''; // phpcs:ignore
 
+		// Verify the token is valid for this order
+		$token_valid = DigiCommerce_Orders::instance()->verify_order_token( $order_id, $token );
+
 		// Get the order data if order_id and token exist
-		$order_data = ( $order_id && $token ) ? DigiCommerce_Orders::instance()->get_order( $order_id ) : array();
+		$order_data = ( $order_id && $token && $token_valid ) ? DigiCommerce_Orders::instance()->get_order( $order_id ) : array();
 
 		// Prepare arguments for the template
 		$args = array(
 			'order_id'        => $order_id,
 			'token'           => $token,
-			'token_valid'     => DigiCommerce_Orders::instance()->verify_order_token( $order_id, $token ),
+			'token_valid'     => $token_valid,
 			'order_data'      => $order_data,
 			'billing_info'    => DigiCommerce()->get_billing_info( $order_data['user_id'] ?? 0 ),
 			'billing_details' => $order_data['billing_details'] ?? array(),

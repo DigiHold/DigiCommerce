@@ -247,8 +247,8 @@ if ( $order_data ) : ?>
 												sprintf(
 													// translators: %1$s is the signup fee, %2$s is the total price
 													esc_html__( 'First payment of %1$s then %2$s', 'digicommerce' ),
-													DigiCommerce_Product::instance()->format_price( $signup_fee, '' ), // phpcs:ignore
-													DigiCommerce_Product::instance()->format_price( $item['total'], '' ) // phpcs:ignore
+													wp_kses_post( DigiCommerce_Product::instance()->format_price( $signup_fee, '' ) ),
+													wp_kses_post( DigiCommerce_Product::instance()->format_price( $item['total'], '' ) )
 												)
 											);
 										}
@@ -411,7 +411,7 @@ if ( $order_data ) : ?>
 								</div>
 							</td>
 							<td data-label="<?php esc_html_e( 'Total', 'digicommerce' ); ?>" class="end">
-								<?php echo DigiCommerce_Product::instance()->format_price( $item['price'], 'total-price' ); // phpcs:ignore ?>
+								<?php echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $item['price'], 'total-price' ) ); ?>
 							</td>
 						</tr>
 						<?php
@@ -427,7 +427,7 @@ if ( $order_data ) : ?>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Subtotal:', 'digicommerce' ); ?></th>
 						<td data-label="<?php esc_html_e( 'Subtotal', 'digicommerce' ); ?>" class="text-dark-blue font-bold end">
-							<?php echo DigiCommerce_Product::instance()->format_price( $order_data['subtotal'], 'subtotal-price' ); // phpcs:ignore ?>
+							<?php echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $order_data['subtotal'], 'subtotal-price' ) ); ?>
 						</td>
 					</tr>
 					
@@ -452,7 +452,7 @@ if ( $order_data ) : ?>
 							?>
 						</th>
 						<td data-label="<?php esc_html_e( 'VAT', 'digicommerce' ); ?>" class="text-dark-blue font-bold end">
-							<?php echo DigiCommerce_Product::instance()->format_price( $order_data['vat'], 'vat-price' ); // phpcs:ignore ?>
+							<?php echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $order_data['vat'], 'vat-price' ) ); ?>
 						</td>
 					</tr>
 					<?php
@@ -466,7 +466,7 @@ if ( $order_data ) : ?>
 							<?php esc_html_e( 'Coupon:', 'digicommerce' ); ?>
 						</th>
 						<td data-label="<?php esc_html_e( 'Discount', 'digicommerce' ); ?>" class="text-dark-blue font-bold end">
-							<div class="flex justify-end">-<?php echo DigiCommerce_Product::instance()->format_price( $order_data['discount_amount'], 'discount-amount' ); // phpcs:ignore ?></div>
+							<div class="flex justify-end">-<?php echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $order_data['discount_amount'], 'discount-amount' ) ); ?></div>
 						</td>
 					</tr>
 				<?php endif; ?>
@@ -476,7 +476,7 @@ if ( $order_data ) : ?>
 					<th scope="row"><?php esc_html_e( 'Total:', 'digicommerce' ); ?></th>
 					<td data-label="<?php esc_html_e( 'Total', 'digicommerce' ); ?>" class="end">
 						<span class="amount">
-							<?php echo DigiCommerce_Product::instance()->format_price( $order_data['total'], 'total-price' ); // phpcs:ignore ?>
+							<?php echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $order_data['total'], 'total-price' ) ); ?>
 						</span>
 					</td>
 				</tr>
@@ -547,7 +547,7 @@ if ( $order_data ) : ?>
 									</span>
 								</td>
 								<td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600" data-label="<?php esc_html_e( 'Amount', 'digicommerce' ); ?>">
-									<?php echo DigiCommerce_Product::instance()->format_price( $subscription['total'], 'subscription-price' ); // phpcs:ignore ?>
+									<?php echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $subscription['total'], 'subscription-price' ) ); ?>
 								</td>
 								<td class="px-6 py-4 whitespace-nowrap ltr:text-right rtl:text-left text-sm font-medium space-x-2" data-label="<?php esc_html_e( 'Actions', 'digicommerce' ); ?>">
 									<?php

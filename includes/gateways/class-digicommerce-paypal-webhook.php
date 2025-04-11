@@ -506,7 +506,7 @@ class DigiCommerce_PayPal_Webhook {
 						array(
 							'subscription_id' => $subscription_id,
 							'meta_key'        => 'note', // phpcs:ignore
-							'meta_value'      => 'Subscription cancelled due to refund in PayPal.', // phpcs:ignore
+							'meta_value'      => esc_html__( 'Subscription cancelled due to refund in PayPal.', 'digicommerce' ), // phpcs:ignore
 						),
 						array( '%d', '%s', '%s' )
 					);
@@ -593,7 +593,7 @@ class DigiCommerce_PayPal_Webhook {
 			}
 
 			// Get subscription details from database to determine billing period
-			$db_subscription = $wpdb->get_row(
+			$db_subscription = $wpdb->get_row( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT * FROM {$wpdb->prefix}digicommerce_subscriptions WHERE id = %d",
 					$local_subscription_id
@@ -668,7 +668,11 @@ class DigiCommerce_PayPal_Webhook {
 					array(
 						'subscription_id' => $local_subscription_id,
 						'meta_key'        => 'note', // phpcs:ignore
-						'meta_value'      => 'Subscription payment received. License expiration extended to ' . $next_payment, // phpcs:ignore
+						'meta_value'      => sprintf( // phpcs:ignore
+							// translators: %s is the next payment date.
+							esc_html__( 'Subscription payment received. License expiration extended to %s', 'digicommerce' ),
+							$next_payment
+						),
 					),
 					array( '%d', '%s', '%s' )
 				);
@@ -767,7 +771,8 @@ class DigiCommerce_PayPal_Webhook {
 						'subscription_id' => $local_subscription_id,
 						'meta_key'        => 'note', // phpcs:ignore
 						'meta_value'      => sprintf( // phpcs:ignore
-							'Subscription status changed from %s to %s in PayPal.',
+							// translators: %1$s is the current status, %2$s is the new status.
+							esc_html__( 'Subscription status changed from %1$s to %2$s in PayPal.', 'digicommerce' ),
 							$current_status,
 							$new_status
 						),
@@ -850,7 +855,7 @@ class DigiCommerce_PayPal_Webhook {
 				array(
 					'subscription_id' => $local_subscription_id,
 					'meta_key'        => 'note', // phpcs:ignore
-					'meta_value'      => 'Subscription payment failed in PayPal.', // phpcs:ignore
+					'meta_value'      => esc_html__( 'Subscription payment failed in PayPal.', 'digicommerce' ), // phpcs:ignore
 				),
 				array( '%d', '%s', '%s' )
 			);

@@ -2015,8 +2015,8 @@ class DigiCommerce_Settings {
 			'empty_cart_button_url'       => DigiCommerce()->get_option( 'empty_cart_button_url', esc_url( get_home_url() ) ),
 
 			// Emails Tab.
-			'email_from_name'             => DigiCommerce()->get_option( 'email_from_name', get_bloginfo( 'name' ) ),
-			'email_from_address'          => DigiCommerce()->get_option( 'email_from_address', get_bloginfo( 'admin_email' ) ),
+			'email_from_name'             => DigiCommerce()->get_option( 'email_from_name', esc_html( get_bloginfo( 'name' ) ) ),
+			'email_from_address'          => DigiCommerce()->get_option( 'email_from_address', esc_html( get_bloginfo( 'admin_email' ) ) ),
 			'email_header_logo'           => DigiCommerce()->get_option( 'email_header_logo', '' ),
 			'email_header_logo_width'     => DigiCommerce()->get_option( 'email_header_logo_width', '' ),
 			'email_new_account'           => DigiCommerce()->get_option( 'email_new_account' ),

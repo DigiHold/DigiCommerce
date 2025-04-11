@@ -48,7 +48,7 @@ if ( 'stripe' === $payment_method ) {
 		?>
 	</title>
 	<style type="text/css">
-		<?php echo wp_strip_all_tags( DigiCommerce_Emails::instance()->get_styles() ); // phpcs:ignore ?>
+		<?php echo wp_strip_all_tags( DigiCommerce_Emails::instance()->get_styles() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS content needs to remain unescaped for email styling to work properly ?>
 		.admin-note {
 			margin: 20px 0;
 			padding: 20px;

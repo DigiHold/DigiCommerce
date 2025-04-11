@@ -46,7 +46,7 @@ $billing_country_name = isset( $countries[ $billing_country ] ) ? $countries[ $b
 		?>
 	</title>
 	<style type="text/css">
-		<?php echo wp_strip_all_tags( DigiCommerce_Emails::instance()->get_styles() ); // phpcs:ignore ?>
+		<?php echo wp_strip_all_tags( DigiCommerce_Emails::instance()->get_styles() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS content needs to remain unescaped for email styling to work properly ?>
 		.status-badge {
 			display: inline-block;
 			padding: 8px 16px;

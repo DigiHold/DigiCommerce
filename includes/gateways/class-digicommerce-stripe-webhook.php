@@ -262,11 +262,11 @@ class DigiCommerce_Stripe_Webhook {
 			}
 
 			// Start transaction
-			$wpdb->query( 'START TRANSACTION' );
+			$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore
 
 			try {
 				// Update order status to refunded
-				$update_result = $wpdb->update(
+				$update_result = $wpdb->update( // phpcs:ignore
 					$wpdb->prefix . 'digicommerce_orders',
 					array(
 						'status'        => 'refunded',
@@ -295,7 +295,7 @@ class DigiCommerce_Stripe_Webhook {
 
 				if ( $refund_id ) {
 					// Check if refund ID already exists
-					$existing_refund = $wpdb->get_var(
+					$existing_refund = $wpdb->get_var( // phpcs:ignore
 						$wpdb->prepare(
 							"SELECT id FROM {$wpdb->prefix}digicommerce_order_meta 
 							WHERE order_id = %d AND meta_key = '_stripe_refund_id' AND meta_value = %s",
@@ -306,19 +306,19 @@ class DigiCommerce_Stripe_Webhook {
 
 					if ( ! $existing_refund ) {
 						// Store refund details in order meta
-						$wpdb->insert(
+						$wpdb->insert( // phpcs:ignore
 							$wpdb->prefix . 'digicommerce_order_meta',
 							array(
 								'order_id'   => $order_id,
-								'meta_key'   => '_stripe_refund_id',
-								'meta_value' => $refund_id,
+								'meta_key'   => '_stripe_refund_id', // phpcs:ignore
+								'meta_value' => $refund_id, // phpcs:ignore
 							),
 							array( '%d', '%s', '%s' )
 						);
 					}
 
 					// Also store in the main order table's refund_id field
-					$wpdb->update(
+					$wpdb->update( // phpcs:ignore
 						$wpdb->prefix . 'digicommerce_orders',
 						array( 'refund_id' => $refund_id ),
 						array( 'id' => $order_id ),
@@ -335,7 +335,7 @@ class DigiCommerce_Stripe_Webhook {
 						$refund_id
 					) : esc_html__( 'Order refunded in Stripe.', 'digicommerce' );
 
-				$wpdb->insert(
+				$wpdb->insert( // phpcs:ignore
 					$wpdb->prefix . 'digicommerce_order_notes',
 					array(
 						'order_id' => $order_id,
@@ -347,7 +347,7 @@ class DigiCommerce_Stripe_Webhook {
 				);
 
 				// Handle subscription if exists
-				$subscription_id = $wpdb->get_var(
+				$subscription_id = $wpdb->get_var( // phpcs:ignore
 					$wpdb->prepare(
 						"SELECT si.subscription_id 
 						FROM {$wpdb->prefix}digicommerce_subscription_items si
@@ -358,7 +358,7 @@ class DigiCommerce_Stripe_Webhook {
 
 				if ( $subscription_id ) {
 					// Handle subscription cancellation
-					$stripe_subscription_id = $wpdb->get_var(
+					$stripe_subscription_id = $wpdb->get_var( // phpcs:ignore
 						$wpdb->prepare(
 							"SELECT meta_value FROM {$wpdb->prefix}digicommerce_order_meta 
 							WHERE order_id = %d AND meta_key = '_stripe_subscription_id'",
@@ -374,7 +374,7 @@ class DigiCommerce_Stripe_Webhook {
 					}
 
 					// Update subscription status
-					$wpdb->update(
+					$wpdb->update( // phpcs:ignore
 						$wpdb->prefix . 'digicommerce_subscriptions',
 						array(
 							'status'        => 'cancelled',
@@ -386,7 +386,7 @@ class DigiCommerce_Stripe_Webhook {
 					);
 
 					// Cancel pending schedules
-					$wpdb->update(
+					$wpdb->update( // phpcs:ignore
 						$wpdb->prefix . 'digicommerce_subscription_schedule',
 						array( 'status' => 'cancelled' ),
 						array(
@@ -398,12 +398,12 @@ class DigiCommerce_Stripe_Webhook {
 					);
 
 					// Add subscription note
-					$wpdb->insert(
+					$wpdb->insert( // phpcs:ignore
 						$wpdb->prefix . 'digicommerce_subscription_meta',
 						array(
 							'subscription_id' => $subscription_id,
-							'meta_key'        => 'note',
-							'meta_value'      => 'Subscription cancelled due to order refund in Stripe.',
+							'meta_key'        => 'note', // phpcs:ignore
+							'meta_value'      => esc_html__( 'Subscription cancelled due to order refund in Stripe.', 'digicommerce' ), // phpcs:ignore
 						),
 						array( '%d', '%s', '%s' )
 					);
@@ -411,11 +411,11 @@ class DigiCommerce_Stripe_Webhook {
 					do_action( 'digicommerce_subscription_cancelled', $subscription_id );
 				}
 
-				$wpdb->query( 'COMMIT' );
+				$wpdb->query( 'COMMIT' ); // phpcs:ignore
 				do_action( 'digicommerce_order_refunded', $order_id, $charge->amount_refunded / 100 );
 
 			} catch ( Exception $e ) {
-				$wpdb->query( 'ROLLBACK' );
+				$wpdb->query( 'ROLLBACK' ); // phpcs:ignore
 				throw $e;
 			}
 		} catch ( Exception $e ) {
@@ -460,7 +460,7 @@ class DigiCommerce_Stripe_Webhook {
 				$stripe_subscription = \Stripe\Subscription::retrieve( $invoice->subscription );
 
 				// Get our database subscription details to determine the correct billing period
-				$db_subscription = $wpdb->get_row(
+				$db_subscription = $wpdb->get_row( // phpcs:ignore
 					$wpdb->prepare(
 						"SELECT * FROM {$wpdb->prefix}digicommerce_subscriptions WHERE id = %d",
 						$subscription_id

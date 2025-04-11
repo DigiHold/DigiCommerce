@@ -132,7 +132,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			add_action( 'template_redirect', array( $this, 'maybe_add_recaptcha_class' ) );
 
 			// Add custom color in head.
-			add_action( 'wp_head', array( $this, 'custom_colors' ), 10 );
+			add_action( 'wp_enqueue_scripts', array( $this, 'custom_colors' ), 10 );
 
 			// Add dir attribute for LTR/RTL support
 			add_filter( 'language_attributes', array( $this, 'attribute_to_html' ) );
@@ -1187,7 +1187,10 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			}
 
 			if ( ! empty( $css ) ) {
-				echo '<style>:root {' . esc_html( $css ) . '}</style>';
+				// Register and enqueue
+				wp_register_style( 'digicommerce-theme-vars', false, array(), DIGICOMMERCE_VERSION );
+				wp_enqueue_style( 'digicommerce-theme-vars' );
+				wp_add_inline_style( 'digicommerce-theme-vars', ':root {' . esc_html( $css ) . '}' );
 			}
 		}
 

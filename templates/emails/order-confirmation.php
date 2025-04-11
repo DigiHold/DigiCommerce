@@ -52,7 +52,7 @@ if ( 'stripe' === $payment_method ) {
 		?>
 	</title>
 	<style type="text/css">
-		<?php echo wp_strip_all_tags( DigiCommerce_Emails::instance()->get_styles() ); // phpcs:ignore ?>
+		<?php echo wp_strip_all_tags( DigiCommerce_Emails::instance()->get_styles() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS content needs to remain unescaped for email styling to work properly ?>
 	</style>
 </head>
 <body>
@@ -211,7 +211,7 @@ if ( 'stripe' === $payment_method ) {
 												?>
 												<div style="margin-top: 10px;">
 													<div style="margin: 5px 0;">
-														<a href="<?php echo DigiCommerce_Files::instance()->generate_secure_download_url( $latest_file['id'], $order_id, true ); // phpcs:ignore ?>" style="display: inline-block; padding: 8px 15px; background-color: #e5e7eb; color: #374151; text-decoration: none; border-radius: 4px; font-size: 14px;">
+														<a href="<?php echo esc_url( DigiCommerce_Files::instance()->generate_secure_download_url( $latest_file['id'], $order_id, true ) ); ?>" style="display: inline-block; padding: 8px 15px; background-color: #e5e7eb; color: #374151; text-decoration: none; border-radius: 4px; font-size: 14px;">
 															<?php esc_html_e( 'Download', 'digicommerce' ); ?>
 														</a>
 													</div>

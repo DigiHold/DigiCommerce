@@ -76,7 +76,7 @@ class DigiCommerce_Emails {
 			sprintf(
 				/* translators: %1$s: Site name, %2$s: Order ID */
 				esc_html__( '[%1$s] Order Confirmation %2$s', 'digicommerce' ),
-				get_bloginfo( 'name' ),
+				esc_html( get_bloginfo( 'name' ) ),
 				$order['order_number'] ?? $order_id
 			),
 			$order_id
@@ -118,7 +118,7 @@ class DigiCommerce_Emails {
 			sprintf(
 				/* translators: %s: Site name */
 				esc_html__( 'Welcome to %s', 'digicommerce' ),
-				get_bloginfo( 'name' )
+				esc_html( get_bloginfo( 'name' ) )
 			)
 		);
 
@@ -201,7 +201,7 @@ class DigiCommerce_Emails {
 			sprintf(
 				/* translators: %1$s: Site name, %2$s: Order ID */
 				esc_html__( '[%1$s] Order %2$s Cancelled', 'digicommerce' ),
-				get_bloginfo( 'name' ),
+				esc_html( get_bloginfo( 'name' ) ),
 				$order['order_number'] ?? $order_id
 			),
 			$order_id
@@ -248,7 +248,7 @@ class DigiCommerce_Emails {
 			sprintf(
 				/* translators: %1$s: Site name, %2$s: Order ID */
 				esc_html__( '[%1$s] Order %2$s Refunded', 'digicommerce' ),
-				get_bloginfo( 'name' ),
+				esc_html( get_bloginfo( 'name' ) ),
 				$order['order_number'] ?? $order_id
 			),
 			$order_id
@@ -298,7 +298,7 @@ class DigiCommerce_Emails {
 			sprintf(
 				/* translators: %1$s: Site name, %2$s: Order number */
 				esc_html__( '[%1$s] New Order %2$s', 'digicommerce' ),
-				get_bloginfo( 'name' ),
+				esc_html( get_bloginfo( 'name' ) ),
 				$order['order_number'] ?? $order_id
 			),
 			$order_id
@@ -349,7 +349,7 @@ class DigiCommerce_Emails {
 			if ( ! empty( $logo_width ) ) {
 				$header_html .= ' style="max-width:' . esc_attr( $logo_width ) . 'px;height:auto;"';
 			}
-			$header_html .= ' alt="' . esc_attr( get_bloginfo( 'name' ) ) . '" class="logo" />';
+			$header_html .= ' alt="' . esc_html( get_bloginfo( 'name' ) ) . '" class="logo" />';
 		} else {
 			$logo_id = get_theme_mod( 'custom_logo' );
 			if ( $logo_id ) {
@@ -396,7 +396,7 @@ class DigiCommerce_Emails {
 		if ( ! empty( $footer_text ) ) {
 			$footer_html .= str_replace(
 				array( '{year}', '{site}' ),
-				array( date( 'Y' ), get_bloginfo( 'name' ) ), // phpcs:ignore
+				array( date( 'Y' ), esc_html( get_bloginfo( 'name' ) ) ), // phpcs:ignore
 				wp_kses_post( $footer_text )
 			);
 		}

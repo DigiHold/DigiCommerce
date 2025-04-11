@@ -406,8 +406,8 @@ $total = number_format( $total, 2, '.', '' );
 													sprintf(
 														// translators: %1$s: signup fee, %2$s: total price
 														esc_html__( 'First payment of %1$s then %2$s', 'digicommerce' ),
-														DigiCommerce_Product::instance()->format_price( $signup_fee, '' ), // phpcs:ignore
-														DigiCommerce_Product::instance()->format_price( $item['total'], '' ) // phpcs:ignore
+														wp_kses_post( DigiCommerce_Product::instance()->format_price( $signup_fee, '' ) ),
+														wp_kses_post( DigiCommerce_Product::instance()->format_price( $item['total'], '' ) )
 													)
 												);
 											}
@@ -584,17 +584,17 @@ $total = number_format( $total, 2, '.', '' );
 									if ( $subscription_enabled ) {
 										if ( $signup_fee > 0 ) {
 											// Show signup fee
-											echo DigiCommerce_Product::instance()->format_price( $signup_fee, 'total-price' ); // phpcs:ignore
+											echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $signup_fee, 'total-price' ) );
 										} elseif ( ! $has_free_trial ) {
 											// Show first payment amount
-											echo DigiCommerce_Product::instance()->format_price( $item['price'], 'total-price' ); // phpcs:ignore
+											echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $item['price'], 'total-price' ) );
 										} else {
 											// Show 0 for free trial with no signup fee
-											echo DigiCommerce_Product::instance()->format_price( 0, 'total-price' ); // phpcs:ignore
+											echo wp_kses_post( DigiCommerce_Product::instance()->format_price( 0, 'total-price' ) );
 										}
 									} else {
 										// Show regular price for non-subscription products
-										echo DigiCommerce_Product::instance()->format_price( $item['price'], 'total-price' ); // phpcs:ignore
+										echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $item['price'], 'total-price' ) );
 									}
 									?>
 								</td>
@@ -612,7 +612,7 @@ $total = number_format( $total, 2, '.', '' );
 						<tr>
 							<th scope="row"><?php esc_html_e( 'Subtotal:', 'digicommerce' ); ?></th>
 							<td data-label="<?php esc_html_e( 'Subtotal', 'digicommerce' ); ?>" class="text-dark-blue font-bold end">
-								<?php echo DigiCommerce_Product::instance()->format_price( $subtotal, 'subtotal-price' ); // phpcs:ignore ?>
+								<?php echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $subtotal, 'subtotal-price' ) ); ?>
 							</td>
 						</tr>
 
@@ -628,7 +628,7 @@ $total = number_format( $total, 2, '.', '' );
 								?>
 							</th>
 							<td data-label="<?php esc_html_e( 'VAT', 'digicommerce' ); ?>" class="text-dark-blue font-bold end">
-								<?php echo DigiCommerce_Product::instance()->format_price( $vat, 'vat-price' ); // phpcs:ignore ?>
+								<?php echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $vat, 'vat-price' ) ); ?>
 							</td>
 						</tr>
 						<?php
@@ -642,7 +642,7 @@ $total = number_format( $total, 2, '.', '' );
 								<?php esc_html_e( 'Coupon:', 'digicommerce' ); ?>
 							</th>
 							<td data-label="<?php esc_html_e( 'Discount', 'digicommerce' ); ?>" class="text-dark-blue font-bold end">
-								<div class="flex justify-end">-<?php echo DigiCommerce_Product::instance()->format_price( $discount_amount, 'discount-amount' ); // phpcs:ignore ?></div>
+								<div class="flex justify-end">-<?php echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $discount_amount, 'discount-amount' ) ); ?></div>
 							</td>
 						</tr>
 					<?php endif; ?>
@@ -652,7 +652,7 @@ $total = number_format( $total, 2, '.', '' );
 						<th scope="row"><?php esc_html_e( 'Total:', 'digicommerce' ); ?></th>
 						<td data-label="<?php esc_html_e( 'Total', 'digicommerce' ); ?>" class="end">
 							<span class="amount">
-								<?php echo DigiCommerce_Product::instance()->format_price( $total, 'total-price' ); // phpcs:ignore ?>
+								<?php echo wp_kses_post( DigiCommerce_Product::instance()->format_price( $total, 'total-price' ) ); ?>
 							</span>
 						</td>
 					</tr>

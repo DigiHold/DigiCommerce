@@ -415,7 +415,7 @@
 
         const directUrl = wp.url.addQueryArgs(getCheckoutUrl(), {
             id: postId,
-            variation: index + 1
+            variation: index + 1,
         });
 
 		const handleFileVersionUpdate = (fileIndex, versions) => {

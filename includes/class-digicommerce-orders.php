@@ -871,7 +871,13 @@ class DigiCommerce_Orders {
 		$total_trash      = $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'trash'" ); // phpcs:ignore
 
 		// Get the current status filter
+		$valid_statuses = array( 'all', 'completed', 'processing', 'cancelled', 'refunded', 'trash' );
 		$current_status = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : 'all';
+
+		// Validate the status against allowed values
+		if ( ! in_array( $current_status, $valid_statuses, true ) ) {
+			$current_status = 'all'; // Default to 'all' if an invalid status is provided
+		}
 
 		// Get total items for current view
 		$where = '1=1';
@@ -894,9 +900,6 @@ class DigiCommerce_Orders {
 			if ( ! isset( $_GET['search_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['search_nonce'] ) ), 'digicommerce_orders_search' ) ) {
 				wp_die( esc_html__( 'Security check failed.', 'digicommerce' ) );
 			}
-			$search_query = sanitize_text_field( wp_unslash( $_GET['s'] ) );
-		} elseif ( isset( $_GET['s'] ) ) {
-			// For other parts of pagination or filter that might carry over the search param
 			$search_query = sanitize_text_field( wp_unslash( $_GET['s'] ) );
 		}
 
@@ -1334,6 +1337,11 @@ class DigiCommerce_Orders {
 	 * Get current admin page number
 	 */
 	private function get_pagenum() {
+		// Only allow pagination for users with appropriate permissions
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return 1;
+		}
+
 		$pagenum = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 0; // phpcs:ignore
 		return max( 1, $pagenum );
 	}
@@ -1451,7 +1459,7 @@ class DigiCommerce_Orders {
 					'invoice'           => esc_html__( 'invoice', 'digicommerce' ),
 					'allRightsReserved' => str_replace(
 						array( '{year}', '{site}' ),
-						array( date( 'Y' ), get_bloginfo( 'name' ) ), // phpcs:ignore
+						array( date( 'Y' ), esc_html( get_bloginfo( 'name' ) ) ), // phpcs:ignore
 						wp_kses_post( DigiCommerce()->get_option( 'invoices_footer', esc_html__( 'Copyright © {year} {site} All rights reserved.', 'digicommerce' ) ) )
 					),
 					'generating'        => esc_html__( 'Generating PDF...', 'digicommerce' ),
