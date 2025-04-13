@@ -523,7 +523,7 @@ class DigiCommerce_Product {
 
 		// Pro plugin features.
 		$pro_active      = class_exists( 'DigiCommerce_Pro' );
-		$s3_enabled      = $pro_active && class_exists( 'DigiCommerce_Pro_S3' ) && DigiCommerce()->get_option( 's3_enabled', false );
+		$s3_enabled      = $pro_active && class_exists( 'DigiCommerce_Pro_S3' ) && DigiCommerce()->get_option( 'enable_s3', false );
 		$license_enabled = $pro_active && class_exists( 'DigiCommerce_Pro_License' ) && DigiCommerce()->get_option( 'enable_license', false );
 
 		// Add localization for file uploads.
@@ -788,7 +788,7 @@ class DigiCommerce_Product {
 		}
 
 		// If S3 is enabled, skip local filesystem check
-		if ( DigiCommerce()->get_option( 's3_enabled', false ) ) {
+		if ( DigiCommerce()->get_option( 'enable_s3', false ) ) {
 			$deleted = apply_filters( 'digicommerce_before_remove_file', false, $file );
 
 			if ( ! $deleted ) {
