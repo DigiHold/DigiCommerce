@@ -743,24 +743,28 @@ class DigiCommerce_Checkout {
 			// Get class instance
 			$product = DigiCommerce_Product::instance();
 
-			// Calculate VAT on subtotal first
-			$new_vat        = $new_subtotal * $tax_rate;
-			$total_with_vat = $new_subtotal + $new_vat;
-
 			// Get discount from session if any
 			$session_data    = $this->get_session( $session_key );
 			$discount_amount = 0;
 			if ( ! empty( $session_data['discount'] ) ) {
 				$discount_data = $session_data['discount'];
 				if ( 'percentage' === $discount_data['type'] ) {
-					$discount_amount = round( ( $total_with_vat * $discount_data['amount'] ) / 100, 2 );
+					// Apply percentage discount to subtotal
+					$discount_amount = round( ( $new_subtotal * $discount_data['amount'] ) / 100, 2 );
 				} else {
-					$discount_amount = min( $discount_data['amount'], $total_with_vat );
+					// Apply fixed discount to subtotal
+					$discount_amount = min( $discount_data['amount'], $new_subtotal );
 				}
 			}
 
+			// Calculate discounted subtotal
+			$discounted_subtotal = $new_subtotal - $discount_amount;
+
+			// Calculate VAT on discounted subtotal
+			$new_vat = $discounted_subtotal * $tax_rate;
+
 			// Calculate final total
-			$new_total = $total_with_vat - $discount_amount;
+			$new_total = $discounted_subtotal + $new_vat;
 
 			// Format prices
 			$formatted_subtotal = $product->format_price( $new_subtotal, 'subtotal-price' );
@@ -1245,7 +1249,28 @@ class DigiCommerce_Checkout {
 			// Calculate subtotal first
 			$subtotal = $this->get_cart_total();
 
-			// Initialize VAT amount
+			// Apply discount to subtotal if exists in session
+			$discount_amount = 0;
+			$discount_type   = null;
+			$discount_code   = null;
+			if ( ! empty( $session_data['discount'] ) ) {
+				$discount_data = $session_data['discount'];
+				$discount_type = $discount_data['type'];
+				$discount_code = $discount_data['code'];
+
+				if ( 'percentage' === $discount_data['type'] ) {
+					// Apply percentage discount to subtotal
+					$discount_amount = round( ( $subtotal * $discount_data['amount'] ) / 100, 2 );
+				} else {
+					// Apply fixed discount to subtotal
+					$discount_amount = min( $discount_data['amount'], $subtotal );
+				}
+			}
+
+			// Calculate discounted subtotal
+			$discounted_subtotal = $subtotal - $discount_amount;
+
+			// Initialize VAT amount and calculate VAT on discounted subtotal
 			$vat      = 0;
 			$tax_rate = 0;
 
@@ -1256,38 +1281,21 @@ class DigiCommerce_Checkout {
 				if ( $buyer_country === $business_country ) {
 					// Domestic sale: Always charge seller's country VAT
 					$tax_rate = $countries[ $business_country ]['tax_rate'] ?? 0;
-					$vat      = $subtotal * $tax_rate;
+					$vat      = $discounted_subtotal * $tax_rate;
 				} elseif ( ! empty( $countries[ $buyer_country ]['eu'] ) && ! empty( $countries[ $business_country ]['eu'] ) ) {
 					// EU cross-border sale
 					if ( empty( $vat_number ) || ! DigiCommerce_Orders::instance()->validate_vat_number( $vat_number, $buyer_country ) ) {
 						// No valid VAT number - charge buyer's country rate
 						$tax_rate = $countries[ $buyer_country ]['tax_rate'] ?? 0;
-						$vat      = $subtotal * $tax_rate;
+						$vat      = $discounted_subtotal * $tax_rate;
 					}
 					// With valid VAT number - no VAT (vat remains 0)
 				}
 				// Non-EU sale - no VAT (vat remains 0)
 			}
 
-			$total_with_vat = $subtotal + $vat;
-
-			// Apply discount if exists in session
-			$discount_amount = 0;
-			$discount_type   = null;
-			$discount_code   = null;
-			if ( ! empty( $session_data['discount'] ) ) {
-				$discount_data = $session_data['discount'];
-				$discount_type = $discount_data['type'];
-				$discount_code = $discount_data['code'];
-				if ( 'percentage' === $discount_data['type'] ) {
-					$discount_amount = round( ( $total_with_vat * $discount_data['amount'] ) / 100, 2 );
-				} else {
-					$discount_amount = min( $discount_data['amount'], $total_with_vat );
-				}
-			}
-
 			// Calculate final total
-			$total = $total_with_vat - $discount_amount;
+			$total = $discounted_subtotal + $vat;
 
 			// Prepare order data
 			$order_data = array(
