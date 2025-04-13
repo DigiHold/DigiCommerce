@@ -1,1 +1,20 @@
-(()=>{document.addEventListener("DOMContentLoaded",function(){let t=document.getElementById("update-order-btn");t&&t.addEventListener("click",function(e){this.parentElement.querySelector(".spinner").classList.add("is-active")}),document.querySelectorAll(".digicommerce__search").forEach(e=>{let c=new Choices(e,{searchEnabled:!0,searchPlaceholderValue:e.dataset.placeholder,searchResultLimit:-1})})});})();
+(() => {
+  // resources/js/admin/orders-admin.js
+  document.addEventListener("DOMContentLoaded", function() {
+    const updateBtn = document.getElementById("update-order-btn");
+    if (updateBtn) {
+      updateBtn.addEventListener("click", function(e) {
+        const spinner = this.parentElement.querySelector(".spinner");
+        spinner.classList.add("is-active");
+      });
+    }
+    const searchSelects = document.querySelectorAll(".digicommerce__search");
+    searchSelects.forEach((select) => {
+      const choices = new Choices(select, {
+        searchEnabled: true,
+        searchPlaceholderValue: select.dataset.placeholder,
+        searchResultLimit: -1
+      });
+    });
+  });
+})();

@@ -1,1 +1,649 @@
-(()=>{var c={showMessage:(e,a,d=!0)=>{e.textContent=a,e.classList.remove("hidden","bg-green-500","bg-red-500"),e.classList.add(d?"bg-red-500":"bg-green-500","text-white");let g=e.getBoundingClientRect().top+window.pageYOffset-100;window.scrollTo({top:g,behavior:"smooth"})},hideMessage:(e,a=5e3)=>{setTimeout(()=>{e.classList.add("hidden")},a)},toggleLoading:(e,a)=>{a?(e.classList.remove("hidden"),e.classList.add("flex")):(e.classList.add("hidden"),e.classList.remove("flex"))},resetButton:(e,a)=>{e.disabled=!1,e.textContent=a},handleValidationFailure:(e,a,d,_,g)=>{c.showMessage(e,g),c.toggleLoading(a,!1),c.resetButton(d,_)}},q={async handlePayment(e,a,d){try{let g=await(await fetch(digicommerceVars.ajaxurl,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({action:"digicommerce_process_stripe_payment",nonce:e.get("checkout_nonce"),...this.getFormFields(e)})})).json();if(!g.success)throw new Error(g.data?.message||"Payment setup failed");let L={payment_method:{card:a,billing_details:this.getBillingDetails(e)}},y={customer_id:g.data.customerId},h=g.data.setupIntent!==void 0;if(g.data.setupIntent){let{setupIntent:m,error:r}=await d.confirmCardSetup(g.data.setupIntent.client_secret,L);if(r)throw new Error(r.message);y.payment_method=m.payment_method,y.setup_intent_id=m.id}if(g.data.paymentIntent){let{paymentIntent:m,error:r}=await d.confirmCardPayment(g.data.paymentIntent.client_secret,y.payment_method?{payment_method:y.payment_method}:L);if(r)throw new Error(r.message);if(y.payment_intent_id=m.id,m.status!=="succeeded")throw new Error("Payment verification failed. Please try again.")}if(y.payment_method&&h&&y.setup_intent_id){let r=await(await fetch(digicommerceVars.ajaxurl,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({action:"digicommerce_process_stripe_payment",nonce:e.get("checkout_nonce"),stripe_payment_data:JSON.stringify(y),...this.getFormFields(e)})})).json();if(!r.success)throw new Error(r.data?.message||"Failed to create subscription");if(r.data.requiresAction&&r.data.clientSecret){let{paymentIntent:E,error:I}=await d.confirmCardPayment(r.data.clientSecret);if(I)throw new Error(I.message);y.payment_intent_id=E.id}r.data.subscriptionId&&(y.subscription_id=r.data.subscriptionId)}return await this.processCheckout(new URLSearchParams({action:"digicommerce_process_checkout",checkout_nonce:e.get("checkout_nonce"),payment_method:"stripe",stripe_payment_data:JSON.stringify(y),...this.getFormFields(e)}))}catch(_){throw console.error("Payment error:",_),_}},processCheckout(e){return fetch(digicommerceVars.ajaxurl,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:e}).then(a=>a.json()).then(a=>{if(!a.success)throw new Error(a.data?.message||"Checkout processing failed");return a})},getBillingDetails(e){return{name:`${e.get("billing_first_name")} ${e.get("billing_last_name")}`,email:e.get("billing_email"),phone:e.get("billing_phone"),address:{line1:e.get("billing_address"),city:e.get("billing_city"),postal_code:e.get("billing_postcode"),country:e.get("billing_country")}}},getFormFields(e){let a={first_name:e.get("billing_first_name"),last_name:e.get("billing_last_name"),email:e.get("billing_email"),phone:e.get("billing_phone"),company:e.get("billing_company")||"",address:e.get("billing_address"),city:e.get("billing_city"),postcode:e.get("billing_postcode"),country:e.get("billing_country"),vat_number:e.get("billing_vat_number")||""},d=document.getElementById("subscribe_mailing_list");d&&(a.subscribe_mailing_list=d.checked?"1":"0");let _=new URLSearchParams(window.location.search);return _.get("from_abandoned")==="1"&&(a.from_abandoned="1",_.get("coupon")&&(a.recovery_coupon=_.get("coupon"))),a}},P,x;document.addEventListener("DOMContentLoaded",function(){let e=document.getElementById("digicommerce-checkout-form"),a=new URLSearchParams(window.location.search);if(e&&(digicommerceVars.stripeEnabled&&(P=Stripe(digicommerceVars.publishableKey),x=P.elements().create("card",{hidePostalCode:!0,style:{base:{fontSize:"16px",color:"#32325d",fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',"::placeholder":{color:"#aab7c4"}},invalid:{color:"#fa755a",iconColor:"#fa755a"}}}),x.mount("#card-element"),x.addEventListener("change",function(t){let o=document.getElementById("card-errors");t.error?(o.textContent=t.error.message,o.classList.remove("hidden"),o.classList.add("flex")):(o.textContent="",o.classList.remove("flex"),o.classList.add("hidden"))})),digicommerceVars.paypalEnabled)){let i=JSON.parse(digicommerceVars.cartItems||"[]"),t=i.some(l=>l.subscription_enabled),o=t?i.find(l=>l.subscription_enabled):null,p={fundingSource:paypal.FUNDING.PAYPAL,style:{layout:"vertical",shape:"rect",label:t?"subscribe":"pay"}};t?p.createSubscription=async(l,w)=>{try{if(!e)throw new Error("Checkout form not found");let n=new FormData(e);c.toggleLoading(document.getElementById("loading-overlay"),!0);let u=await(await fetch(digicommerceVars.ajaxurl,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({action:"digicommerce_create_paypal_plan",nonce:n.get("checkout_nonce"),first_name:n.get("billing_first_name"),last_name:n.get("billing_last_name"),email:n.get("billing_email"),country:n.get("billing_country"),vat_number:n.get("billing_vat_number")})})).json();if(!u.success||!u.data.plan_id)throw new Error(u.data?.message||"Failed to create PayPal plan");let b={plan_id:u.data.plan_id,application_context:{shipping_preference:"NO_SHIPPING"},subscriber:{name:{given_name:n.get("billing_first_name"),surname:n.get("billing_last_name")},email_address:n.get("billing_email")}};return c.toggleLoading(document.getElementById("loading-overlay"),!1),await w.subscription.create(b)}catch(n){throw console.error("Subscription creation error:",n),c.showMessage(document.getElementById("checkout-message"),n.message),n}}:p.createOrder=async(l,w)=>{try{if(!e)throw new Error("Checkout form not found");let n=new FormData(e),s=i.reduce((v,R)=>v+parseFloat(R.price),0),u=n.get("billing_country"),b=digicommerceVars.businessCountry,S=n.get("billing_vat_number"),F=0,f=digicommerceVars.countries||{};digicommerceVars.removeTaxes||(u===b?F=f[b]?.tax_rate||0:f[u]?.eu&&f[b]?.eu&&(!S||!window.vatCalculator?.validateVATNumber(S,u))&&(F=f[u]?.tax_rate||0));let k=s*F,B=s+k,V=0;if(digicommerceVars.cartDiscount){let v=JSON.parse(digicommerceVars.cartDiscount);v.type==="percentage"?V=B*v.amount/100:V=Math.min(v.amount,B)}let T=B-V;return w.order.create({purchase_units:[{amount:{currency_code:digicommerceVars.currency,value:T.toFixed(2),breakdown:{item_total:{currency_code:digicommerceVars.currency,value:s.toFixed(2)},tax_total:k>0?{currency_code:digicommerceVars.currency,value:k.toFixed(2)}:void 0,discount:V>0?{currency_code:digicommerceVars.currency,value:V.toFixed(2)}:void 0}},items:i.map(v=>({name:v.name,unit_amount:{currency_code:digicommerceVars.currency,value:v.price.toFixed(2)},quantity:1}))}]})}catch(n){throw console.error("Order creation error:",n),c.showMessage(document.getElementById("checkout-message"),n.message),n}},p.onApprove=async(l,w)=>{try{let n;l.orderID&&!l.subscriptionID&&(n=await w.order.capture());let s=new FormData(e),u=document.getElementById("checkout-message");c.toggleLoading(document.getElementById("loading-overlay"),!0);let b=new URLSearchParams({action:"digicommerce_process_checkout",checkout_nonce:s.get("checkout_nonce"),payment_method:"paypal",paypal_order_id:l.orderID,paypal_subscription_id:l.subscriptionID,email:s.get("billing_email"),first_name:s.get("billing_first_name"),last_name:s.get("billing_last_name"),company:s.get("billing_company"),country:s.get("billing_country"),address:s.get("billing_address"),city:s.get("billing_city"),postcode:s.get("billing_postcode"),phone:s.get("billing_phone"),vat_number:s.get("billing_vat_number")}),S=document.getElementById("subscribe_mailing_list");S&&b.append("subscribe_mailing_list",S.checked?"1":"0"),a.get("from_abandoned")==="1"&&(b.append("from_abandoned","1"),a.get("coupon")&&b.append("recovery_coupon",a.get("coupon")));let f=await(await fetch(digicommerceVars.ajaxurl,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:b})).json();if(f.success&&f.data.redirect)c.showMessage(u,digicommerceVars.i18n.success,!1),f.data.order_id&&localStorage.setItem("last_order_id",f.data.order_id),setTimeout(()=>{window.location.href=f.data.redirect},1500);else throw new Error(f.data?.message||"Payment processing failed")}catch(n){console.error("PayPal payment processing error:",n),c.showMessage(document.getElementById("checkout-message"),n.message),c.toggleLoading(document.getElementById("loading-overlay"),!1)}},p.onError=l=>{console.error("PayPal error:",l),c.showMessage(document.getElementById("checkout-message"),"PayPal payment failed"),c.toggleLoading(document.getElementById("loading-overlay"),!1)},p.onCancel=()=>{c.showMessage(document.getElementById("checkout-message"),"Payment cancelled"),c.toggleLoading(document.getElementById("loading-overlay"),!1)},paypal.Buttons(p).render("#paypal-button-container")}let d=document.getElementById("country");if(d){let i=new Choices(d,{searchEnabled:!0,searchPlaceholderValue:d.dataset.placeholder,searchResultLimit:-1}),t=a.get("country");t&&d.querySelector(`option[value="${t}"]`)&&(i.setChoiceByValue(t),d.value=t,setTimeout(()=>{window.vatCalculator&&window.vatCalculator.updateFromSubtotal()},0))}let _=document.querySelectorAll(".digi__form .field input");_&&_.forEach(i=>{let t=()=>{i.value!==""?i.classList.add("focused"):i.classList.remove("focused")};t(),i.addEventListener("blur",t),i.addEventListener("input",t)});let g={validateCountry:(i,t)=>i.value?!0:(t.onFailure(digicommerceVars.i18n.select_country),!1),validateRequiredFields:(i,t)=>{let o=i.querySelectorAll("input[required]"),p=!0;return o.forEach(l=>{l.value.trim()||(p=!1)}),p?!0:(t.onFailure(digicommerceVars.i18n.required_fields),!1)},validateVATNumber:(i,t,o)=>{if(!window.vatCalculator)return!0;let p=t.value,l=document.getElementById("vat_number"),w=document.getElementById("vat_number_field");if(!l||w.style.display==="none")return!0;if(window.vatCalculator.isEUCountry(p)){let n=l.value.trim();if(n&&!window.vatCalculator.validateVATNumber(n,p))return o.onFailure(digicommerceVars.i18n.vat_invalid||"Invalid VAT number format"),l.classList.add("border-red-500"),!1}return!0},validateForm:(i,t,o)=>g.validateCountry(t,o)&&g.validateVATNumber(i,t,o)&&g.validateRequiredFields(i,o)},L=document.getElementById("payment_method_stripe"),y=document.getElementById("payment_method_paypal"),h=document.querySelector(".digicommerce-stripe"),m=document.querySelector(".digicommerce-paypal"),r=document.querySelector(".digicommerce-checkout-button"),E=document.getElementById("paypal-button-container");if(L&&y&&h&&m){let i=function(t){t?(m.style.opacity="0",setTimeout(()=>{m.style.display="none",h.style.display="flex",r.style.display="flex",E.style.display="none",h.offsetWidth,h.style.opacity="1",r.style.opacity="1"},300)):(h.style.opacity="0",r.style.opacity="0",setTimeout(()=>{h.style.display="none",m.style.display="flex",r.style.display="none",E.style.display="flex",m.offsetWidth,m.style.opacity="1"},300))};var N=i;m.style.opacity="0",m.style.display="none",E.style.display="none",L.addEventListener("change",function(){this.checked&&i(!0)}),y.addEventListener("change",function(){this.checked&&i(!1)}),L.checked?(h.style.display="flex",h.style.opacity="1",r.style.display="flex",r.style.opacity="1",E.style.display="none"):y.checked&&(m.style.display="flex",m.style.opacity="1",r.style.display="none",E.style.display="flex"),h.style.transition="opacity 300ms ease-in-out",m.style.transition="opacity 300ms ease-in-out",r.style.transition="all 300ms ease-in-out"}let I=document.getElementById("loading-overlay"),C=document.getElementById("checkout-message");if(e&&d&&(digicommerceVars.stripeEnabled||digicommerceVars.paypalEnabled)){d.removeAttribute("required"),e.setAttribute("novalidate","");let i=document.getElementById("vat_number");i&&i.addEventListener("input",()=>{i.classList.remove("border-red-500"),C.classList.add("hidden")}),e.addEventListener("submit",async function(t){t.preventDefault();let o=e.querySelector("button.digicommerce-checkout-button .text"),p=o.textContent;c.toggleLoading(I,!0),o.disabled=!0,o.textContent=digicommerceVars.i18n.processing_payment;let l={onFailure:s=>{c.handleValidationFailure(C,I,o,p,s)}};if(!g.validateForm(e,d,l))return;let n=e.querySelector('input[name="billing_email"]')?.value.trim();if(!n||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(n)){c.handleValidationFailure(C,I,o,p,digicommerceVars.i18n.invalid_email);return}C.classList.add("hidden");try{if(P&&x){let s=new FormData(e),u=await q.handlePayment(s,x,P);if(u.success)c.showMessage(C,digicommerceVars.i18n.success,!1),u.data.order_id&&localStorage.setItem("last_order_id",u.data.order_id),setTimeout(()=>{u.data.redirect?window.location.href=u.data.redirect:digicommerceVars.payment_success_page&&(window.location.href=digicommerceVars.payment_success_page)},1500);else throw new Error(u.data?.message||digicommerceVars.i18n.payment_error)}}catch(s){console.error("Checkout Error:",s),c.showMessage(C,s.message),c.resetButton(o,p)}finally{c.toggleLoading(I,!1)}}),e.querySelectorAll("input[required]").forEach(t=>{t.addEventListener("invalid",function(o){o.preventDefault(),t.classList.add("invalid")}),t.addEventListener("input",function(){t.classList.remove("invalid")})})}});})();
+(() => {
+  // resources/js/front/checkout.js
+  var DigiUI = {
+    showMessage: (element, message, isError = true) => {
+      element.textContent = message;
+      element.classList.remove("hidden", "bg-green-500", "bg-red-500");
+      element.classList.add(isError ? "bg-red-500" : "bg-green-500", "text-white");
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - 100;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+    },
+    hideMessage: (element, delay = 5e3) => {
+      setTimeout(() => {
+        element.classList.add("hidden");
+      }, delay);
+    },
+    toggleLoading: (overlay, show) => {
+      if (show) {
+        overlay.classList.remove("hidden");
+        overlay.classList.add("flex");
+      } else {
+        overlay.classList.add("hidden");
+        overlay.classList.remove("flex");
+      }
+    },
+    resetButton: (button, originalText) => {
+      button.disabled = false;
+      button.textContent = originalText;
+    },
+    handleValidationFailure: (messageEl, loadingOverlay, submitButton, originalButtonText, message) => {
+      DigiUI.showMessage(messageEl, message);
+      DigiUI.toggleLoading(loadingOverlay, false);
+      DigiUI.resetButton(submitButton, originalButtonText);
+    }
+  };
+  var DigiStripe = {
+    async handlePayment(formData, cardElement2, stripeInstance2) {
+      try {
+        const setupResponse = await fetch(digicommerceVars.ajaxurl, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            action: "digicommerce_process_stripe_payment",
+            nonce: formData.get("checkout_nonce"),
+            ...this.getFormFields(formData)
+          })
+        });
+        const setupResult = await setupResponse.json();
+        if (!setupResult.success) {
+          throw new Error(setupResult.data?.message || "Payment setup failed");
+        }
+        const paymentData = {
+          payment_method: {
+            card: cardElement2,
+            billing_details: this.getBillingDetails(formData)
+          }
+        };
+        let finalData = {
+          customer_id: setupResult.data.customerId
+        };
+        const hasSubscription = setupResult.data.setupIntent !== void 0;
+        if (setupResult.data.setupIntent) {
+          const { setupIntent, error: setupError } = await stripeInstance2.confirmCardSetup(
+            setupResult.data.setupIntent.client_secret,
+            paymentData
+          );
+          if (setupError) {
+            throw new Error(setupError.message);
+          }
+          finalData.payment_method = setupIntent.payment_method;
+          finalData.setup_intent_id = setupIntent.id;
+        }
+        if (setupResult.data.paymentIntent) {
+          const { paymentIntent, error: paymentError } = await stripeInstance2.confirmCardPayment(
+            setupResult.data.paymentIntent.client_secret,
+            finalData.payment_method ? { payment_method: finalData.payment_method } : paymentData
+          );
+          if (paymentError) {
+            throw new Error(paymentError.message);
+          }
+          finalData.payment_intent_id = paymentIntent.id;
+          if (paymentIntent.status !== "succeeded") {
+            throw new Error("Payment verification failed. Please try again.");
+          }
+        }
+        if (finalData.payment_method && hasSubscription && finalData.setup_intent_id) {
+          const subscriptionResponse = await fetch(digicommerceVars.ajaxurl, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+              action: "digicommerce_process_stripe_payment",
+              nonce: formData.get("checkout_nonce"),
+              stripe_payment_data: JSON.stringify(finalData),
+              ...this.getFormFields(formData)
+            })
+          });
+          const subscriptionResult = await subscriptionResponse.json();
+          if (!subscriptionResult.success) {
+            throw new Error(subscriptionResult.data?.message || "Failed to create subscription");
+          }
+          if (subscriptionResult.data.requiresAction && subscriptionResult.data.clientSecret) {
+            const { paymentIntent, error: confirmError } = await stripeInstance2.confirmCardPayment(
+              subscriptionResult.data.clientSecret
+            );
+            if (confirmError) {
+              throw new Error(confirmError.message);
+            }
+            finalData.payment_intent_id = paymentIntent.id;
+          }
+          if (subscriptionResult.data.subscriptionId) {
+            finalData.subscription_id = subscriptionResult.data.subscriptionId;
+          }
+        }
+        return await this.processCheckout(new URLSearchParams({
+          action: "digicommerce_process_checkout",
+          checkout_nonce: formData.get("checkout_nonce"),
+          payment_method: "stripe",
+          stripe_payment_data: JSON.stringify(finalData),
+          ...this.getFormFields(formData)
+        }));
+      } catch (error) {
+        console.error("Payment error:", error);
+        throw error;
+      }
+    },
+    processCheckout(data) {
+      return fetch(digicommerceVars.ajaxurl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: data
+      }).then((response) => response.json()).then((result) => {
+        if (!result.success) {
+          throw new Error(result.data?.message || "Checkout processing failed");
+        }
+        return result;
+      });
+    },
+    getBillingDetails(formData) {
+      return {
+        name: `${formData.get("billing_first_name")} ${formData.get("billing_last_name")}`,
+        email: formData.get("billing_email"),
+        phone: formData.get("billing_phone"),
+        address: {
+          line1: formData.get("billing_address"),
+          city: formData.get("billing_city"),
+          postal_code: formData.get("billing_postcode"),
+          country: formData.get("billing_country")
+        }
+      };
+    },
+    getFormFields(formData) {
+      const fields = {
+        first_name: formData.get("billing_first_name"),
+        last_name: formData.get("billing_last_name"),
+        email: formData.get("billing_email"),
+        phone: formData.get("billing_phone"),
+        company: formData.get("billing_company") || "",
+        address: formData.get("billing_address"),
+        city: formData.get("billing_city"),
+        postcode: formData.get("billing_postcode"),
+        country: formData.get("billing_country"),
+        vat_number: formData.get("billing_vat_number") || ""
+      };
+      const mailingListCheckbox = document.getElementById("subscribe_mailing_list");
+      if (mailingListCheckbox) {
+        fields.subscribe_mailing_list = mailingListCheckbox.checked ? "1" : "0";
+      }
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("from_abandoned") === "1") {
+        fields.from_abandoned = "1";
+        if (urlParams.get("coupon")) {
+          fields.recovery_coupon = urlParams.get("coupon");
+        }
+      }
+      return fields;
+    }
+  };
+  var stripeInstance;
+  var cardElement;
+  document.addEventListener("DOMContentLoaded", function() {
+    const checkoutForm = document.getElementById("digicommerce-checkout-form");
+    const urlParams = new URLSearchParams(window.location.search);
+    if (checkoutForm) {
+      if (digicommerceVars.stripeEnabled) {
+        stripeInstance = Stripe(digicommerceVars.publishableKey);
+        const elements = stripeInstance.elements();
+        cardElement = elements.create("card", {
+          hidePostalCode: true,
+          style: {
+            base: {
+              fontSize: "16px",
+              color: "#32325d",
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+              "::placeholder": {
+                color: "#aab7c4"
+              }
+            },
+            invalid: {
+              color: "#fa755a",
+              iconColor: "#fa755a"
+            }
+          }
+        });
+        cardElement.mount("#card-element");
+        cardElement.addEventListener("change", function(event) {
+          const displayError = document.getElementById("card-errors");
+          if (event.error) {
+            displayError.textContent = event.error.message;
+            displayError.classList.remove("hidden");
+            displayError.classList.add("flex");
+          } else {
+            displayError.textContent = "";
+            displayError.classList.remove("flex");
+            displayError.classList.add("hidden");
+          }
+        });
+      }
+      if (digicommerceVars.paypalEnabled) {
+        const cartItems = JSON.parse(digicommerceVars.cartItems || "[]");
+        const hasSubscription = cartItems.some((item) => item.subscription_enabled);
+        const subscriptionItem = hasSubscription ? cartItems.find((item) => item.subscription_enabled) : null;
+        const paypalConfig = {
+          fundingSource: paypal.FUNDING.PAYPAL,
+          style: {
+            layout: "vertical",
+            shape: "rect",
+            label: hasSubscription ? "subscribe" : "pay"
+          }
+        };
+        if (hasSubscription) {
+          paypalConfig.createSubscription = async (data, actions) => {
+            try {
+              if (!checkoutForm)
+                throw new Error("Checkout form not found");
+              const formData = new FormData(checkoutForm);
+              DigiUI.toggleLoading(document.getElementById("loading-overlay"), true);
+              const planResponse = await fetch(digicommerceVars.ajaxurl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                  action: "digicommerce_create_paypal_plan",
+                  nonce: formData.get("checkout_nonce"),
+                  first_name: formData.get("billing_first_name"),
+                  last_name: formData.get("billing_last_name"),
+                  email: formData.get("billing_email"),
+                  country: formData.get("billing_country"),
+                  vat_number: formData.get("billing_vat_number")
+                })
+              });
+              const planResult = await planResponse.json();
+              if (!planResult.success || !planResult.data.plan_id) {
+                throw new Error(planResult.data?.message || "Failed to create PayPal plan");
+              }
+              const subscriptionConfig = {
+                plan_id: planResult.data.plan_id,
+                application_context: {
+                  shipping_preference: "NO_SHIPPING"
+                },
+                subscriber: {
+                  name: {
+                    given_name: formData.get("billing_first_name"),
+                    surname: formData.get("billing_last_name")
+                  },
+                  email_address: formData.get("billing_email")
+                }
+              };
+              DigiUI.toggleLoading(document.getElementById("loading-overlay"), false);
+              return await actions.subscription.create(subscriptionConfig);
+            } catch (error) {
+              console.error("Subscription creation error:", error);
+              DigiUI.showMessage(document.getElementById("checkout-message"), error.message);
+              throw error;
+            }
+          };
+        } else {
+          paypalConfig.createOrder = async (data, actions) => {
+            try {
+              if (!checkoutForm)
+                throw new Error("Checkout form not found");
+              const formData = new FormData(checkoutForm);
+              const subtotal = cartItems.reduce((sum, item) => sum + parseFloat(item.price), 0);
+              let discountAmount = 0;
+              if (digicommerceVars.cartDiscount) {
+                const discount = JSON.parse(digicommerceVars.cartDiscount);
+                if (discount.type === "percentage") {
+                  discountAmount = subtotal * discount.amount / 100;
+                } else {
+                  discountAmount = Math.min(discount.amount, subtotal);
+                }
+              }
+              const discountedSubtotal = subtotal - discountAmount;
+              const buyerCountry = formData.get("billing_country");
+              const sellerCountry = digicommerceVars.businessCountry;
+              const vatNumber = formData.get("billing_vat_number");
+              let vatRate = 0;
+              const countries = digicommerceVars.countries || {};
+              if (!digicommerceVars.removeTaxes) {
+                if (buyerCountry === sellerCountry) {
+                  vatRate = countries[sellerCountry]?.tax_rate || 0;
+                } else if (countries[buyerCountry]?.eu && countries[sellerCountry]?.eu) {
+                  if (!vatNumber || !window.vatCalculator?.validateVATNumber(vatNumber, buyerCountry)) {
+                    vatRate = countries[buyerCountry]?.tax_rate || 0;
+                  }
+                }
+              }
+              const vatAmount = discountedSubtotal * vatRate;
+              const finalTotal = discountedSubtotal + vatAmount;
+              return actions.order.create({
+                purchase_units: [{
+                  amount: {
+                    currency_code: digicommerceVars.currency,
+                    value: finalTotal.toFixed(2),
+                    breakdown: {
+                      item_total: {
+                        currency_code: digicommerceVars.currency,
+                        value: subtotal.toFixed(2)
+                      },
+                      tax_total: vatAmount > 0 ? {
+                        currency_code: digicommerceVars.currency,
+                        value: vatAmount.toFixed(2)
+                      } : void 0,
+                      discount: discountAmount > 0 ? {
+                        currency_code: digicommerceVars.currency,
+                        value: discountAmount.toFixed(2)
+                      } : void 0
+                    }
+                  },
+                  items: cartItems.map((item) => ({
+                    name: item.name,
+                    unit_amount: {
+                      currency_code: digicommerceVars.currency,
+                      value: item.price.toFixed(2)
+                    },
+                    quantity: 1
+                  }))
+                }]
+              });
+            } catch (error) {
+              console.error("Order creation error:", error);
+              DigiUI.showMessage(document.getElementById("checkout-message"), error.message);
+              throw error;
+            }
+          };
+        }
+        paypalConfig.onApprove = async (data, actions) => {
+          try {
+            let captureResult;
+            if (data.orderID && !data.subscriptionID) {
+              captureResult = await actions.order.capture();
+            }
+            const formData = new FormData(checkoutForm);
+            const messageEl = document.getElementById("checkout-message");
+            DigiUI.toggleLoading(document.getElementById("loading-overlay"), true);
+            const checkoutData = new URLSearchParams({
+              action: "digicommerce_process_checkout",
+              checkout_nonce: formData.get("checkout_nonce"),
+              payment_method: "paypal",
+              paypal_order_id: data.orderID,
+              paypal_subscription_id: data.subscriptionID,
+              email: formData.get("billing_email"),
+              first_name: formData.get("billing_first_name"),
+              last_name: formData.get("billing_last_name"),
+              company: formData.get("billing_company"),
+              country: formData.get("billing_country"),
+              address: formData.get("billing_address"),
+              city: formData.get("billing_city"),
+              postcode: formData.get("billing_postcode"),
+              phone: formData.get("billing_phone"),
+              vat_number: formData.get("billing_vat_number")
+            });
+            const mailingListCheckbox = document.getElementById("subscribe_mailing_list");
+            if (mailingListCheckbox) {
+              checkoutData.append("subscribe_mailing_list", mailingListCheckbox.checked ? "1" : "0");
+            }
+            if (urlParams.get("from_abandoned") === "1") {
+              checkoutData.append("from_abandoned", "1");
+              if (urlParams.get("coupon")) {
+                checkoutData.append("recovery_coupon", urlParams.get("coupon"));
+              }
+            }
+            const response = await fetch(digicommerceVars.ajaxurl, {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: checkoutData
+            });
+            const result = await response.json();
+            if (result.success && result.data.redirect) {
+              DigiUI.showMessage(messageEl, digicommerceVars.i18n.success, false);
+              if (result.data.order_id) {
+                localStorage.setItem("last_order_id", result.data.order_id);
+              }
+              setTimeout(() => {
+                window.location.href = result.data.redirect;
+              }, 1500);
+            } else {
+              throw new Error(result.data?.message || "Payment processing failed");
+            }
+          } catch (error) {
+            console.error("PayPal payment processing error:", error);
+            DigiUI.showMessage(document.getElementById("checkout-message"), error.message);
+            DigiUI.toggleLoading(document.getElementById("loading-overlay"), false);
+          }
+        };
+        paypalConfig.onError = (err) => {
+          console.error("PayPal error:", err);
+          DigiUI.showMessage(document.getElementById("checkout-message"), "PayPal payment failed");
+          DigiUI.toggleLoading(document.getElementById("loading-overlay"), false);
+        };
+        paypalConfig.onCancel = () => {
+          DigiUI.showMessage(document.getElementById("checkout-message"), "Payment cancelled");
+          DigiUI.toggleLoading(document.getElementById("loading-overlay"), false);
+        };
+        paypal.Buttons(paypalConfig).render("#paypal-button-container");
+      }
+    }
+    const countrySelect = document.getElementById("country");
+    if (countrySelect) {
+      const choices = new Choices(countrySelect, {
+        searchEnabled: true,
+        searchPlaceholderValue: countrySelect.dataset.placeholder,
+        searchResultLimit: -1
+      });
+      const countryCode = urlParams.get("country");
+      if (countryCode) {
+        const optionToSelect = countrySelect.querySelector(`option[value="${countryCode}"]`);
+        if (optionToSelect) {
+          choices.setChoiceByValue(countryCode);
+          countrySelect.value = countryCode;
+          setTimeout(() => {
+            if (window.vatCalculator) {
+              window.vatCalculator.updateFromSubtotal();
+            }
+          }, 0);
+        }
+      }
+    }
+    const inputs = document.querySelectorAll(".digi__form .field input");
+    if (inputs) {
+      inputs.forEach((input) => {
+        const handleInputState = () => {
+          if (input.value !== "") {
+            input.classList.add("focused");
+          } else {
+            input.classList.remove("focused");
+          }
+        };
+        handleInputState();
+        input.addEventListener("blur", handleInputState);
+        input.addEventListener("input", handleInputState);
+      });
+    }
+    const DigiValidation = {
+      validateCountry: (countrySelect2, handlers) => {
+        if (!countrySelect2.value) {
+          handlers.onFailure(digicommerceVars.i18n.select_country);
+          return false;
+        }
+        return true;
+      },
+      validateRequiredFields: (form, handlers) => {
+        const requiredFields = form.querySelectorAll("input[required]");
+        let isValid = true;
+        requiredFields.forEach((field) => {
+          if (!field.value.trim()) {
+            isValid = false;
+          }
+        });
+        if (!isValid) {
+          handlers.onFailure(digicommerceVars.i18n.required_fields);
+          return false;
+        }
+        return true;
+      },
+      validateVATNumber: (form, countrySelect2, handlers) => {
+        if (!window.vatCalculator)
+          return true;
+        const countryCode = countrySelect2.value;
+        const vatNumberField = document.getElementById("vat_number");
+        const vatNumberContainer = document.getElementById("vat_number_field");
+        if (!vatNumberField || vatNumberContainer.style.display === "none") {
+          return true;
+        }
+        if (window.vatCalculator.isEUCountry(countryCode)) {
+          const vatNumber = vatNumberField.value.trim();
+          if (vatNumber && !window.vatCalculator.validateVATNumber(vatNumber, countryCode)) {
+            handlers.onFailure(digicommerceVars.i18n.vat_invalid || "Invalid VAT number format");
+            vatNumberField.classList.add("border-red-500");
+            return false;
+          }
+        }
+        return true;
+      },
+      validateForm: (form, countrySelect2, handlers) => {
+        return DigiValidation.validateCountry(countrySelect2, handlers) && DigiValidation.validateVATNumber(form, countrySelect2, handlers) && DigiValidation.validateRequiredFields(form, handlers);
+      }
+    };
+    const stripeRadio = document.getElementById("payment_method_stripe");
+    const paypalRadio = document.getElementById("payment_method_paypal");
+    const stripeSection = document.querySelector(".digicommerce-stripe");
+    const paypalSection = document.querySelector(".digicommerce-paypal");
+    const checkoutButton = document.querySelector(".digicommerce-checkout-button");
+    const paypalContainer = document.getElementById("paypal-button-container");
+    if (stripeRadio && paypalRadio && stripeSection && paypalSection) {
+      let togglePaymentMethod2 = function(isStripe) {
+        if (isStripe) {
+          paypalSection.style.opacity = "0";
+          setTimeout(() => {
+            paypalSection.style.display = "none";
+            stripeSection.style.display = "flex";
+            checkoutButton.style.display = "flex";
+            paypalContainer.style.display = "none";
+            void stripeSection.offsetWidth;
+            stripeSection.style.opacity = "1";
+            checkoutButton.style.opacity = "1";
+          }, 300);
+        } else {
+          stripeSection.style.opacity = "0";
+          checkoutButton.style.opacity = "0";
+          setTimeout(() => {
+            stripeSection.style.display = "none";
+            paypalSection.style.display = "flex";
+            checkoutButton.style.display = "none";
+            paypalContainer.style.display = "flex";
+            void paypalSection.offsetWidth;
+            paypalSection.style.opacity = "1";
+          }, 300);
+        }
+      };
+      var togglePaymentMethod = togglePaymentMethod2;
+      paypalSection.style.opacity = "0";
+      paypalSection.style.display = "none";
+      paypalContainer.style.display = "none";
+      stripeRadio.addEventListener("change", function() {
+        if (this.checked) {
+          togglePaymentMethod2(true);
+        }
+      });
+      paypalRadio.addEventListener("change", function() {
+        if (this.checked) {
+          togglePaymentMethod2(false);
+        }
+      });
+      if (stripeRadio.checked) {
+        stripeSection.style.display = "flex";
+        stripeSection.style.opacity = "1";
+        checkoutButton.style.display = "flex";
+        checkoutButton.style.opacity = "1";
+        paypalContainer.style.display = "none";
+      } else if (paypalRadio.checked) {
+        paypalSection.style.display = "flex";
+        paypalSection.style.opacity = "1";
+        checkoutButton.style.display = "none";
+        paypalContainer.style.display = "flex";
+      }
+      stripeSection.style.transition = "opacity 300ms ease-in-out";
+      paypalSection.style.transition = "opacity 300ms ease-in-out";
+      checkoutButton.style.transition = "all 300ms ease-in-out";
+    }
+    const loadingOverlay = document.getElementById("loading-overlay");
+    const checkoutMessage = document.getElementById("checkout-message");
+    if (checkoutForm && countrySelect && (digicommerceVars.stripeEnabled || digicommerceVars.paypalEnabled)) {
+      countrySelect.removeAttribute("required");
+      checkoutForm.setAttribute("novalidate", "");
+      const vatNumberField = document.getElementById("vat_number");
+      if (vatNumberField) {
+        vatNumberField.addEventListener("input", () => {
+          vatNumberField.classList.remove("border-red-500");
+          checkoutMessage.classList.add("hidden");
+        });
+      }
+      checkoutForm.addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const submitButton = checkoutForm.querySelector("button.digicommerce-checkout-button .text");
+        const originalButtonText = submitButton.textContent;
+        DigiUI.toggleLoading(loadingOverlay, true);
+        submitButton.disabled = true;
+        submitButton.textContent = digicommerceVars.i18n.processing_payment;
+        const validationHandlers = {
+          onFailure: (message) => {
+            DigiUI.handleValidationFailure(
+              checkoutMessage,
+              loadingOverlay,
+              submitButton,
+              originalButtonText,
+              message
+            );
+          }
+        };
+        if (!DigiValidation.validateForm(checkoutForm, countrySelect, validationHandlers)) {
+          return;
+        }
+        const emailField = checkoutForm.querySelector('input[name="billing_email"]');
+        const emailValue = emailField?.value.trim();
+        if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+          DigiUI.handleValidationFailure(
+            checkoutMessage,
+            loadingOverlay,
+            submitButton,
+            originalButtonText,
+            digicommerceVars.i18n.invalid_email
+          );
+          return;
+        }
+        checkoutMessage.classList.add("hidden");
+        try {
+          if (stripeInstance && cardElement) {
+            const formData = new FormData(checkoutForm);
+            const result = await DigiStripe.handlePayment(formData, cardElement, stripeInstance);
+            if (result.success) {
+              DigiUI.showMessage(checkoutMessage, digicommerceVars.i18n.success, false);
+              if (result.data.order_id) {
+                localStorage.setItem("last_order_id", result.data.order_id);
+              }
+              setTimeout(() => {
+                if (result.data.redirect) {
+                  window.location.href = result.data.redirect;
+                } else if (digicommerceVars.payment_success_page) {
+                  window.location.href = digicommerceVars.payment_success_page;
+                }
+              }, 1500);
+            } else {
+              throw new Error(result.data?.message || digicommerceVars.i18n.payment_error);
+            }
+          }
+        } catch (error) {
+          console.error("Checkout Error:", error);
+          DigiUI.showMessage(checkoutMessage, error.message);
+          DigiUI.resetButton(submitButton, originalButtonText);
+        } finally {
+          DigiUI.toggleLoading(loadingOverlay, false);
+        }
+      });
+      checkoutForm.querySelectorAll("input[required]").forEach((input) => {
+        input.addEventListener("invalid", function(event) {
+          event.preventDefault();
+          input.classList.add("invalid");
+        });
+        input.addEventListener("input", function() {
+          input.classList.remove("invalid");
+        });
+      });
+    }
+  });
+})();

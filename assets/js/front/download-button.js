@@ -1,1 +1,115 @@
-(()=>{var i=class{constructor(){this.init()}init(){document.addEventListener("DOMContentLoaded",()=>{this.attachDownloadHandlers()})}attachDownloadHandlers(){document.querySelectorAll(".download-item").forEach(e=>{e.addEventListener("click",a=>this.handleDownload(a))})}async handleDownload(t){let e=t.currentTarget,a=e.dataset.file,o=e.dataset.order,n=e.dataset.token,d=e.parentElement.querySelector("select");if(d&&(a=d.value),!a){this.handleDownloadError(e,{code:"no_file",message:"No file selected"});return}this.updateButtonState(e,"loading");try{let r=await this.getDownloadUrl(a,o,n);this.initiateDownload(r),setTimeout(()=>{this.updateButtonState(e,"default")},2e3)}catch(r){console.error("Download error:",r),this.handleDownloadError(e,{code:"unknown_error",message:r.message||digicommerceVars.i18n.download_failed})}}initiateDownload(t){let e=document.createElement("iframe");e.style.display="none",document.body.appendChild(e),e.contentWindow.location.href=t,setTimeout(()=>{document.body.removeChild(e)},5e3)}async getDownloadUrl(t,e,a){let o=new FormData;o.append("action","digicommerce_download_token"),o.append("file_id",t),o.append("order_id",e),o.append("nonce",digicommerceVars.download_nonce),a&&o.append("order_token",a);let n=await fetch(digicommerceVars.ajaxurl,{method:"POST",body:o,credentials:"include"});if(!n.ok)throw new Error(`Request failed: ${n.status}`);let d=await n.json();if(!d.success)throw new Error(d.data?.message||"Failed to generate download URL");return d.data.download_url}updateButtonState(t,e,a=null){let o=t.querySelector(".text"),n=t.dataset.originalText||o.textContent;switch(t.dataset.originalText||(t.dataset.originalText=n),e){case"loading":t.classList.add("loading"),t.classList.remove("error"),o.textContent=digicommerceVars.i18n.downloading;break;case"error":t.classList.remove("loading"),t.classList.add("error"),o.textContent=a||digicommerceVars.i18n.download_failed;break;default:t.classList.remove("loading","error"),o.textContent=t.dataset.originalText;break}}handleDownloadError(t,e){this.updateButtonState(t,"error",digicommerceVars.i18n.download_failed),window.DigiCommerceNotice&&window.DigiCommerceNotice.error(e.message),setTimeout(()=>{this.updateButtonState(t,"default")},5e3)}};window.digicommerceDownload=new i;})();
+(() => {
+  // resources/js/front/download-button.js
+  var DigiCommerceDownload = class {
+    constructor() {
+      this.init();
+    }
+    init() {
+      document.addEventListener("DOMContentLoaded", () => {
+        this.attachDownloadHandlers();
+      });
+    }
+    attachDownloadHandlers() {
+      const downloadButtons = document.querySelectorAll(".download-item");
+      downloadButtons.forEach((button) => {
+        button.addEventListener("click", (e) => this.handleDownload(e));
+      });
+    }
+    async handleDownload(event) {
+      const button = event.currentTarget;
+      let fileId = button.dataset.file;
+      const orderId = button.dataset.order;
+      const token = button.dataset.token;
+      const select = button.parentElement.querySelector("select");
+      if (select) {
+        fileId = select.value;
+      }
+      if (!fileId) {
+        this.handleDownloadError(button, {
+          code: "no_file",
+          message: "No file selected"
+        });
+        return;
+      }
+      this.updateButtonState(button, "loading");
+      try {
+        const downloadUrl = await this.getDownloadUrl(fileId, orderId, token);
+        this.initiateDownload(downloadUrl);
+        setTimeout(() => {
+          this.updateButtonState(button, "default");
+        }, 2e3);
+      } catch (error) {
+        console.error("Download error:", error);
+        this.handleDownloadError(button, {
+          code: "unknown_error",
+          message: error.message || digicommerceVars.i18n.download_failed
+        });
+      }
+    }
+    initiateDownload(url) {
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      document.body.appendChild(iframe);
+      iframe.contentWindow.location.href = url;
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 5e3);
+    }
+    async getDownloadUrl(fileId, orderId, token) {
+      const formData = new FormData();
+      formData.append("action", "digicommerce_download_token");
+      formData.append("file_id", fileId);
+      formData.append("order_id", orderId);
+      formData.append("nonce", digicommerceVars.download_nonce);
+      if (token) {
+        formData.append("order_token", token);
+      }
+      const response = await fetch(digicommerceVars.ajaxurl, {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
+      }
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.data?.message || "Failed to generate download URL");
+      }
+      return result.data.download_url;
+    }
+    updateButtonState(button, state, customText = null) {
+      const textSpan = button.querySelector(".text");
+      const originalText = button.dataset.originalText || textSpan.textContent;
+      if (!button.dataset.originalText) {
+        button.dataset.originalText = originalText;
+      }
+      switch (state) {
+        case "loading":
+          button.classList.add("loading");
+          button.classList.remove("error");
+          textSpan.textContent = digicommerceVars.i18n.downloading;
+          break;
+        case "error":
+          button.classList.remove("loading");
+          button.classList.add("error");
+          textSpan.textContent = customText || digicommerceVars.i18n.download_failed;
+          break;
+        default:
+          button.classList.remove("loading", "error");
+          textSpan.textContent = button.dataset.originalText;
+          break;
+      }
+    }
+    handleDownloadError(button, error) {
+      this.updateButtonState(button, "error", digicommerceVars.i18n.download_failed);
+      if (window.DigiCommerceNotice) {
+        window.DigiCommerceNotice.error(error.message);
+      }
+      setTimeout(() => {
+        this.updateButtonState(button, "default");
+      }, 5e3);
+    }
+  };
+  window.digicommerceDownload = new DigiCommerceDownload();
+})();

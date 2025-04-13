@@ -70,6 +70,9 @@ Enhance user convenience with an intuitive scheduling add-on, making it easy for
 **[License](https://digicommerce.me/license/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)**
 Effortlessly generate and securely manage license keys for your digital products, ensuring seamless access for your customers.
 
+**[Affiliation](https://digicommerce.me/affiliation/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)**
+Expand your reach and increase sales with a powerful affiliate marketing system that rewards partners for promoting your products or services.
+
 **[Abandonned Cart](https://digicommerce.me/abandonned-cart/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)**
 Recover lost sales by sending automated emails to customers, reminding them to complete their checkout.
 

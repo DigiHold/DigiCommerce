@@ -157,48 +157,59 @@ class VATCalculator {
 		const isEU = this.isEUCountry(buyerCountry);
 		const isSameCountry = buyerCountry === this.businessCountry;
 	
-		let vatAmount = 0;
-		const vatNumber = this.vatNumberInput ? this.vatNumberInput.value.trim() : '';
-		
 		// Show VAT number field only for EU buyers (except domestic)
 		if (this.vatNumberField) {
 			this.vatNumberField.style.display = (isEU && !isSameCountry) ? 'block' : 'none';
 		}
 	
-		// Calculate VAT on the original subtotal
-		const taxableAmount = this.subtotalValue;
+		// 1. Calculate discount on the original subtotal
+		let discountValue = 0;
+		if (this.discountType === 'percentage' && this.discountAmount > 0) {
+			discountValue = (this.subtotalValue * this.discountAmount) / 100;
+		} else {
+			discountValue = Math.min(this.discountAmount, this.subtotalValue);
+		}
 	
+		// 2. Calculate discounted subtotal
+		const discountedSubtotal = this.subtotalValue - discountValue;
+	
+		// 3. Determine VAT rate
+		let appliedVatRate = 0;
+		const vatNumber = this.vatNumberInput ? this.vatNumberInput.value.trim() : '';
+		
 		// VAT Logic:
 		// 1. Same country as seller: Always charge seller's country VAT
 		// 2. Different EU country: Charge buyer's VAT rate unless valid VAT number
 		// 3. Non-EU country: No VAT
 		if (isSameCountry) {
 			// Domestic sale - always charge local VAT rate
-			vatAmount = taxableAmount * businessTaxRate;
+			appliedVatRate = businessTaxRate;
 		} else if (isEU) {
 			// EU cross-border sale
 			const isValidVAT = vatNumber && this.validateVATNumber(vatNumber, buyerCountry);
 			if (!isValidVAT) {
 				// No valid VAT number - charge buyer's country rate
-				vatAmount = taxableAmount * taxRate;
+				appliedVatRate = taxRate;
 			}
-			// If valid VAT number - no VAT (vatAmount remains 0)
+			// If valid VAT number - no VAT (appliedVatRate remains 0)
 		}
-		// For non-EU buyers, vatAmount remains 0
+		// For non-EU buyers, appliedVatRate remains 0
 	
-		// Calculate final total: (subtotal + VAT) - discount
-		const totalBeforeDiscount = taxableAmount + vatAmount;
-		const totalAmount = Math.max(0, totalBeforeDiscount - this.discountAmount);
+		// 4. Calculate VAT on the discounted subtotal
+		const vatAmount = discountedSubtotal * appliedVatRate;
+	
+		// 5. Calculate final total (discounted subtotal + VAT)
+		const totalAmount = discountedSubtotal + vatAmount;
 	
 		// Update displays with rounded values
-		vatAmount = Math.round(vatAmount * 100) / 100;
+		const roundedVat = Math.round(vatAmount * 100) / 100;
 		const roundedTotal = Math.round(totalAmount * 100) / 100;
 	
 		// Update VAT display
 		if (this.cartVatElement) {
 			const vatPriceElement = this.cartVatElement.querySelector('.vat-price .price');
 			if (vatPriceElement) {
-				vatPriceElement.textContent = vatAmount.toFixed(2);
+				vatPriceElement.textContent = roundedVat.toFixed(2);
 			}
 		}
 	
@@ -214,9 +225,8 @@ class VATCalculator {
 		// Update VAT rate display
 		const vatRateElement = document.getElementById('vat_rate');
 		if (vatRateElement) {
-			if (vatAmount > 0) {
-				const appliedRate = isSameCountry ? businessTaxRate : taxRate;
-				vatRateElement.textContent = `(${(appliedRate * 100).toFixed(2)}%)`;
+			if (roundedVat > 0) {
+				vatRateElement.textContent = `(${(appliedVatRate * 100).toFixed(2)}%)`;
 			} else {
 				vatRateElement.textContent = '(0%)';
 			}

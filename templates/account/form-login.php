@@ -66,7 +66,7 @@ defined( 'ABSPATH' ) || exit;
 			</div>
 
 			<div class="flex items-center justify-between gap-4 mb-6">
-				<label class="flex items-center gap-2 cursor-pointer">
+				<label class="flex items-center gap-2 cursor-pointer m-0">
 					<input type="checkbox" id="remember" name="remember" class="w-4 h-4 rounded border border-solid border-gray-300 text-dark-blue focus:ring-dark-blue">
 					<span class="text-sm text-gray-700"><?php esc_html_e( 'Remember me', 'digicommerce' ); ?></span>
 				</label>

@@ -1,1 +1,43 @@
-(()=>{document.addEventListener("DOMContentLoaded",function(){let e=document.getElementById("terms-modal");if(!e)return;let o=e.querySelector(".modal-overlay"),n=e.querySelector(".modal-container"),s=()=>{e.classList.remove("hidden"),document.body.style.overflow="hidden",setTimeout(()=>{o.classList.remove("opacity-0"),setTimeout(()=>{n.classList.remove("opacity-0","translate-y-[-20px]")},150)},10)},d=()=>{o.classList.add("opacity-0"),n.classList.add("opacity-0","translate-y-[-20px]"),setTimeout(()=>{e.classList.add("hidden"),document.body.style.overflow=""},300)};document.querySelectorAll("a.modal").forEach(t=>{t.addEventListener("click",function(a){a.preventDefault(),s()})}),e.querySelectorAll(".close-modal").forEach(t=>{t.addEventListener("click",d)}),o.addEventListener("click",d),document.addEventListener("keydown",function(t){t.key==="Escape"&&!e.classList.contains("hidden")&&d()})});})();
+(() => {
+  // resources/js/front/modal.js
+  document.addEventListener("DOMContentLoaded", function() {
+    const modal = document.getElementById("terms-modal");
+    if (!modal)
+      return;
+    const overlay = modal.querySelector(".modal-overlay");
+    const container = modal.querySelector(".modal-container");
+    const showModal = () => {
+      modal.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+      setTimeout(() => {
+        overlay.classList.remove("opacity-0");
+        setTimeout(() => {
+          container.classList.remove("opacity-0", "translate-y-[-20px]");
+        }, 150);
+      }, 10);
+    };
+    const hideModal = () => {
+      overlay.classList.add("opacity-0");
+      container.classList.add("opacity-0", "translate-y-[-20px]");
+      setTimeout(() => {
+        modal.classList.add("hidden");
+        document.body.style.overflow = "";
+      }, 300);
+    };
+    document.querySelectorAll("a.modal").forEach((link) => {
+      link.addEventListener("click", function(e) {
+        e.preventDefault();
+        showModal();
+      });
+    });
+    modal.querySelectorAll(".close-modal").forEach((button) => {
+      button.addEventListener("click", hideModal);
+    });
+    overlay.addEventListener("click", hideModal);
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        hideModal();
+      }
+    });
+  });
+})();

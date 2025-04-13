@@ -11,6 +11,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const registerMessage = document.getElementById('register-message');
     const lostPasswordMessage = document.getElementById('lost-password-message');
 
+	// Check URL parameters to determine which form to show
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+    
+    // Show appropriate form based on URL parameter
+    if (action === 'lostpassword' && lostPasswordForm) {
+        loginForm?.classList.add('hidden');
+        registerForm?.classList.add('hidden');
+        lostPasswordForm.classList.remove('hidden');
+    } else if (action === 'register' && registerForm) {
+        loginForm?.classList.add('hidden');
+        lostPasswordForm?.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+    }
+
     // Toggle password visibility
     const togglePasswordBtns = document.querySelectorAll('.pass__icon');
     if (togglePasswordBtns) {

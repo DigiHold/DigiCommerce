@@ -1,1 +1,204 @@
-(()=>{var u=class{constructor(){if(this.form=document.getElementById("digicommerce-checkout-form"),this.countrySelect=document.getElementById("country"),this.vatNumberField=document.getElementById("vat_number_field"),this.vatNumberInput=document.getElementById("vat_number"),this.cartVatElement=document.getElementById("cart-vat"),this.cartTotalElement=document.getElementById("cart-total"),this.vatSection=document.getElementById("vat_section"),this.cartSubtotalElement=document.getElementById("cart-subtotal"),this.discountType=null,this.subtotalValue=0,this.discountAmount=0,this.businessCountry=digicommerceVars.businessCountry,!(!this.form||!this.countrySelect||!this.cartSubtotalElement)){try{this.taxRates=JSON.parse(this.form.dataset.taxRates||"{}")}catch(t){console.warn("Invalid tax rates JSON:",t),this.taxRates={}}this.initializeEventListeners(),this.updateFromSubtotal()}}initializeEventListeners(){this.countrySelect&&this.countrySelect.addEventListener("change",()=>{this.updateFromSubtotal()}),this.vatNumberInput&&this.vatNumberInput.addEventListener("input",()=>{this.updateFromSubtotal()})}updateFromSubtotal(){if(!this.cartSubtotalElement)return;let t=this.cartSubtotalElement.querySelector(".subtotal-price .price");t&&(this.subtotalValue=parseFloat(t.textContent.replace(/[^0-9.-]+/g,""))||0,this.cartTotalElement&&(this.discountAmount=parseFloat(this.cartTotalElement.dataset.discountRaw||0),this.discountType=this.cartTotalElement.dataset.discountType||"fixed"),this.updateVATDisplay(this.countrySelect.value))}isEUCountry(t){return this.taxRates[t]?.eu===!0}validateVATNumber(t,i){if(!t||(t=t.toUpperCase().replace(/[^A-Z0-9]/g,""),!this.isEUCountry(i)))return!1;if(!t.startsWith(i))return this.vatNumberInput&&(this.vatNumberInput.setCustomValidity(digicommerceVars.i18n.vat_number),this.vatNumberInput.reportValidity()),!1;if(t.length<8)return this.vatNumberInput&&(this.vatNumberInput.setCustomValidity(digicommerceVars.i18n.vat_short),this.vatNumberInput.reportValidity()),!1;let s={AT:/^ATU[0-9]{8}$/,BE:/^BE[0-9]{10}$/,BG:/^BG[0-9]{9,10}$/,CY:/^CY[0-9]{8}[A-Z]$/,CZ:/^CZ[0-9]{8,10}$/,DE:/^DE[0-9]{9}$/,DK:/^DK[0-9]{8}$/,EE:/^EE[0-9]{9}$/,EL:/^EL[0-9]{9}$/,ES:/^ES[A-Z0-9][0-9]{7}[A-Z0-9]$/,FI:/^FI[0-9]{8}$/,FR:/^FR[0-9A-Z]{2}[0-9]{9}$/,HR:/^HR[0-9]{11}$/,HU:/^HU[0-9]{8}$/,IE:/^IE[0-9][A-Z0-9][0-9]{5}[A-Z]$/,IT:/^IT[0-9]{11}$/,LT:/^LT([0-9]{9}|[0-9]{12})$/,LU:/^LU[0-9]{8}$/,LV:/^LV[0-9]{11}$/,MT:/^MT[0-9]{8}$/,NL:/^NL[0-9]{9}B[0-9]{2}$/,PL:/^PL[0-9]{10}$/,PT:/^PT[0-9]{9}$/,RO:/^RO[0-9]{2,10}$/,SE:/^SE[0-9]{12}$/,SI:/^SI[0-9]{8}$/,SK:/^SK[0-9]{10}$/};return s[i]&&!s[i].test(t)?(this.vatNumberInput&&(this.vatNumberInput.setCustomValidity(digicommerceVars.i18n.vat_invalid+i),this.vatNumberInput.reportValidity()),!1):(this.vatNumberInput&&this.vatNumberInput.setCustomValidity(""),!0)}updateVATDisplay(t){let i=this.taxRates[t]||{rate:0,eu:!1},s=this.taxRates[this.businessCountry]?.rate||0,l=parseFloat(i.rate)||0,c=this.isEUCountry(t),n=t===this.businessCountry,a=0,m=this.vatNumberInput?this.vatNumberInput.value.trim():"";this.vatNumberField&&(this.vatNumberField.style.display=c&&!n?"block":"none");let r=this.subtotalValue;n?a=r*s:c&&(m&&this.validateVATNumber(m,t)||(a=r*l));let d=r+a,E=Math.max(0,d-this.discountAmount);a=Math.round(a*100)/100;let h=Math.round(E*100)/100;if(this.cartVatElement){let e=this.cartVatElement.querySelector(".vat-price .price");e&&(e.textContent=a.toFixed(2))}if(this.cartTotalElement){let e=this.cartTotalElement.querySelector(".total-price .price");e&&(e.textContent=h.toFixed(2)),this.cartTotalElement.dataset.currentTotal=h}let o=document.getElementById("vat_rate");if(o)if(a>0){let e=n?s:l;o.textContent=`(${(e*100).toFixed(2)}%)`}else o.textContent="(0%)"}};document.addEventListener("DOMContentLoaded",()=>{window.vatCalculator=new u});})();
+(() => {
+  // resources/js/front/vat.js
+  var VATCalculator = class {
+    constructor() {
+      this.form = document.getElementById("digicommerce-checkout-form");
+      this.countrySelect = document.getElementById("country");
+      this.vatNumberField = document.getElementById("vat_number_field");
+      this.vatNumberInput = document.getElementById("vat_number");
+      this.cartVatElement = document.getElementById("cart-vat");
+      this.cartTotalElement = document.getElementById("cart-total");
+      this.vatSection = document.getElementById("vat_section");
+      this.cartSubtotalElement = document.getElementById("cart-subtotal");
+      this.discountType = null;
+      this.subtotalValue = 0;
+      this.discountAmount = 0;
+      this.businessCountry = digicommerceVars.businessCountry;
+      if (!this.form || !this.countrySelect || !this.cartSubtotalElement) {
+        return;
+      }
+      try {
+        this.taxRates = JSON.parse(this.form.dataset.taxRates || "{}");
+      } catch (error) {
+        console.warn("Invalid tax rates JSON:", error);
+        this.taxRates = {};
+      }
+      this.initializeEventListeners();
+      this.updateFromSubtotal();
+    }
+    initializeEventListeners() {
+      if (this.countrySelect) {
+        this.countrySelect.addEventListener("change", () => {
+          this.updateFromSubtotal();
+        });
+      }
+      if (this.vatNumberInput) {
+        this.vatNumberInput.addEventListener("input", () => {
+          this.updateFromSubtotal();
+        });
+      }
+    }
+    updateFromSubtotal() {
+      if (!this.cartSubtotalElement)
+        return;
+      const subtotalPriceElement = this.cartSubtotalElement.querySelector(".subtotal-price .price");
+      if (subtotalPriceElement) {
+        this.subtotalValue = parseFloat(subtotalPriceElement.textContent.replace(/[^0-9.-]+/g, "")) || 0;
+        if (this.cartTotalElement) {
+          this.discountAmount = parseFloat(this.cartTotalElement.dataset.discountRaw || 0);
+          this.discountType = this.cartTotalElement.dataset.discountType || "fixed";
+        }
+        this.updateVATDisplay(this.countrySelect.value);
+      }
+    }
+    isEUCountry(countryCode) {
+      return this.taxRates[countryCode]?.eu === true;
+    }
+    validateVATNumber(vatNumber, countryCode) {
+      if (!vatNumber)
+        return false;
+      vatNumber = vatNumber.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (!this.isEUCountry(countryCode)) {
+        return false;
+      }
+      if (!vatNumber.startsWith(countryCode)) {
+        if (this.vatNumberInput) {
+          this.vatNumberInput.setCustomValidity(digicommerceVars.i18n.vat_number);
+          this.vatNumberInput.reportValidity();
+        }
+        return false;
+      }
+      if (vatNumber.length < 8) {
+        if (this.vatNumberInput) {
+          this.vatNumberInput.setCustomValidity(digicommerceVars.i18n.vat_short);
+          this.vatNumberInput.reportValidity();
+        }
+        return false;
+      }
+      const countryFormats = {
+        "AT": /^ATU[0-9]{8}$/,
+        // Austria
+        "BE": /^BE[0-9]{10}$/,
+        // Belgium
+        "BG": /^BG[0-9]{9,10}$/,
+        // Bulgaria
+        "CY": /^CY[0-9]{8}[A-Z]$/,
+        // Cyprus
+        "CZ": /^CZ[0-9]{8,10}$/,
+        // Czech Republic
+        "DE": /^DE[0-9]{9}$/,
+        // Germany
+        "DK": /^DK[0-9]{8}$/,
+        // Denmark
+        "EE": /^EE[0-9]{9}$/,
+        // Estonia
+        "EL": /^EL[0-9]{9}$/,
+        // Greece
+        "ES": /^ES[A-Z0-9][0-9]{7}[A-Z0-9]$/,
+        // Spain
+        "FI": /^FI[0-9]{8}$/,
+        // Finland
+        "FR": /^FR[0-9A-Z]{2}[0-9]{9}$/,
+        // France
+        "HR": /^HR[0-9]{11}$/,
+        // Croatia
+        "HU": /^HU[0-9]{8}$/,
+        // Hungary
+        "IE": /^IE[0-9][A-Z0-9][0-9]{5}[A-Z]$/,
+        // Ireland
+        "IT": /^IT[0-9]{11}$/,
+        // Italy
+        "LT": /^LT([0-9]{9}|[0-9]{12})$/,
+        // Lithuania
+        "LU": /^LU[0-9]{8}$/,
+        // Luxembourg
+        "LV": /^LV[0-9]{11}$/,
+        // Latvia
+        "MT": /^MT[0-9]{8}$/,
+        // Malta
+        "NL": /^NL[0-9]{9}B[0-9]{2}$/,
+        // Netherlands
+        "PL": /^PL[0-9]{10}$/,
+        // Poland
+        "PT": /^PT[0-9]{9}$/,
+        // Portugal
+        "RO": /^RO[0-9]{2,10}$/,
+        // Romania
+        "SE": /^SE[0-9]{12}$/,
+        // Sweden
+        "SI": /^SI[0-9]{8}$/,
+        // Slovenia
+        "SK": /^SK[0-9]{10}$/
+        // Slovakia
+      };
+      if (countryFormats[countryCode]) {
+        if (!countryFormats[countryCode].test(vatNumber)) {
+          if (this.vatNumberInput) {
+            this.vatNumberInput.setCustomValidity(digicommerceVars.i18n.vat_invalid + countryCode);
+            this.vatNumberInput.reportValidity();
+          }
+          return false;
+        }
+      }
+      if (this.vatNumberInput) {
+        this.vatNumberInput.setCustomValidity("");
+      }
+      return true;
+    }
+    updateVATDisplay(buyerCountry) {
+      const selectedCountry = this.taxRates[buyerCountry] || { rate: 0, eu: false };
+      const businessTaxRate = this.taxRates[this.businessCountry]?.rate || 0;
+      const taxRate = parseFloat(selectedCountry.rate) || 0;
+      const isEU = this.isEUCountry(buyerCountry);
+      const isSameCountry = buyerCountry === this.businessCountry;
+      if (this.vatNumberField) {
+        this.vatNumberField.style.display = isEU && !isSameCountry ? "block" : "none";
+      }
+      let discountValue = 0;
+      if (this.discountType === "percentage" && this.discountAmount > 0) {
+        discountValue = this.subtotalValue * this.discountAmount / 100;
+      } else {
+        discountValue = Math.min(this.discountAmount, this.subtotalValue);
+      }
+      const discountedSubtotal = this.subtotalValue - discountValue;
+      let appliedVatRate = 0;
+      const vatNumber = this.vatNumberInput ? this.vatNumberInput.value.trim() : "";
+      if (isSameCountry) {
+        appliedVatRate = businessTaxRate;
+      } else if (isEU) {
+        const isValidVAT = vatNumber && this.validateVATNumber(vatNumber, buyerCountry);
+        if (!isValidVAT) {
+          appliedVatRate = taxRate;
+        }
+      }
+      const vatAmount = discountedSubtotal * appliedVatRate;
+      const totalAmount = discountedSubtotal + vatAmount;
+      const roundedVat = Math.round(vatAmount * 100) / 100;
+      const roundedTotal = Math.round(totalAmount * 100) / 100;
+      if (this.cartVatElement) {
+        const vatPriceElement = this.cartVatElement.querySelector(".vat-price .price");
+        if (vatPriceElement) {
+          vatPriceElement.textContent = roundedVat.toFixed(2);
+        }
+      }
+      if (this.cartTotalElement) {
+        const totalPriceElement = this.cartTotalElement.querySelector(".total-price .price");
+        if (totalPriceElement) {
+          totalPriceElement.textContent = roundedTotal.toFixed(2);
+        }
+        this.cartTotalElement.dataset.currentTotal = roundedTotal;
+      }
+      const vatRateElement = document.getElementById("vat_rate");
+      if (vatRateElement) {
+        if (roundedVat > 0) {
+          vatRateElement.textContent = `(${(appliedVatRate * 100).toFixed(2)}%)`;
+        } else {
+          vatRateElement.textContent = "(0%)";
+        }
+      }
+    }
+  };
+  document.addEventListener("DOMContentLoaded", () => {
+    window.vatCalculator = new VATCalculator();
+  });
+})();

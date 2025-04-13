@@ -360,22 +360,36 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 // Handle one-time payment flow
                 paypalConfig.createOrder = async (data, actions) => {
-                    try {
-                        if (!checkoutForm) throw new Error('Checkout form not found');
-        
-                        const formData = new FormData(checkoutForm);
-                        
-                        // Calculate subtotal first
-                        const subtotal = cartItems.reduce((sum, item) => sum + parseFloat(item.price), 0);
-                        
-                        // Get VAT rate based on country and VAT number
-                        const buyerCountry = formData.get('billing_country');
+					try {
+						if (!checkoutForm) throw new Error('Checkout form not found');
+				
+						const formData = new FormData(checkoutForm);
+						
+						// Calculate subtotal first
+						const subtotal = cartItems.reduce((sum, item) => sum + parseFloat(item.price), 0);
+						
+						// Calculate discount on subtotal first (moved this up)
+						let discountAmount = 0;
+						if (digicommerceVars.cartDiscount) {
+							const discount = JSON.parse(digicommerceVars.cartDiscount);
+							if (discount.type === 'percentage') {
+								discountAmount = (subtotal * discount.amount) / 100;
+							} else {
+								discountAmount = Math.min(discount.amount, subtotal);
+							}
+						}
+						
+						// Calculate discounted subtotal
+						const discountedSubtotal = subtotal - discountAmount;
+						
+						// Get VAT rate based on country and VAT number
+						const buyerCountry = formData.get('billing_country');
 						const sellerCountry = digicommerceVars.businessCountry;
 						const vatNumber = formData.get('billing_vat_number');
 						let vatRate = 0;
-                        
-                        const countries = digicommerceVars.countries || {};
-                        
+						
+						const countries = digicommerceVars.countries || {};
+						
 						// Check if taxes are enabled
 						if (!digicommerceVars.removeTaxes) {
 							if (buyerCountry === sellerCountry) {
@@ -391,62 +405,50 @@ document.addEventListener('DOMContentLoaded', function () {
 							}
 							// Non-EU sale - no VAT (vatRate remains 0)
 						}
-
-                        // Calculate VAT on subtotal
-                        const vatAmount = subtotal * vatRate;
-                        const totalWithVat = subtotal + vatAmount;
-                        
-                        // Calculate discount on total with VAT (key change here)
-                        let discountAmount = 0;
-                        if (digicommerceVars.cartDiscount) {
-                            const discount = JSON.parse(digicommerceVars.cartDiscount);
-                            if (discount.type === 'percentage') {
-                                discountAmount = (totalWithVat * discount.amount) / 100;
-                            } else {
-                                discountAmount = Math.min(discount.amount, totalWithVat);
-                            }
-                        }
-
-                        // Calculate final total by subtracting discount from total with VAT
-                        const finalTotal = totalWithVat - discountAmount;
-        
-                        // Create PayPal order
-                        return actions.order.create({
-                            purchase_units: [{
-                                amount: {
-                                    currency_code: digicommerceVars.currency,
-                                    value: finalTotal.toFixed(2),
-                                    breakdown: {
-                                        item_total: {
-                                            currency_code: digicommerceVars.currency,
-                                            value: subtotal.toFixed(2)
-                                        },
-                                        tax_total: vatAmount > 0 ? {
-                                            currency_code: digicommerceVars.currency,
-                                            value: vatAmount.toFixed(2)
-                                        } : undefined,
-                                        discount: discountAmount > 0 ? {
-                                            currency_code: digicommerceVars.currency,
-                                            value: discountAmount.toFixed(2)
-                                        } : undefined
-                                    }
-                                },
-                                items: cartItems.map(item => ({
-                                    name: item.name,
-                                    unit_amount: {
-                                        currency_code: digicommerceVars.currency,
-                                        value: item.price.toFixed(2)
-                                    },
-                                    quantity: 1
-                                }))
-                            }]
-                        });
-                    } catch (error) {
-                        console.error('Order creation error:', error);
-                        DigiUI.showMessage(document.getElementById('checkout-message'), error.message);
-                        throw error;
-                    }
-                };
+				
+						// Calculate VAT on discounted subtotal (key change here)
+						const vatAmount = discountedSubtotal * vatRate;
+						
+						// Calculate final total
+						const finalTotal = discountedSubtotal + vatAmount;
+				
+						// Create PayPal order
+						return actions.order.create({
+							purchase_units: [{
+								amount: {
+									currency_code: digicommerceVars.currency,
+									value: finalTotal.toFixed(2),
+									breakdown: {
+										item_total: {
+											currency_code: digicommerceVars.currency,
+											value: subtotal.toFixed(2)
+										},
+										tax_total: vatAmount > 0 ? {
+											currency_code: digicommerceVars.currency,
+											value: vatAmount.toFixed(2)
+										} : undefined,
+										discount: discountAmount > 0 ? {
+											currency_code: digicommerceVars.currency,
+											value: discountAmount.toFixed(2)
+										} : undefined
+									}
+								},
+								items: cartItems.map(item => ({
+									name: item.name,
+									unit_amount: {
+										currency_code: digicommerceVars.currency,
+										value: item.price.toFixed(2)
+									},
+									quantity: 1
+								}))
+							}]
+						});
+					} catch (error) {
+						console.error('Order creation error:', error);
+						DigiUI.showMessage(document.getElementById('checkout-message'), error.message);
+						throw error;
+					}
+				};
             }
         
             // Common handlers for all payment types

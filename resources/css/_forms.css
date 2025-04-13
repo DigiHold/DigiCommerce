@@ -5,7 +5,8 @@
     }
 
     .field {
-        input {
+        input,
+        textarea {
             @apply border-border text-dark-blue focus:border-gold min-h-[64px] w-full rounded-md border border-solid px-4 py-3 text-base;
             box-shadow: none;
             outline: none;
@@ -23,6 +24,10 @@
 
         label {
             @apply text-medium pointer-events-none absolute top-2/4 m-0 -translate-y-2/4 font-bold transition-all duration-[0.3s] ease-[cubic-bezier(.64,0.09,0.08,1)] ltr:left-4 rtl:right-4;
+        }
+
+        textarea + label {
+            @apply top-6 m-0;
         }
     }
 

@@ -25,9 +25,9 @@ document.addEventListener('DOMContentLoaded', function() {
     dateRangeSelect.addEventListener('change', function() {
         currentRange = this.value;
         if (this.value === 'custom') {
-            customDateRange.classList.remove('hidden');
+            customDateRange.classList.remove('masked');
         } else {
-            customDateRange.classList.add('hidden');
+            customDateRange.classList.add('masked');
             customStart = null;
             customEnd = null;
             fetchReportData(this.value);
@@ -702,14 +702,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 tabContent.innerHTML = '';
             }
             
-            if (currentRange === 'custom' && customStart && customEnd) {
-                fetchReportData(currentRange, {
-                    start: customStart,
-                    end: customEnd
-                });
-            } else {
-                fetchReportData(currentRange);
-            }
+			if (currentRange === 'custom') {
+				// Only use custom dates if they've been applied (both values exist)
+				if (customStart && customEnd) {
+					fetchReportData(currentRange, {
+						start: customStart,
+						end: customEnd
+					});
+				} else {
+					// Fall back to the default date range if custom dates haven't been applied
+					fetchReportData('this_month');
+				}
+			} else {
+				fetchReportData(currentRange);
+			}
 
             // Handle chart visibility
             const chartContainer = document.querySelector('.charts-container');

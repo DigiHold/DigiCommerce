@@ -53,7 +53,7 @@
 
 /* Custom date range panel */
 .custom-date-range {
-    @apply flex items-center gap-4;
+    @apply flex items-stretch gap-4;
 }
 
 .custom-date-range.masked {

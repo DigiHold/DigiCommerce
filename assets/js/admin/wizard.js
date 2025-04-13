@@ -1,1 +1,117 @@
-(()=>{document.addEventListener("DOMContentLoaded",function(){document.querySelector(".digicommerce-setup-wizard")&&(document.body.style.overflow="hidden");let n=document.querySelectorAll(".digicommerce-setup-content"),m=document.querySelectorAll(".continue");n.length&&n.forEach((e,r)=>{r===0?e.classList.remove("hidden"):e.classList.add("hidden")});let d=document.querySelector(".business-form");d&&d.addEventListener("submit",function(e){e.preventDefault();let r=this.closest(".digicommerce-setup-content"),c=Array.from(n).indexOf(r),t=this.querySelector('button[type="submit"]'),u=t.textContent;t.textContent=digicommerceSetup.i18n.saving,t.disabled=!0;let i=new FormData(this);i.append("action","digicommerce_setup_wizard_save"),i.append("nonce",digicommerceSetup.nonce),i.append("subscribe_newsletter",document.getElementById("subscribe_newsletter").checked),fetch(digicommerceSetup.ajaxurl,{method:"POST",body:i,credentials:"same-origin",headers:{Accept:"application/json"}}).then(o=>{if(!o.ok)throw new Error(`HTTP error! status: ${o.status}`);return o.text()}).then(o=>{try{let s=JSON.parse(o);s.success?(r.classList.add("hidden"),n[c+1]&&n[c+1].classList.remove("hidden")):(console.error("Server returned error:",s),alert(digicommerceSetup.i18n.error))}catch(s){console.error("JSON parse error:",s),alert(digicommerceSetup.i18n.error)}t.textContent=u,t.disabled=!1}).catch(o=>{console.error("Fetch error:",o),alert(digicommerceSetup.i18n.error),t.textContent=u,t.disabled=!1})}),m.forEach(e=>{e.addEventListener("click",function(r){r.preventDefault();let c=this.closest(".digicommerce-setup-content"),t=Array.from(n).indexOf(c);c.classList.add("hidden"),n[t+1]&&n[t+1].classList.remove("hidden")})}),document.querySelectorAll(".digicommerce__search").forEach(e=>{new Choices(e,{searchEnabled:!0,searchPlaceholderValue:e.dataset.placeholder||digicommerceSetup.i18n.select,searchResultLimit:-1})});let a=document.querySelector(".skip");a&&a.addEventListener("click",async e=>{e.preventDefault();try{let c=await(await fetch(digicommerceSetup.ajaxurl,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({action:"digicommerce_skip_setup",nonce:digicommerceSetup.nonce})})).json();if(c.success&&c.data.redirect)window.location.href=c.data.redirect;else throw new Error(digicommerceSetup.i18n.error)}catch(r){alert(r.message||digicommerceSetup.i18n.error)}})});})();
+(() => {
+  // resources/js/admin/wizard.js
+  document.addEventListener("DOMContentLoaded", function() {
+    const wizard = document.querySelector(".digicommerce-setup-wizard");
+    if (wizard) {
+      document.body.style.overflow = "hidden";
+    }
+    const steps = document.querySelectorAll(".digicommerce-setup-content");
+    const continueButtons = document.querySelectorAll(".continue");
+    if (steps.length) {
+      steps.forEach((step, index) => {
+        if (index === 0) {
+          step.classList.remove("hidden");
+        } else {
+          step.classList.add("hidden");
+        }
+      });
+    }
+    const businessForm = document.querySelector(".business-form");
+    if (businessForm) {
+      businessForm.addEventListener("submit", function(e) {
+        e.preventDefault();
+        const currentStep = this.closest(".digicommerce-setup-content");
+        const currentIndex = Array.from(steps).indexOf(currentStep);
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalText = submitButton.textContent;
+        submitButton.textContent = digicommerceSetup.i18n.saving;
+        submitButton.disabled = true;
+        const formData = new FormData(this);
+        formData.append("action", "digicommerce_setup_wizard_save");
+        formData.append("nonce", digicommerceSetup.nonce);
+        formData.append("subscribe_newsletter", document.getElementById("subscribe_newsletter").checked);
+        fetch(digicommerceSetup.ajaxurl, {
+          method: "POST",
+          body: formData,
+          credentials: "same-origin",
+          headers: {
+            "Accept": "application/json"
+          }
+        }).then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.text();
+        }).then((data) => {
+          try {
+            const jsonData = JSON.parse(data);
+            if (jsonData.success) {
+              currentStep.classList.add("hidden");
+              if (steps[currentIndex + 1]) {
+                steps[currentIndex + 1].classList.remove("hidden");
+              }
+            } else {
+              console.error("Server returned error:", jsonData);
+              alert(digicommerceSetup.i18n.error);
+            }
+          } catch (e2) {
+            console.error("JSON parse error:", e2);
+            alert(digicommerceSetup.i18n.error);
+          }
+          submitButton.textContent = originalText;
+          submitButton.disabled = false;
+        }).catch((error) => {
+          console.error("Fetch error:", error);
+          alert(digicommerceSetup.i18n.error);
+          submitButton.textContent = originalText;
+          submitButton.disabled = false;
+        });
+      });
+    }
+    continueButtons.forEach((button) => {
+      button.addEventListener("click", function(e) {
+        e.preventDefault();
+        const currentStep = this.closest(".digicommerce-setup-content");
+        const currentIndex = Array.from(steps).indexOf(currentStep);
+        currentStep.classList.add("hidden");
+        if (steps[currentIndex + 1]) {
+          steps[currentIndex + 1].classList.remove("hidden");
+        }
+      });
+    });
+    const searchSelects = document.querySelectorAll(".digicommerce__search");
+    searchSelects.forEach((select) => {
+      new Choices(select, {
+        searchEnabled: true,
+        searchPlaceholderValue: select.dataset.placeholder || digicommerceSetup.i18n.select,
+        searchResultLimit: -1
+      });
+    });
+    const skipSetupButton = document.querySelector(".skip");
+    if (skipSetupButton) {
+      skipSetupButton.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+          const response = await fetch(digicommerceSetup.ajaxurl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: new URLSearchParams({
+              action: "digicommerce_skip_setup",
+              nonce: digicommerceSetup.nonce
+            })
+          });
+          const data = await response.json();
+          if (data.success && data.data.redirect) {
+            window.location.href = data.data.redirect;
+          } else {
+            throw new Error(digicommerceSetup.i18n.error);
+          }
+        } catch (error) {
+          alert(error.message || digicommerceSetup.i18n.error);
+        }
+      });
+    }
+  });
+})();
