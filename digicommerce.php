@@ -230,6 +230,12 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		private function create_pages() {
 			$pages = $this->get_pages_data();
 
+			// Determine if Gutenberg is active
+			$use_gutenberg = function_exists( 'register_block_type' ) &&
+							! class_exists( 'Classic_Editor' ) &&
+							! isset( $GLOBALS['syntaxhighlighter_settings'] ) &&
+							! function_exists( 'amt_has_disabled_gutenberg' );
+
 			foreach ( $pages as $slug => $page_data ) {
 				$page_exists = get_page_by_path( $slug );
 
@@ -237,10 +243,19 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 					$translated_title = wp_strip_all_tags( $page_data['title'] );
 					$translated_slug  = sanitize_title( $translated_title );
 
+					// Format the content based on whether Gutenberg is active
+					if ( $use_gutenberg ) {
+						// Create content with Gutenberg shortcode block
+						$post_content = '<!-- wp:shortcode -->' . $page_data['content'] . '<!-- /wp:shortcode -->';
+					} else {
+						// Create content with regular shortcode
+						$post_content = $page_data['content'];
+					}
+
 					$page_id = wp_insert_post(
 						array(
 							'post_title'   => $translated_title,
-							'post_content' => wp_kses_post( $page_data['content'] ),
+							'post_content' => wp_kses_post( $post_content ),
 							'post_status'  => 'publish',
 							'post_type'    => 'page',
 							'post_name'    => $translated_slug,
@@ -259,7 +274,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		 *
 		 * @param string $flag_name Flag name.
 		 */
-		private function get_flag( $flag_name ) {
+		public function get_flag( $flag_name ) {
 			global $wpdb;
 			$table_name = $wpdb->prefix . 'digicommerce';
 
@@ -350,7 +365,21 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		 * @param mixed  $default Default value.
 		 */
 		public function get_option( $key, $default = false ) { // phpcs:ignore
-			return isset( $this->options[ $key ] ) ? $this->options[ $key ] : $default;
+			//return isset( $this->options[ $key ] ) ? $this->options[ $key ] : $default;
+			
+			// Check if the key exists in the options array
+			if ( array_key_exists( $key, $this->options ) ) {
+				// Special handling for numeric zero values
+				if ( $this->options[ $key ] === 0 || $this->options[ $key ] === '0' ) {
+					return 0;
+				}
+				// Return the value if it exists and is not null
+				if ( $this->options[ $key ] !== null ) {
+					return $this->options[ $key ];
+				}
+			}
+			// Return default if key doesn't exist or value is null
+			return $default;
 		}
 
 		/**
@@ -436,18 +465,20 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		 * Enqueue scripts and styles
 		 */
 		public function enqueue_scripts() {
-			static $localized = false;
+			$localized = false;
 
 			$should_load_css = (
 				// Load everywhere if pro plugin exists and side cart is enabled.
-				( class_exists( 'DigiCommerce_Pro' ) && DigiCommerce()->get_option( 'enable_side_cart' ) )
+				( class_exists( 'DigiCommerce_Pro' ) && $this->get_option( 'enable_side_cart' ) )
+				// Or if pro plugin exists and affiliation is enabled and we're on an affiliate page
+				|| ( class_exists( 'DigiCommerce_Pro' ) && $this->get_option( 'enable_affiliation' ) && $this->is_affiliate_page() )
 				// Or load only on plugin pages otherwise.
 				|| $this->is_plugin_page()
 			);
 
 			// Check if styling is not disabled via option and filter.
 			$should_load_css = $should_load_css
-			&& ! DigiCommerce()->get_option( 'disable_styling' )
+			&& ! $this->get_option( 'disable_styling' )
 			&& apply_filters( 'digicommerce_style', true );
 
 			if ( $should_load_css ) {
@@ -468,7 +499,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 						$this->is_account_page() ||
 						$this->is_reset_password_page() ||
 						( $this->is_checkout_page() && $this->get_option( 'login_during_checkout' ) ) ||
-						( is_singular( 'digi_product' ) && DigiCommerce()->get_option( 'enable_reviews' ) )
+						( is_singular( 'digi_product' ) && $this->get_option( 'enable_reviews' ) )
 					) &&
 					! is_user_logged_in()
 				) {
@@ -608,7 +639,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 						$localized_vars['cartDiscount']  = isset( $session_data['discount'] ) ? json_encode( $session_data['discount'] ) : null; // phpcs:ignore
 					}
 
-					if ( ! DigiCommerce()->get_option( 'remove_taxes' ) ) {
+					if ( ! $this->get_option( 'remove_taxes' ) ) {
 						wp_enqueue_script(
 							'digicommerce-vat',
 							DIGICOMMERCE_PLUGIN_URL . 'assets/js/front/vat.js',
@@ -617,10 +648,10 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 							true
 						);
 
-						$localized_vars['businessCountry'] = DigiCommerce()->get_option( 'business_country' );
+						$localized_vars['businessCountry'] = $this->get_option( 'business_country' );
 					}
 
-					if ( ! empty( DigiCommerce()->get_option( 'modal_terms', '' ) ) ) {
+					if ( ! empty( $this->get_option( 'modal_terms', '' ) ) ) {
 						wp_enqueue_script(
 							'digicommerce-modal',
 							DIGICOMMERCE_PLUGIN_URL . 'assets/js/front/modal.js',
@@ -630,7 +661,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 						);
 					}
 
-					if ( ! DigiCommerce()->get_option( 'remove_product' ) ) {
+					if ( ! $this->get_option( 'remove_product' ) ) {
 						wp_enqueue_script(
 							'digicommerce-delete-button',
 							DIGICOMMERCE_PLUGIN_URL . 'assets/js/front/delete-button.js',
@@ -648,7 +679,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 						true
 					);
 
-					if ( DigiCommerce()->get_option( 'login_during_checkout' ) ) {
+					if ( $this->get_option( 'login_during_checkout' ) ) {
 						wp_enqueue_script(
 							'digicommerce-login-checkout',
 							DIGICOMMERCE_PLUGIN_URL . 'assets/js/front/login-checkout.js',
@@ -695,10 +726,10 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				$localized_vars['ajaxurl']        = admin_url( 'admin-ajax.php' );
 				$localized_vars['i18n']           = $this->get_js_translations();
 				$localized_vars['proVersion']     = class_exists( 'DigiCommerce_Pro' );
-				$localized_vars['abandonedCart']  = DigiCommerce()->get_option( 'enable_abandoned_cart' );
-				$localized_vars['enableSideCart'] = DigiCommerce()->get_option( 'enable_side_cart' );
-				$localized_vars['autoOpen']       = DigiCommerce()->get_option( 'side_cart_trigger' );
-				$localized_vars['removeTaxes']    = DigiCommerce()->get_option( 'remove_taxes' );
+				$localized_vars['abandonedCart']  = $this->get_option( 'enable_abandoned_cart' );
+				$localized_vars['enableSideCart'] = $this->get_option( 'enable_side_cart' );
+				$localized_vars['autoOpen']       = $this->get_option( 'side_cart_trigger' );
+				$localized_vars['removeTaxes']    = $this->get_option( 'remove_taxes' );
 
 				// Single localization for all scripts.
 				if ( ! $localized && ! empty( $localized_vars ) ) {
@@ -732,14 +763,14 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		public function base_css() {
 			$should_load_css = (
 				// Load everywhere if pro plugin exists and side cart is enabled.
-				( class_exists( 'DigiCommerce_Pro' ) && DigiCommerce()->get_option( 'enable_side_cart' ) )
+				( class_exists( 'DigiCommerce_Pro' ) && $this->get_option( 'enable_side_cart' ) )
 				// Or load only on plugin pages otherwise.
 				|| $this->is_plugin_page()
 			);
 
 			// Check if styling is not disabled via option and filter.
 			$should_load_css = $should_load_css
-			&& ! DigiCommerce()->get_option( 'disable_styling' )
+			&& ! $this->get_option( 'disable_styling' )
 			&& apply_filters( 'digicommerce_style', true );
 
 			if ( $should_load_css ) {
@@ -793,6 +824,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				$this->is_reset_password_page() ||
 				$this->is_checkout_page() ||
 				$this->is_payment_success_page() ||
+				$this->is_affiliate_page() ||
 				is_singular( 'digi_product' ) ||
 				is_singular( 'digi_order' );
 		}
@@ -864,6 +896,19 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		}
 
 		/**
+		 * Check if this is an affiliate page
+		 */
+		public function is_affiliate_page() {
+			global $post;
+			if ( ! $post ) {
+				return false;
+			}
+
+			$page_id = $this->get_option( 'affiliate_account_page_id' );
+			return $page_id && $post->ID === $page_id;
+		}
+
+		/**
 		 * Protects admin access if enabled and run wizard
 		 */
 		public function admin_init() {
@@ -924,7 +969,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 					$this->is_account_page() ||
 					$this->is_reset_password_page() ||
 					( $this->is_checkout_page() && $this->get_option( 'login_during_checkout' ) ) ||
-					( is_singular( 'digi_product' ) && DigiCommerce()->get_option( 'enable_reviews' ) )
+					( is_singular( 'digi_product' ) && $this->get_option( 'enable_reviews' ) )
 				) &&
 				! is_user_logged_in()
 			) {
