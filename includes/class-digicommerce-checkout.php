@@ -376,7 +376,7 @@ class DigiCommerce_Checkout {
 		$table_name = $wpdb->prefix . 'digicommerce_sessions';
 
 		// Delete expired sessions and empty carts
-		$wpdb->query(
+		$wpdb->query( // phpcs:ignore
 			$wpdb->prepare( "DELETE FROM {$table_name} WHERE session_expiry < %d OR ( session_value LIKE %s AND session_key NOT LIKE %s )", // phpcs:ignore
 				time(),
 				'%' . $wpdb->esc_like( serialize( array( 'cart' => array() ) ) ) . '%', // phpcs:ignore

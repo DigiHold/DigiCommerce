@@ -289,7 +289,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			$table_name = $wpdb->prefix . 'digicommerce';
 
 			// Get the flags JSON data
-			$flags_json = $wpdb->get_var(
+			$flags_json = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT option_value FROM {$table_name} WHERE option_name = %s", // phpcs:ignore
 					'digicommerce_setup'
@@ -316,7 +316,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			$table_name = $wpdb->prefix . 'digicommerce';
 
 			// Get current flags
-			$flags_json = $wpdb->get_var(
+			$flags_json = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT option_value FROM {$table_name} WHERE option_name = %s", // phpcs:ignore
 					'digicommerce_setup'
@@ -332,7 +332,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			$updated_json = wp_json_encode( $flags );
 
 			// Check if the record exists
-			$exists = $wpdb->get_var(
+			$exists = $wpdb->get_var( // phpcs:ignore
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$table_name} WHERE option_name = %s", // phpcs:ignore
 					'digicommerce_setup'
@@ -341,7 +341,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 
 			if ( $exists ) {
 				// Update existing record
-				$result = $wpdb->update(
+				$result = $wpdb->update( // phpcs:ignore
 					$table_name,
 					array( 'option_value' => $updated_json ),
 					array( 'option_name' => 'digicommerce_setup' ),
@@ -350,7 +350,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				);
 			} else {
 				// Insert new record
-				$result = $wpdb->insert(
+				$result = $wpdb->insert( // phpcs:ignore
 					$table_name,
 					array(
 						'option_name'  => 'digicommerce_setup',
