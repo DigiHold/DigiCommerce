@@ -105,6 +105,9 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			// Emails.
 			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/class-digicommerce-emails.php';
 
+			// Review notice.
+			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-review-notice.php';
+
 			// Installation.
 			register_activation_hook( __FILE__, array( $this, 'install' ) );
 
@@ -193,9 +196,9 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			dbDelta( $sql );
 
 			// Check if the flag exists in the custom table.
-			if ( ! $this->get_flag( 'digicommerce_pages_created' ) ) {
+			if ( ! $this->get_flag( 'pages_created' ) ) {
 				$this->create_pages(); // Create pages only if not already created.
-				$this->set_flag( 'digicommerce_pages_created', true ); // Set the flag in the custom table.
+				$this->set_flag( 'pages_created', true ); // Set the flag in the custom table.
 			}
 
 			// Call orders table installation
@@ -275,44 +278,91 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		}
 
 		/**
-		 * Adds page state labels
+		 * Gets a flag from the JSON structure
 		 *
 		 * @param string $flag_name Flag name.
+		 * @param mixed  $default_val Default value if flag doesn't exist.
+		 * @return mixed Flag value or default
 		 */
-		public function get_flag( $flag_name ) {
+		public function get_flag( $flag_name, $default_val = false ) {
 			global $wpdb;
 			$table_name = $wpdb->prefix . 'digicommerce';
 
-			// Query the custom table for the flag
-			$result = $wpdb->get_var( // phpcs:ignore
-				$wpdb->prepare( "SELECT option_value FROM $table_name WHERE option_name = %s", $flag_name ) // phpcs:ignore
+			// Get the flags JSON data
+			$flags_json = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT option_value FROM {$table_name} WHERE option_name = %s", // phpcs:ignore
+					'digicommerce_setup'
+				)
 			);
 
-			return $result ? maybe_unserialize( $result ) : false;
+			if ( $flags_json ) {
+				$flags = json_decode( $flags_json, true );
+				return isset( $flags[ $flag_name ] ) ? $flags[ $flag_name ] : $default_val;
+			}
+
+			return $default_val;
 		}
 
 		/**
-		 * Sets a flag
+		 * Sets a flag in the JSON structure
 		 *
 		 * @param string $flag_name Flag name.
 		 * @param mixed  $value Flag value.
+		 * @return bool Whether the operation was successful
 		 */
 		public function set_flag( $flag_name, $value ) {
 			global $wpdb;
 			$table_name = $wpdb->prefix . 'digicommerce';
 
-			// Serialize the value if necessary
-			$serialized_value = maybe_serialize( $value );
-
-			// Insert or update the flag in the custom table
-			$wpdb->replace( // phpcs:ignore
-				$table_name,
-				array(
-					'option_name'  => $flag_name,
-					'option_value' => $serialized_value,
-				),
-				array( '%s', '%s' ) // Data types
+			// Get current flags
+			$flags_json = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT option_value FROM {$table_name} WHERE option_name = %s", // phpcs:ignore
+					'digicommerce_setup'
+				)
 			);
+
+			$flags = $flags_json ? json_decode( $flags_json, true ) : array();
+
+			// Update the specific flag
+			$flags[ $flag_name ] = $value;
+
+			// Encode back to JSON
+			$updated_json = wp_json_encode( $flags );
+
+			// Check if the record exists
+			$exists = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$table_name} WHERE option_name = %s", // phpcs:ignore
+					'digicommerce_setup'
+				)
+			);
+
+			if ( $exists ) {
+				// Update existing record
+				$result = $wpdb->update(
+					$table_name,
+					array( 'option_value' => $updated_json ),
+					array( 'option_name' => 'digicommerce_setup' ),
+					array( '%s' ),
+					array( '%s' )
+				);
+			} else {
+				// Insert new record
+				$result = $wpdb->insert(
+					$table_name,
+					array(
+						'option_name'  => 'digicommerce_setup',
+						'option_value' => $updated_json,
+						'created_at'   => current_time( 'mysql' ),
+						'updated_at'   => current_time( 'mysql' ),
+					),
+					array( '%s', '%s', '%s', '%s' )
+				);
+			}
+
+			return false !== $result;
 		}
 
 		/**
@@ -914,7 +964,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			}
 
 			// Wizard
-			if ( is_admin() && ! $this->get_flag( 'digicommerce_setup_wizard_completed' ) ) {
+			if ( is_admin() && ! $this->get_flag( 'wizard_completed' ) ) {
 				require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-wizard.php';
 			}
 		}
@@ -1313,51 +1363,3 @@ function DigiCommerce() { // phpcs:ignore
 
 // Starting the plugin
 DigiCommerce();
-
-/**
- * Global functions for ease of use
- */
-function digicommerce_login() {
-	$instance = DigiCommerce::instance();
-	return method_exists( $instance, 'is_login_page' ) ? $instance->is_login_page() : false;
-}
-
-/**
- * Check if we are on the account page
- */
-function digicommerce_account() {
-	$instance = DigiCommerce::instance();
-	return method_exists( $instance, 'is_account_page' ) ? $instance->is_account_page() : false;
-}
-
-/**
- * Check if we are on the password reset page
- */
-function digicommerce_reset_pass() {
-	$instance = DigiCommerce::instance();
-	return method_exists( $instance, 'is_reset_password_page' ) ? $instance->is_reset_password_page() : false;
-}
-
-/**
- * Check if we are on the checkout page
- */
-function digicommerce_checkout() {
-	$instance = DigiCommerce::instance();
-	return method_exists( $instance, 'is_checkout_page' ) ? $instance->is_checkout_page() : false;
-}
-
-/**
- * Check if we are on the payment success page
- */
-function digicommerce_payment_success() {
-	$instance = DigiCommerce::instance();
-	return method_exists( $instance, 'is_payment_success_page' ) ? $instance->is_payment_success_page() : false;
-}
-
-/**
- * Check if we are on the single product page
- */
-function digicommerce_single_product() {
-	$instance = DigiCommerce::instance();
-	return method_exists( $instance, 'is_single_product' ) ? $instance->is_single_product() : false;
-}

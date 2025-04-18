@@ -405,7 +405,7 @@ class DigiCommerce_Setup_Wizard {
 			}
 
 			// Set the completion flag when form is saved successfully.
-			DigiCommerce()->set_flag( 'digicommerce_setup_wizard_completed', true );
+			DigiCommerce()->set_flag( 'wizard_completed', true );
 
 			wp_send_json_success();
 
@@ -463,7 +463,7 @@ class DigiCommerce_Setup_Wizard {
 			wp_send_json_error( 'Permission denied' );
 		}
 
-		DigiCommerce()->set_flag( 'digicommerce_setup_wizard_completed', true );
+		DigiCommerce()->set_flag( 'wizard_completed', true );
 
 		wp_send_json_success(
 			array(

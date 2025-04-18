@@ -35,6 +35,10 @@ class DigiCommerce_Pro_Addons {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_addons_menu' ), 100 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+
+		// Custom footer texts
+		add_filter( 'admin_footer_text', array( $this, 'footer_text' ), 99 );
+		add_filter( 'update_footer', array( $this, 'update_footer' ), 99 );
 	}
 
 	/**
@@ -293,6 +297,48 @@ class DigiCommerce_Pro_Addons {
 			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Customize admin footer
+	 *
+	 * @param string $text Footer text.
+	 */
+	public function footer_text( $text ) {
+		$screen = get_current_screen();
+
+		if ( 'digicommerce_page_digicommerce-addons' === $screen->id ) {
+			$text = sprintf(
+				/* translators: %1$s: Plugin review link */
+				esc_html__( 'Please rate %2$sDigiCommerce%3$s %4$s&#9733;&#9733;&#9733;&#9733;&#9733;%5$s on %6$sWordPress.org%7$s to help us spread the word.', 'digicommerce' ),
+				'https://wordpress.org/support/plugin/digicommerce/reviews/#new-post',
+				'<strong>',
+				'</strong>',
+				'<a href="https://wordpress.org/support/plugin/digicommerce/reviews/#new-post" target="_blank" rel="noopener noreferrer">',
+				'</a>',
+				'<a href="https://wordpress.org/support/plugin/digicommerce/reviews/#new-post" target="_blank" rel="noopener noreferrer">',
+				'</a>'
+			);
+		}
+
+		return $text;
+	}
+
+	/**
+	 * Customize admin footer version
+	 *
+	 * @param string $version Footer version.
+	 */
+	public function update_footer( $version ) {
+		$screen = get_current_screen();
+
+		if ( 'digicommerce_page_digicommerce-addons' === $screen->id ) {
+			$name = class_exists( 'DigiCommerce_Pro' ) ? 'DigiCommerce Pro' : 'DigiCommerce';
+
+			$version .= sprintf( ' | %1$s %2$s', $name, DIGICOMMERCE_VERSION );
+		}
+
+		return $version;
 	}
 }
 

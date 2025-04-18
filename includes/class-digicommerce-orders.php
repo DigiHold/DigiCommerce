@@ -1419,7 +1419,7 @@ class DigiCommerce_Orders {
 	 */
 	public function enqueue_frontend_assets( $hook ) {
 		// Only enqueue on account page
-		if ( ! digicommerce_account() ) {
+		if ( ! DigiCommerce()->is_account_page() ) {
 			return;
 		}
 
