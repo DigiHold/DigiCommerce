@@ -93,7 +93,12 @@ defined( 'ABSPATH' ) || exit;
 					$total_pages = ceil( $total_items / $per_page );
 					if ( $total_pages > 1 ) {
 						$current_page = max( 1, $pagenum );
-						$base_url     = add_query_arg( 'paged', '%#%' );
+						$base_url     = add_query_arg(
+							array(
+								'paged'    => '%#%',
+								'_wpnonce' => wp_create_nonce( 'digi_orders_pagination' ),
+							)
+						);
 
 						// Generate the pagination links
 						$pagination_links = paginate_links(
@@ -113,14 +118,26 @@ defined( 'ABSPATH' ) || exit;
 
 							// First page link
 							if ( $current_page > 1 ) {
-								echo '<a class="first-page button" href="' . esc_url( add_query_arg( 'paged', 1 ) ) . '"><span class="screen-reader-text">' . esc_html__( 'First page', 'digicommerce' ) . '</span><span aria-hidden="true">«</span></a>';
+								$first_url = add_query_arg(
+									array(
+										'paged'    => 1,
+										'_wpnonce' => wp_create_nonce( 'digi_orders_pagination' ),
+									)
+								);
+								echo '<a class="first-page button" href="' . esc_url( $first_url ) . '"><span class="screen-reader-text">' . esc_html__( 'First page', 'digicommerce' ) . '</span><span aria-hidden="true">«</span></a>';
 							} else {
 								echo '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">«</span>';
 							}
 
 							// Previous page link
 							if ( $current_page > 1 ) {
-								echo '<a class="prev-page button" href="' . esc_url( add_query_arg( 'paged', $current_page - 1 ) ) . '"><span class="screen-reader-text">' . esc_html__( 'Previous page', 'digicommerce' ) . '</span><span aria-hidden="true">‹</span></a>';
+								$prev_url = add_query_arg(
+									array(
+										'paged'    => $current_page - 1,
+										'_wpnonce' => wp_create_nonce( 'digi_orders_pagination' ),
+									)
+								);
+								echo '<a class="prev-page button" href="' . esc_url( $prev_url ) . '"><span class="screen-reader-text">' . esc_html__( 'Previous page', 'digicommerce' ) . '</span><span aria-hidden="true">‹</span></a>';
 							} else {
 								echo '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">‹</span>';
 							}
@@ -133,14 +150,26 @@ defined( 'ABSPATH' ) || exit;
 
 							// Next page link
 							if ( $current_page < $total_pages ) {
-								echo '<a class="next-page button" href="' . esc_url( add_query_arg( 'paged', $current_page + 1 ) ) . '"><span class="screen-reader-text">' . esc_html__( 'Next page', 'digicommerce' ) . '</span><span aria-hidden="true">›</span></a>';
+								$next_url = add_query_arg(
+									array(
+										'paged'    => $current_page + 1,
+										'_wpnonce' => wp_create_nonce( 'digi_orders_pagination' ),
+									)
+								);
+								echo '<a class="next-page button" href="' . esc_url( $next_url ) . '"><span class="screen-reader-text">' . esc_html__( 'Next page', 'digicommerce' ) . '</span><span aria-hidden="true">›</span></a>';
 							} else {
 								echo '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">›</span>';
 							}
 
 							// Last page link
 							if ( $current_page < $total_pages ) {
-								echo '<a class="last-page button" href="' . esc_url( add_query_arg( 'paged', $total_pages ) ) . '"><span class="screen-reader-text">' . esc_html__( 'Last page', 'digicommerce' ) . '</span><span aria-hidden="true">»</span></a>';
+								$last_url = add_query_arg(
+									array(
+										'paged'    => $total_pages,
+										'_wpnonce' => wp_create_nonce( 'digi_orders_pagination' ),
+									)
+								);
+								echo '<a class="last-page button" href="' . esc_url( $last_url ) . '"><span class="screen-reader-text">' . esc_html__( 'Last page', 'digicommerce' ) . '</span><span aria-hidden="true">»</span></a>';
 							} else {
 								echo '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">»</span>';
 							}

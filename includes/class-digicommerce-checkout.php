@@ -1515,8 +1515,9 @@ class DigiCommerce_Checkout {
 			// Add order ID and token to success URL
 			$redirect_url = add_query_arg(
 				array(
-					'order_id' => $order_id,
-					'token'    => $token,
+					'order_id'      => $order_id,
+					'token'         => $token,
+					'payment_nonce' => wp_create_nonce( 'digicommerce_payment_' . $order_id ),
 				),
 				$success_page_url
 			);

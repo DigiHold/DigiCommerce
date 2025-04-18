@@ -66,6 +66,11 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				// Plugin settings.
 				require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-settings.php';
 
+				// Pro Addons
+				if ( ! class_exists( 'DigiCommerce_Pro' ) ) {
+					require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-pro-addons.php';
+				}
+
 				// Reports.
 				require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-reports.php';
 

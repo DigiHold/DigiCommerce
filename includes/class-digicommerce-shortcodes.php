@@ -151,11 +151,17 @@ class DigiCommerce_Shortcodes {
 		ob_start();
 
 		// Get order ID and token from URL
-		$order_id = isset( $_GET['order_id'] ) ? absint( $_GET['order_id'] ) : 0; // phpcs:ignore
-		$token    = isset( $_GET['token'] ) ? sanitize_text_field( $_GET['token'] ) : ''; // phpcs:ignore
+		$order_id = isset( $_GET['order_id'] ) ? absint( $_GET['order_id'] ) : 0;
+		$token    = isset( $_GET['token'] ) ? sanitize_text_field( wp_unslash( $_GET['token'] ) ) : '';
 
-		// Verify the token is valid for this order
-		$token_valid = DigiCommerce_Orders::instance()->verify_order_token( $order_id, $token );
+		// Verify nonce
+		$nonce_valid = false;
+		if ( isset( $_GET['payment_nonce'] ) && wp_verify_nonce( sanitize_key( $_GET['payment_nonce'] ), 'digicommerce_payment_' . $order_id ) ) {
+			$nonce_valid = true;
+		}
+
+		// Modify token_valid check to include nonce validation
+		$token_valid = $nonce_valid && DigiCommerce_Orders::instance()->verify_order_token( $order_id, $token );
 
 		// Get the order data if order_id and token exist
 		$order_data = ( $order_id && $token && $token_valid ) ? DigiCommerce_Orders::instance()->get_order( $order_id ) : array();

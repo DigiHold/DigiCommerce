@@ -55,10 +55,6 @@
             span {
                 @apply relative;
             }
-
-            .digicommerce-tab-icon {
-                @apply absolute -top-2 left-full rotate-45;
-            }
         }
     }
 
@@ -188,6 +184,10 @@
             @apply justify-center rounded-none text-sm;
         }
     }
+}
+
+body.digicommerce_page_digicommerce-addons {
+    @apply bg-white;
 }
 
 /* Fix RTL margin issues */

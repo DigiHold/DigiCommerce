@@ -30,6 +30,16 @@
 }
 
 .digicommerce-setup {
+    align-items: flex-start;
+}
+
+.digicommerce-setup-content.setup-wizard,
+.digicommerce-setup-content.setup-ready {
+    align-items: center;
+    height: 100%;
+}
+
+.digicommerce-setup {
     padding: 1.5rem;
     width: 100%;
     height: 100%;
@@ -194,11 +204,6 @@
 .digicommerce-setup-wizard .form-fields input:focus,
 .digicommerce-setup-wizard .form-fields select:focus {
     border-color: #ccb161;
-}
-
-.digicommerce-setup-wizard .choices[data-type*='select-one']::after {
-    right: auto;
-    left: 7px;
 }
 
 .digicommerce-setup-wizard .business-form .digicommerce-setup-actions {

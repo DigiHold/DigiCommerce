@@ -9,6 +9,7 @@
         "dev:css-base": "tailwindcss -c ./tailwind.front.config.js -i ./resources/css/base.css -o ./assets/css/base.css --postcss --watch",
         "dev:css-front": "tailwindcss -c ./tailwind.front.config.js -i ./resources/css/front.css -o ./assets/css/front.css --postcss --watch",
         "dev:css-admin": "tailwindcss -c ./tailwind.admin.config.js -i ./resources/css/admin/admin.css -o ./assets/css/admin/admin.css --postcss --watch",
+        "dev:css-pro-addons": "tailwindcss -c ./tailwind.admin.config.js -i ./resources/css/admin/pro-addons.css -o ./assets/css/admin/pro-addons.css --postcss --watch",
         "dev:css-wizard": "tailwindcss -c ./tailwind.admin.config.js -i ./resources/css/admin/wizard.css -o ./assets/css/admin/wizard.css --postcss --watch",
         "dev:css-orders-admin": "tailwindcss -c ./tailwind.admin.config.js -i ./resources/css/admin/orders-admin.css -o ./assets/css/admin/orders-admin.css --postcss --watch",
         "dev:css-dashboard": "tailwindcss -c ./tailwind.admin.config.js -i ./resources/css/admin/dashboard.css -o ./assets/css/admin/dashboard.css --postcss --watch",
@@ -20,6 +21,7 @@
         "build:css-base": "tailwindcss -c ./tailwind.front.config.js -i ./resources/css/base.css -o ./assets/css/base.css --postcss --minify",
         "build:css-front": "tailwindcss -c ./tailwind.front.config.js -i ./resources/css/front.css -o ./assets/css/front.css --postcss --minify",
         "build:css-admin": "tailwindcss -c ./tailwind.admin.config.js -i ./resources/css/admin/admin.css -o ./assets/css/admin/admin.css --postcss --minify",
+        "build:css-pro-addons": "tailwindcss -c ./tailwind.admin.config.js -i ./resources/css/admin/pro-addons.css -o ./assets/css/admin/pro-addons.css --postcss --minify",
         "build:css-wizard": "tailwindcss -c ./tailwind.admin.config.js -i ./resources/css/admin/wizard.css -o ./assets/css/admin/wizard.css --postcss --minify",
         "build:css-orders-admin": "tailwindcss -c ./tailwind.admin.config.js -i ./resources/css/admin/orders-admin.css -o ./assets/css/admin/orders-admin.css --postcss --minify",
         "build:css-dashboard": "tailwindcss -c ./tailwind.admin.config.js -i ./resources/css/admin/dashboard.css -o ./assets/css/admin/dashboard.css --postcss --minify",
@@ -30,9 +32,9 @@
         "build:js-blocks": "esbuild ./resources/js/blocks/*.js --bundle --loader:.js=jsx --external:@wordpress/* --minify --outdir=assets/js/blocks",
         "extract-classes": "node extract-classes.js",
         "watch:classes": "node extract-classes.js --watch",
-        "watch": "npm run clean && npm run clean:ds_store && concurrently \"npm run photoswipe\" \"npm run dev:css-base\" \"npm run dev:css-front\" \"npm run dev:css-admin\" \"npm run dev:css-wizard\" \"npm run dev:css-orders-admin\" \"npm run dev:css-dashboard\" \"npm run dev:css-reports\" \"npm run dev:css-blocks\" \"npm run dev:js-front\" \"npm run dev:js-admin\" \"npm run dev:js-blocks\" \"npm run watch:classes\"",
-        "build": "npm run clean && npm run clean:ds_store && npm run photoswipe && npm run build:css-base && npm run build:css-front && npm run build:css-admin && npm run build:css-wizard && npm run build:css-orders-admin && npm run build:css-dashboard && npm run build:css-reports && npm run build:css-blocks && npm run build:js-front && npm run build:js-admin && npm run build:js-blocks && npm run extract-classes",
-        "pack": "npm run build && find . -name '.DS_Store' -type f -delete && zip -r digicommerce.zip . -x '*node_modules*' -x '*/node_modules/*' -x '*/.*' -x '*.DS_Store' -x '*__MACOSX*' -x 'package.json' -x 'package-lock.json' -x 'tailwind*.config.js' -x 'postcss.config.js' -x 'resources/*' -x 'extract-classes.js' -x 'composer.lock' -x 'CONTRIBUTING.md' -x 'README.md' -x '.gitattributes' -x '.gitignore' -x '.prettierignore' -x 'prettier.config.mjs' -x 'phpcs.xml' -x '.git/*' -x '.git/**/*'",
+        "watch": "npm run clean && npm run clean:ds_store && concurrently \"npm run photoswipe\" \"npm run dev:css-base\" \"npm run dev:css-front\" \"npm run dev:css-admin\" \"npm run dev:css-pro-addons\" \"npm run dev:css-wizard\" \"npm run dev:css-orders-admin\" \"npm run dev:css-dashboard\" \"npm run dev:css-reports\" \"npm run dev:css-blocks\" \"npm run dev:js-front\" \"npm run dev:js-admin\" \"npm run dev:js-blocks\" \"npm run watch:classes\"",
+        "build": "npm run clean && npm run clean:ds_store && npm run photoswipe && npm run build:css-base && npm run build:css-front && npm run build:css-admin && npm run build:css-pro-addons && npm run build:css-wizard && npm run build:css-orders-admin && npm run build:css-dashboard && npm run build:css-reports && npm run build:css-blocks && npm run build:js-front && npm run build:js-admin && npm run build:js-blocks && npm run extract-classes",
+        "pack": "npm run build && find . -name '.DS_Store' -type f -delete && zip -r digicommerce.zip . -x '*node_modules*' -x '*/node_modules/*' -x '*/.*' -x '*.DS_Store' -x '*__MACOSX*' -x 'package.json' -x 'package-lock.json' -x 'tailwind*.config.js' -x 'postcss.config.js' -x 'extract-classes.js' -x 'composer.lock' -x 'CONTRIBUTING.md' -x 'README.md' -x '.gitattributes' -x '.gitignore' -x '.prettierignore' -x 'prettier.config.mjs' -x 'phpcs.xml' -x '.git/*' -x '.git/**/*'",
         "format": "prettier --write \"**/*.{js,jsx,ts,tsx,css,md,json}\""
     },
     "devDependencies": {

@@ -55,7 +55,7 @@ class DigiCommerce_Login_Handler {
 		}
 
 		// Don't redirect if this is a logout request
-		if ( 'wp-login.php' === $pagenow && isset( $_GET['action'] ) && 'logout' === $_GET['action'] ) { // phpcs:ignore
+		if ( 'wp-login.php' === $pagenow && isset( $_GET['action'] ) && 'logout' === $_GET['action'] ) {
 			return;
 		}
 
@@ -65,8 +65,14 @@ class DigiCommerce_Login_Handler {
 
 		// If trying to access a restricted page
 		if ( in_array( $pagenow, $restricted_pages ) ) {
+			// Validate nonce when processing sensitive actions or redirects
+			$valid_nonce = isset( $_GET['digicommerce_redirect_nonce'] ) && wp_verify_nonce( sanitize_key( $_GET['digicommerce_redirect_nonce'] ), 'digicommerce_login_redirect' );
+
+			// Only allow action parameter if valid nonce or if it's a standard WordPress action
+			$process_action = $valid_nonce || ( isset( $_GET['action'] ) && in_array( $_GET['action'], array( 'logout' ) ) );
+
 			// Preserve action (reset password, register, etc.) as parameter
-			if ( isset( $_GET['action'] ) ) { // phpcs:ignore
+			if ( $process_action && isset( $_GET['action'] ) ) { // phpcs:ignore
 				// Sanitize the action parameter
 				$action = sanitize_key( $_GET['action'] ); // phpcs:ignore
 
@@ -77,8 +83,8 @@ class DigiCommerce_Login_Handler {
 				}
 			}
 
-			// Preserve redirect parameter if it exists
-			if ( isset( $_GET['redirect_to'] ) ) { // phpcs:ignore
+			// Only process redirect parameter if nonce is valid
+			if ( $valid_nonce && isset( $_GET['redirect_to'] ) ) { // phpcs:ignore
 				// Sanitize the redirect URL - ensure it's a local URL to prevent open redirect vulnerabilities
 				$redirect_to = esc_url_raw( wp_unslash( $_GET['redirect_to'] ) ); // phpcs:ignore
 
@@ -88,12 +94,18 @@ class DigiCommerce_Login_Handler {
 				}
 			}
 
+			// Add nonce to final redirect URL
+			$redirect_url = add_query_arg( 'digicommerce_redirect_nonce', wp_create_nonce( 'digicommerce_login_redirect' ), $redirect_url );
+
 			wp_safe_redirect( $redirect_url );
 			exit();
 		}
 
 		// Handle wp-admin redirect for non-logged users
 		if ( is_admin() && ! is_user_logged_in() && ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) ) {
+			// Add nonce to redirect URL
+			$redirect_url = add_query_arg( 'digicommerce_redirect_nonce', wp_create_nonce( 'digicommerce_login_redirect' ), $redirect_url );
+
 			wp_safe_redirect( $redirect_url );
 			exit();
 		}
@@ -110,7 +122,12 @@ class DigiCommerce_Login_Handler {
 		$account_page_id = DigiCommerce()->get_option( 'account_page_id' );
 		$account_url     = $account_page_id ? get_permalink( $account_page_id ) : home_url();
 
-		return add_query_arg( 'action', 'lostpassword', $account_url );
+		$account_url = add_query_arg( 'action', 'lostpassword', $account_url );
+
+		// Add nonce for security
+		$account_url = add_query_arg( 'digicommerce_redirect_nonce', wp_create_nonce( 'digicommerce_login_redirect' ), $account_url );
+
+		return $account_url;
 	}
 
 	/**
@@ -123,7 +140,12 @@ class DigiCommerce_Login_Handler {
 		$account_page_id = DigiCommerce()->get_option( 'account_page_id' );
 		$account_url     = $account_page_id ? get_permalink( $account_page_id ) : home_url();
 
-		return add_query_arg( 'action', 'register', $account_url );
+		$account_url = add_query_arg( 'action', 'register', $account_url );
+
+		// Add nonce for security
+		$account_url = add_query_arg( 'digicommerce_redirect_nonce', wp_create_nonce( 'digicommerce_login_redirect' ), $account_url );
+
+		return $account_url;
 	}
 
 	/**
@@ -145,6 +167,9 @@ class DigiCommerce_Login_Handler {
 		if ( $force_reauth ) {
 			$account_url = add_query_arg( 'reauth', '1', $account_url );
 		}
+
+		// Add nonce for security
+		$account_url = add_query_arg( 'digicommerce_redirect_nonce', wp_create_nonce( 'digicommerce_login_redirect' ), $account_url );
 
 		return $account_url;
 	}

@@ -30,7 +30,20 @@ defined( 'ABSPATH' ) || exit;
 
 		<!-- Login Form -->
 		<form id="digicommerce-login-form" class="digi__form w-full">
-			<input type="hidden" name="redirect_to" value="<?php echo esc_url( isset( $_GET['redirect_to'] ) ? $_GET['redirect_to'] : '' ); ?>">
+			<?php
+			// Safely get and sanitize the redirect_to parameter
+			$redirect_to = '';
+			if ( isset( $_GET['redirect_to'] ) ) { // phpcs:ignore
+				$redirect_to = esc_url_raw( wp_unslash( $_GET['redirect_to'] ) ); // phpcs:ignore
+				
+				// Additional security: ensure it's a local URL
+				if ( ! wp_validate_redirect( $redirect_to ) ) {
+					$redirect_to = '';
+				}
+			}
+			?>
+			<input type="hidden" name="redirect_to" value="<?php echo esc_url( $redirect_to ); ?>">
+
 			<?php
 			if ( $register_text ) :
 				$class = 'm-0 no-margin';

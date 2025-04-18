@@ -1342,7 +1342,19 @@ class DigiCommerce_Orders {
 			return 1;
 		}
 
-		$pagenum = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 0; // phpcs:ignore
+		$pagenum = 1;
+
+		// Check if paged parameter exists and verify nonce when necessary
+		if ( isset( $_REQUEST['paged'] ) ) {
+			// Only verify nonce if this is a form submission or explicit navigation
+			if ( isset( $_REQUEST['_wpnonce'] ) && wp_verify_nonce( sanitize_key( $_REQUEST['_wpnonce'] ), 'digi_orders_pagination' ) ) {
+				$pagenum = absint( $_REQUEST['paged'] );
+			} elseif ( ! isset( $_REQUEST['_wpnonce'] ) && is_admin() ) {
+				// Allow pagination from WP admin navigation links which don't include nonces
+				$pagenum = absint( $_REQUEST['paged'] );
+			}
+		}
+
 		return max( 1, $pagenum );
 	}
 
