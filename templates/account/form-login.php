@@ -30,6 +30,7 @@ defined( 'ABSPATH' ) || exit;
 
 		<!-- Login Form -->
 		<form id="digicommerce-login-form" class="digi__form w-full">
+			<input type="hidden" name="redirect_to" value="<?php echo esc_url( isset( $_GET['redirect_to'] ) ? $_GET['redirect_to'] : '' ); ?>">
 			<?php
 			if ( $register_text ) :
 				$class = 'm-0 no-margin';

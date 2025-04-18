@@ -114,12 +114,22 @@ class DigiCommerce_Account {
 			// Reset failed login attempts on successful login
 			$this->security->reset_rate_limit( 'login', $ip_address );
 
-			// Determine redirect URL
-			$redirect_url = home_url();
-			if ( current_user_can( 'administrator' ) ) { // phpcs:ignore
-				$redirect_url = admin_url();
-			} else {
-				$redirect_url = get_permalink( DigiCommerce()->get_option( 'account_page_id' ) );
+			// Check for redirect_to URL first
+			$redirect_url = '';
+			if ( ! empty( $_POST['redirect_to'] ) ) {
+				$redirect_to = esc_url_raw( wp_unslash( $_POST['redirect_to'] ) );
+				if ( wp_validate_redirect( $redirect_to ) ) {
+					$redirect_url = $redirect_to;
+				}
+			}
+
+			// If no redirect_to or invalid URL, use default redirects
+			if ( empty( $redirect_url ) ) {
+				if ( current_user_can( 'manage_options' ) ) { // phpcs:ignore
+					$redirect_url = admin_url();
+				} else {
+					$redirect_url = get_permalink( DigiCommerce()->get_option( 'account_page_id' ) );
+				}
 			}
 
 			wp_send_json_success(
@@ -587,7 +597,11 @@ class DigiCommerce_Account {
 		}
 
 		// Redirect non-admins from wp-admin
-		if ( strpos( $current_url, '/wp-admin' ) !== false && ! current_user_can( 'administrator' ) ) { // phpcs:ignore
+		if ( strpos( $current_url, '/wp-admin' ) !== false &&
+			! ( current_user_can( 'manage_options' ) ||
+				current_user_can( 'edit_posts' ) ||
+				current_user_can( 'edit_pages' ) )
+			) {
 			wp_safe_redirect( home_url() );
 			exit;
 		}

@@ -4,12 +4,16 @@ Welcome to the DigiCommerce GitHub repository. Here you can browse the source co
 
 ## About DigiCommerce
 
-DigiCommerce transforms your WordPress site into a high-performance ecommerce platform, designed to convert visitors into customers. With an optimized checkout page, perfect user flows, and revenue-focused features, DigiCommerce gives you the competitive edge to scale your digital business.
+DigiCommerce transforms your WordPress site into a high-performance ecommerce platform, designed to convert visitors into customers. With an optimized checkout page, perfect user flows, and revenue-focused features, DigiCommerce gives you the competitive edge to scale your digital business. The free version is perfect for selling digital downloads, while the Pro version unlocks services and online courses.
 
-**Perfect for:**
+**Free Version (Digital Products Only):**
 
-- **Digital Products**: Ebooks, software licenses, digital art, music, videos, templates, and more
-- **Service Businesses**: Bookings, appointments, reservations, consulting sessions, classes, and more
+Ebooks, software, digital art, music, videos, templates, and more
+
+**Pro Version Exclusive Features:**
+
+**Service Businesses:** Bookings, appointments, reservations, consulting sessions, classes, and more
+**E-Learning:** Online courses, lessons, student management, and more
 
 ## Getting Started
 
@@ -28,15 +32,17 @@ For full documentation on how to use DigiCommerce, please visit our [official do
 
 Upgrade to [DigiCommerce Pro](https://digicommerce.me/pricing) to unlock powerful features:
 
-- **Subscriptions**: Generate steady revenue with automated billing solutions
-- **Booking**: Offer an intuitive scheduling system for service businesses
-- **License Keys**: Generate and manage license keys for software products
-- **Abandoned Cart Recovery**: Recover lost sales with automated reminders
-- **Side Cart**: Enhance shopping experience with an AJAX cart
-- **Coupons**: Create promotional offers to boost sales
-- **Reviews**: Build social proof with customer reviews
-- **Amazon S3 Integration**: Optimize file delivery with secure cloud storage
-- **Mailing List Integration**: Connect with popular email marketing services
+- **Subscriptions:** Generate steady revenue with automated billing solutions
+- **Booking:** Offer an intuitive scheduling system for service businesses
+- **Programs:** Transform your site into a complete e-learning solution with courses and student management
+- **License Keys:** Generate and manage license keys for software products
+- **Affiliation:** Expand your reach and increase sales with a powerful affiliate marketing system
+- **Abandoned Cart Recovery:** Recover lost sales with automated reminders
+- **Side Cart:** Enhance shopping experience with an AJAX cart
+- **Coupons:** Create promotional offers to boost sales
+- **Reviews:** Build social proof with customer reviews
+- **Amazon S3 Integration:** Optimize file delivery with secure cloud storage
+- **Mailing List Integration:** Connect with popular email marketing services
 
 ## Support
 

@@ -1,6 +1,6 @@
 === DigiCommerce ===
 Contributors: digicommercewp
-Tags: ecommerce, shop, bookings, appointments, sell online
+Tags: ecommerce, shop, digital products, appointments, sell online
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.4
@@ -8,11 +8,11 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-DigiCommerce is your lightning-fast, conversion-optimized solution for selling digital products and services - built to maximize your business growth.
+DigiCommerce is your lightning-fast, conversion-optimized solution for selling digital products - built to maximize your business growth. Upgrade to Pro for services and courses.
 
 == Description ==
 
-DigiCommerce transforms your WordPress site into a high-performance ecommerce platform, designed to convert visitors into customers. With an optimized checkout page, perfect user flows, and revenue-focused features, DigiCommerce gives you the competitive edge to scale your digital business. Whether you're selling digital downloads or services, our platform is engineered for speed, reliability, and maximum conversions.
+DigiCommerce transforms your WordPress site into a high-performance ecommerce platform, designed to convert visitors into customers. With an optimized checkout page, perfect user flows, and revenue-focused features, DigiCommerce gives you the competitive edge to scale your digital business. The free version is perfect for selling digital downloads, while the Pro version unlocks several features like services and online courses. Our platform is engineered for speed, reliability, and maximum conversions.
 
 https://digicommerce.me
 
@@ -25,9 +25,9 @@ https://digicommerce.me
 [eBook](https://ebook.digidemo.me/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)
 [Images](https://images.digidemo.me/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)
 
-**Perfect for Digital Products**
+**Perfect for Digital Products (Free Version)**
 * Ebooks and digital publications
-* Software licenses and applications
+* Software and applications
 * Digital art and graphics
 * Music and audio files
 * Video content
@@ -35,7 +35,7 @@ https://digicommerce.me
 * Downloadable templates
 * Stock photos and media
 
-**Ideal for Service Businesses**
+**Upgrade to Pro for Services**
 * Hotel and room bookings
 * Restaurant table reservations
 * Consulting appointments
@@ -46,7 +46,14 @@ https://digicommerce.me
 * Beauty salon appointments
 * Private coaching sessions
 
-**Powerful Features Out of the Box**
+**Upgrade to Pro for E-Learning**
+* Online courses and programs
+* Video lessons and tutorials
+* Downloadable course materials
+* Student progress tracking
+* Membership-based learning platforms
+
+**Powerful Features Out of the Box (Free Version)**
 * Stripe and PayPal payment gateways
 * Automated and secure download button
 * Professional checkout process
@@ -66,6 +73,9 @@ Generate steady revenue and foster long-term customer relationships with seamles
 
 **[Booking](https://digicommerce.me/booking/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)**
 Enhance user convenience with an intuitive scheduling add-on, making it easy for customers to book services effortlessly.
+
+**[Programs](https://digicommerce.me/programs/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)**
+Transform your website into a complete e-learning solution with courses, lessons, and student management tools.
 
 **[License](https://digicommerce.me/license/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)**
 Effortlessly generate and securely manage license keys for your digital products, ensuring seamless access for your customers.
@@ -142,9 +152,9 @@ You can sell any type of digital product, including:
 - Templates and themes
 - Digital subscriptions
 
-= What types of services can I offer? =
+= What types of services can I offer with the Pro version? =
 
-DigiCommerce supports a wide range of service-based businesses, including:
+DigiCommerce Pro supports a wide range of service-based businesses, including:
 - Hotel and accommodation bookings
 - Restaurant reservations
 - Spa and wellness appointments
@@ -153,6 +163,18 @@ DigiCommerce supports a wide range of service-based businesses, including:
 - Professional services
 - Membership subscriptions
 - Any time-based service
+
+Note: Service booking features require the Pro version with the Booking addon.
+
+= Can I create and sell online courses? =
+
+Yes! With the Pro version and the Programs addon, you can:
+- Create structured courses with sections and lessons
+- Upload videos, PDFs, and other learning materials
+- Track student progress
+- Manage your students and their access
+
+Note: E-learning features are only available in the Pro version with the Programs addon and are not included in the free version.
 
 = Which payment gateways are supported? =
 

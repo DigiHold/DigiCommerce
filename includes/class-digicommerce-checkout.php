@@ -644,7 +644,7 @@ class DigiCommerce_Checkout {
 
 			// Determine redirect URL
 			$redirect_url = home_url();
-			if ( current_user_can( 'administrator' ) ) { // phpcs:ignore
+			if ( current_user_can( 'manage_options' ) ) { // phpcs:ignore
 				$redirect_url = admin_url();
 			} else {
 				$redirect_url = get_permalink( DigiCommerce()->get_option( 'checkout_page_id' ) );

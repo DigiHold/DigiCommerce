@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       DigiCommerce
  * Plugin URI:        https://digicommerce.me/
- * Description:       Powerful ecommerce plugin to sell services and digital products.
+ * Description:       Powerful ecommerce plugin to sell digital products, services and online courses.
  * Version:           1.0.0
  * Author:            DigiCommerce
  * Author URI:        https://digicommerce.me?utm_source=wordpress.org&utm_medium=referral&utm_campaign=plugin_directory&utm_content=digicommerce
@@ -365,21 +365,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		 * @param mixed  $default Default value.
 		 */
 		public function get_option( $key, $default = false ) { // phpcs:ignore
-			//return isset( $this->options[ $key ] ) ? $this->options[ $key ] : $default;
-			
-			// Check if the key exists in the options array
-			if ( array_key_exists( $key, $this->options ) ) {
-				// Special handling for numeric zero values
-				if ( $this->options[ $key ] === 0 || $this->options[ $key ] === '0' ) {
-					return 0;
-				}
-				// Return the value if it exists and is not null
-				if ( $this->options[ $key ] !== null ) {
-					return $this->options[ $key ];
-				}
-			}
-			// Return default if key doesn't exist or value is null
-			return $default;
+			return isset( $this->options[ $key ] ) ? $this->options[ $key ] : $default;
 		}
 
 		/**
@@ -912,7 +898,12 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		 * Protects admin access if enabled and run wizard
 		 */
 		public function admin_init() {
-			if ( $this->get_option( 'block_admin' ) && ! current_user_can( 'administrator' ) && ! wp_doing_ajax() ) { // phpcs:ignore
+			if ( $this->get_option( 'block_admin' ) &&
+				! wp_doing_ajax() &&
+				! ( current_user_can( 'manage_options' ) ||
+					current_user_can( 'edit_posts' ) ||
+					current_user_can( 'edit_pages' ) )
+			) {
 				wp_safe_redirect( home_url() );
 				exit;
 			}
@@ -929,7 +920,11 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		 * @param bool $show Show admin bar.
 		 */
 		public function handle_admin_bar( $show ) {
-			if ( $this->get_option( 'block_admin' ) && ! current_user_can( 'administrator' ) ) { // phpcs:ignore
+			if ( $this->get_option( 'block_admin' ) &&
+				! ( current_user_can( 'manage_options' ) ||
+					current_user_can( 'edit_posts' ) ||
+					current_user_can( 'edit_pages' ) )
+			) {
 				return false;
 			}
 			return $show;
