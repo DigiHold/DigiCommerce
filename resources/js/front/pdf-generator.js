@@ -1,3 +1,7 @@
+/**
+ * Receipt PDF Generation
+ * This script captures the receipt DOM element and converts it to a PDF
+ */
 document.addEventListener('DOMContentLoaded', function () {
     const downloadButton = document.querySelector('.download-pdf');
 
@@ -6,268 +10,504 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    // Convert image URL to Base64
-    const convertImageToBase64 = (url) => {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.crossOrigin = 'Anonymous'; // Ensure cross-origin requests are allowed
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                resolve(canvas.toDataURL('image/png')); // Convert to Base64 PNG
-            };
-            img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
-            img.src = url;
-        });
-    };
-
-    const extractDataFromDOM = async () => {
-        const receiptContainer = document.getElementById('digicommerce-receipt');
-        if (!receiptContainer) {
-            throw new Error(digicommercePDF.i18n.errorMessage);
-        }
-
-        // Extract order information
-        const pdfNumber = receiptContainer.querySelector('.pdf-id')?.textContent.split(':')[1]?.trim() || digicommercePDF.i18n.unknown;
-        const pdfDate = receiptContainer.querySelector('.pdf-date')?.textContent.split('Date:')[1]?.trim() || digicommercePDF.i18n.unknown;
-		const pdfNextDate = receiptContainer.querySelector('.pdf-next-date')?.textContent.split('Next Payment:')[1]?.trim() || '';
-
-        // Extract business details
-        const businessInfo = receiptContainer.querySelector('.business-info');
-        const businessName = businessInfo.querySelector('.business-name')?.textContent.trim() || '';
-        const businessAddresses = Array.from(businessInfo.querySelectorAll('.business-address span'))
-            .map(span => span.textContent.trim())
-            .filter(Boolean);
-
-        // Extract billing details
-        const billingInfo = receiptContainer.querySelector('.billing-info');
-        const billingCompany = billingInfo.querySelector('.billing-company')?.textContent.trim() || '';
-        const billingAddresses = Array.from(billingInfo.querySelectorAll('.billing-address span'))
-            .map(span => span.textContent.trim())
-            .filter(Boolean);
-
-        // Extract logo URL and convert to Base64
-        const logoElement = document.getElementById('digicommerce-receipt-logo');
-        const logoUrl = logoElement ? logoElement.src : null;
-        const logoBase64 = logoUrl ? await convertImageToBase64(logoUrl) : null;
-
-        // Extract order items
-        const items = Array.from(receiptContainer.querySelectorAll('.digicommerce-table:not(.no-invoice) tbody tr')).map(row => {
-            const productElement = row.querySelector('td:first-child');
-            let productText = '';
-        
-            if (productElement) {
-                // Create a clone of the product element to avoid modifying the DOM
-                const clonedElement = productElement.cloneNode(true);
-        
-                // Remove all .no-invoice elements from the cloned element
-                const noInvoice = clonedElement.querySelectorAll('.no-invoice');
-                noInvoice.forEach(el => el.remove());
-        
-                // Get the cleaned-up text content
-                productText = clonedElement.textContent.trim();
-            }
-        
-            const total = row.querySelector('td:last-child')?.textContent.trim() || digicommercePDF.i18n.unknown;
-        
-            return {
-                product: productText || digicommercePDF.i18n.unknown,
-                total: total
-            };
-        });
-
-        // Extract totals from footer
-        const totals = Array.from(receiptContainer.querySelectorAll('.digicommerce-table tfoot tr')).map(row => ({
-            label: row.querySelector('th')?.textContent.trim() || '',
-            value: row.querySelector('td')?.textContent.trim() || ''
-        }));
-
-        return {
-            pdfNumber,
-            pdfDate,
-            pdfNextDate,
-            businessName,
-            businessAddresses,
-            billingCompany,
-            billingAddresses,
-            logoBase64,
-            items,
-            totals
-        };
-    };
-
+    /**
+     * Generate PDF from the receipt DOM element
+     */
     const generatePDF = async () => {
         try {
-            const {
-                pdfNumber,
-                pdfDate,
-                pdfNextDate,
-                businessName,
-                businessAddresses,
-                billingCompany,
-                billingAddresses,
-                logoBase64,
-                items,
-                totals
-            } = await extractDataFromDOM();
-
-            const sanitizedpdfNumber = pdfNumber.replace('#', '');
-
-            function parseHTMLToPlainText(html) {
-                // Create a temporary DOM element to parse HTML
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-            
-                // Convert supported tags (like <strong>) into equivalent styles for PDF
-                tempDiv.querySelectorAll('strong').forEach(el => {
-                    const boldText = document.createTextNode(el.textContent);
-                    el.replaceWith(boldText);
-                });
-            
-                // Strip unsupported tags and return plain text
-                return tempDiv.textContent.trim();
+            // Get the receipt container element
+            const receiptContainer = document.getElementById('digicommerce-receipt');
+            if (!receiptContainer) {
+                throw new Error(digicommercePDF.i18n.errorMessage);
             }
 
-            const docDefinition = {
-                content: [
-                    {
-                        columns: [
-                            logoBase64
-                                ? { image: logoBase64, width: 80 } // Include the logo
-                                : { text: '' },
-                            {
-                                stack: [
-                                    { text: `${digicommercePDF.i18n.invoiceId}: ${sanitizedpdfNumber}`, style: 'invoiceId' },
-                                    { text: `${digicommercePDF.i18n.date}: ${pdfDate}`, style: 'invoiceDate' },
-									pdfNextDate ? { text: `${digicommercePDF.i18n.nextDate}: ${pdfNextDate}`, style: 'invoiceDate' } : null,
-                                ],
-                                alignment: 'right'
-                            }
-                        ],
-                        margin: [0, 0, 0, 20]
-                    },
-                    {
-                        columns: [
-                            {
-                                stack: [
-                                    { text: digicommercePDF.i18n.from, style: 'subheader' },
-                                    { text: businessName, style: 'businessName' },
-                                    ...businessAddresses.map(line => ({ text: line }))
-                                ]
-                            },
-                            {
-                                stack: [
-                                    { text: digicommercePDF.i18n.billTo, style: 'subheader' },
-                                    billingCompany ? { text: billingCompany, style: 'billingName' } : null,
-                                    ...billingAddresses.map(line => ({ text: line }))
-                                ].filter(Boolean),
-                                alignment: 'right'
-                            }
-                        ],
-                        columnGap: 20,
-                        margin: [0, 0, 0, 20]
-                    },
-                    {
-                        text: digicommercePDF.i18n.orderDetails,
-                        style: 'sectionHeader',
-                        margin: [0, 10, 0, 10]
-                    },
-                    {
-                        table: {
-                            headerRows: 1,
-                            widths: ['*', 'auto'],
-                            body: [
-                                [
-                                    { text: digicommercePDF.i18n.product, style: 'tableHeader' },
-                                    { text: digicommercePDF.i18n.total, style: 'tableHeader', alignment: 'right' }
-                                ],
-                                ...items.map(item => [
-                                    { text: item.product, style: 'tableData' },
-                                    { text: item.total, style: 'tableData', alignment: 'right' }
-                                ]),
-                                ...totals.map(total => [
-                                    {
-                                        text: total.label,
-                                        style: total.label.includes('Subtotal') || total.label.includes('VAT')
-                                            ? 'tableFooterSmall'
-                                            : 'tableFooterBold'
-                                    },
-                                    {
-                                        text: total.value,
-                                        alignment: 'right',
-                                        style: total.label.includes('Subtotal') || total.label.includes('VAT')
-                                            ? 'tableFooterSmall'
-                                            : total.label.includes('Total')
-                                            ? 'tableFooterGreen'
-                                            : 'tableFooterBold'
-                                    }
-                                ])
-                            ]
-                        },
-                        layout: 'lightHorizontalLines'
-                    }
-                ],
-                footer: {
-                    columns: [
-                        {
-                            stack: [
-                                {
-                                    text: businessName + '\n',
-                                    style: 'footerBusiness'
-                                },
-                                {
-                                    text: parseHTMLToPlainText(digicommercePDF.i18n.allRightsReserved),
-                                    style: 'footerText'
-                                }
-                            ],
-                            alignment: 'center',
-                            width: '*'
-                        }
-                    ],
-                    margin: [40, 20]
-                },
-                styles: {
-                    // Header Styles
-                    invoiceId: { fontSize: 18, bold: true, color: '#09053A', margin: [0, 0, 0, 5] }, // Invoice ID in bold with main color
-                    invoiceDate: { fontSize: 12, color: '#656071' }, // Smaller font size for date
-                
-                    // Section Headers
-                    subheader: { fontSize: 16, bold: true, color: '#09053A', margin: [0, 5, 0, 5] }, // Header for sections like "From" and "Bill To"
-                    sectionHeader: { fontSize: 15, bold: true, color: '#09053A' }, // Header for "Order Details"
-                
-                    // Table Styles
-                    tableHeader: { fontSize: 16, bold: true, color: '#09053A' }, // Table column headers
-                    tableData: { fontSize: 11 }, // Standard table row data
-                    tableFooter: { fontSize: 11, bold: false }, // General footer data
-                    tableFooterSmall: { fontSize: 11,bold: true, color: '#09053A' }, // Subtotal and VAT rows, smaller and lighter
-                    tableFooterBold: { fontSize: 16, bold: true }, // Bold styling for labels
-                    tableFooterGreen: { fontSize: 16, bold: true, color: '#16a34a' }, // Highlight Total Price with green color
-                
-                    // Business and Billing Styles
-                    businessName: { fontSize: 16, bold: true, color: '#09053A' }, // Business name bold and prominent
-                    billingName: { fontSize: 16, bold: true, color: '#09053A' }, // Billing company bold and prominent
+            // Extract the invoice number for the filename
+            const pdfNumberElement = receiptContainer.querySelector('.pdf-id');
+            let pdfNumber = 'invoice';
+            
+            if (pdfNumberElement) {
+                const fullText = pdfNumberElement.textContent.trim();
+                // Extract just the invoice number
+                const matches = fullText.match(/:\s*(.*?)$/i);
+                if (matches && matches[1]) {
+                    pdfNumber = matches[1].trim().replace('#', '');
+                }
+            }
 
-                    // Footer
-                    footerBusiness: { fontSize: 10, bold: true, color: '#09053A' },
-                    footerText: { fontSize: 8, color: '#656071' }
-                },
-                pageMargins: [40, 40, 40, 80],
-                defaultStyle: {
-                    fontSize: 11,
-                    lineHeight: 1.4
+            // Create a new window for rendering
+            const renderWindow = window.open('', '_blank', 'width=800,height=600');
+            if (!renderWindow) {
+                alert('Please allow popups to generate the PDF.');
+                return;
+            }
+
+            // Create a basic HTML structure in the new window
+            renderWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Generating Invoice PDF...</title>
+                    <style>
+                        body, html {
+                            margin: 0;
+                            padding: 0;
+                            width: 100%;
+                            height: 100%;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            background-color: white;
+                            font-family: Arial, Helvetica, sans-serif !important;
+                            letter-spacing: normal !important;
+                            word-spacing: normal !important;
+                        }
+                        
+                        .render-container {
+                            position: relative;
+                            max-width: 800px;
+                            margin: 20px auto;
+                            background-color: white;
+                            box-shadow: none;
+                            padding: 0;
+                        }
+                        
+                        /* Progress indicator */
+                        .progress-message {
+                            position: fixed;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            background-color: rgba(0, 0, 0, 0.8);
+                            color: white;
+                            padding: 20px;
+                            border-radius: 8px;
+                            text-align: center;
+                            z-index: 9999;
+                            font-family: Arial, Helvetica, sans-serif !important;
+                            letter-spacing: normal !important;
+                            word-spacing: normal !important;
+                            font-kerning: normal !important;
+                            text-rendering: optimizeLegibility !important;
+                        }
+                        
+                        /* Footer styles */
+                        .pdf-footer {
+                            margin-top: 30px;
+                            padding-top: 15px;
+                            padding-bottom: 30px;
+                            border-top: 1px solid #e5e7eb;
+                            font-size: 12px;
+                            color: #6b7280;
+                            text-align: center;
+                            line-height: 1.6;
+                            letter-spacing: normal !important;
+                            word-spacing: normal !important;
+                        }
+                        
+                        /* Table alignment fixes */
+                        .digicommerce-table th:first-child,
+                        .digicommerce-table td:first-child {
+                            text-align: left !important;
+                        }
+                        
+                        .digicommerce-table th:last-child,
+                        .digicommerce-table td:last-child {
+                            text-align: right !important;
+                        }
+                        
+                        /* Fix footer spacing in table */
+                        .digicommerce-table tfoot th {
+                            text-align: right !important;
+                            padding-right: 10px !important;
+                        }
+                        
+                        /* FIX: Prevent letter-spacing issues for ALL elements */
+                        *, *::before, *::after {
+                            letter-spacing: normal !important;
+                            word-spacing: normal !important;
+                            text-rendering: optimizeLegibility !important;
+                            font-kerning: normal !important;
+                            white-space: normal !important;
+                            font-feature-settings: normal !important;
+                            -webkit-font-smoothing: antialiased !important;
+                            -moz-osx-font-smoothing: grayscale !important;
+                        }
+                        
+                        /* Specific fixes for elements with known issues */
+                        h1, h2, h3, h4, h5, h6, p, span, div, td, th, strong, em, label {
+                            letter-spacing: normal !important;
+                            word-spacing: normal !important;
+                            text-transform: none !important;
+                            font-stretch: normal !important;
+                        }
+                        
+                        /* Copy all styles from the original document */
+                        ${Array.from(document.styleSheets)
+                            .map(styleSheet => {
+                                try {
+                                    return Array.from(styleSheet.cssRules)
+                                        .map(rule => rule.cssText)
+                                        .join('\n');
+                                } catch (e) {
+                                    return '';
+                                }
+                            })
+                            .join('\n')}
+                            
+                        /* Hide elements that should not be in the invoice */
+                        .no-invoice, .no-print, .download-pdf {
+                            display: none !important;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="progress-message" style="font-family: Arial, sans-serif; letter-spacing: normal !important; word-spacing: normal !important; white-space: normal !important; text-rendering: optimizeLegibility !important;">Generating PDF... Please wait.</div>
+                    <div class="render-container"></div>
+                </body>
+                </html>
+            `);
+            
+            // Clone the receipt container and append it to the new window
+            const clonedReceipt = receiptContainer.cloneNode(true);
+            
+            // Remove elements with no-invoice or no-print classes
+            const hideElements = clonedReceipt.querySelectorAll('.no-invoice, .no-print, .download-pdf');
+            hideElements.forEach(el => el.remove());
+            
+            // FIX: More robust text replacement that handles both specific issues
+            function fixTextContent(element) {
+                // Get localized strings from WordPress
+                const invoiceIdText = digicommercePDF?.i18n?.invoiceId || 'Invoice ID';
+                const orderDetailsText = digicommercePDF?.i18n?.orderDetails || 'Order Details';
+                
+                // Fix the "InvoicelD:" issue - directly set the content for the pdf-id element
+                const invoiceIdElement = element.querySelector('.pdf-id');
+                if (invoiceIdElement) {
+                    // Get the original text but normalize it
+                    const originalText = invoiceIdElement.textContent.trim();
+                    // Extract the invoice number
+                    const invoiceNumber = originalText.replace(/.*:\s*(.*)$/i, '$1').trim();
+                    
+                    // Clear and recreate the content with properly formatted text
+                    invoiceIdElement.innerHTML = '';
+                    const textNode = document.createTextNode(`${invoiceIdText}: ${invoiceNumber}`);
+                    invoiceIdElement.appendChild(textNode);
+                }
+                
+                // Fix the "Order Details" issue - directly handle the h2 element
+                const orderDetailsElement = element.querySelector('h2');
+                if (orderDetailsElement && /order\s*details/i.test(orderDetailsElement.textContent.trim())) {
+                    // CRITICAL FIX: Complete element replacement with inline styles
+                    const newHeading = document.createElement('h2');
+                    newHeading.className = orderDetailsElement.className;
+                    
+                    // Apply extremely explicit styling to prevent spacing issues
+                    newHeading.style.cssText = `
+                        ${orderDetailsElement.style.cssText || ''}
+                        padding: 16px;
+                        margin: 0;
+                        letter-spacing: normal !important; 
+                        word-spacing: normal !important;
+                        white-space: normal !important;
+                        text-transform: none !important;
+                        font-kerning: normal !important;
+                        text-rendering: optimizeLegibility !important;
+                        font-feature-settings: normal !important;
+                        -webkit-font-smoothing: antialiased !important;
+                        -moz-osx-font-smoothing: grayscale !important;
+                        font-family: Arial, Helvetica, sans-serif !important;
+                    `;
+                    
+                    // Instead of creating text node, set the HTML directly
+                    newHeading.innerHTML = `<span style="letter-spacing: normal !important; word-spacing: normal !important;">${orderDetailsText}</span>`;
+                    
+                    // Replace the old element
+                    orderDetailsElement.parentNode.replaceChild(newHeading, orderDetailsElement);
+                    
+                    // Add extra safety - also inject a style that targets this specific element
+                    const styleForH2 = document.createElement('style');
+                    styleForH2.textContent = `
+                        h2 {
+                            letter-spacing: normal !important;
+                            word-spacing: normal !important;
+                            white-space: normal !important;
+                            text-transform: none !important;
+                            font-feature-settings: normal !important;
+                        }
+                        h2 * {
+                            letter-spacing: normal !important;
+                            word-spacing: normal !important;
+                        }
+                    `;
+                    element.appendChild(styleForH2);
+                }
+                
+                // Process other text nodes
+                const textNodes = [];
+                const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+                let node;
+                while (node = walker.nextNode()) {
+                    textNodes.push(node);
+                }
+                
+                textNodes.forEach(node => {
+                    // Additional text replacements if needed
+                    let text = node.textContent;
+                    if (text.includes('InvoicelD:') || text.includes('InvoiceID:') || 
+                        text.includes('Invoice ID:')) {
+                        text = text.replace(/InvoicelD:|InvoiceID:|Invoice ID:/gi, `${invoiceIdText}:`);
+                    }
+                    if (text.includes('OrderDetails') || text.includes('Order Details')) {
+                        text = text.replace(/OrderDetails|Order Details/gi, orderDetailsText);
+                    }
+                    // Update node text if changed
+                    if (text !== node.textContent) {
+                        node.textContent = text;
+                    }
+                });
+            }
+            
+            // Apply the text fix to the cloned receipt
+            fixTextContent(clonedReceipt);
+            
+            // Fix table alignment issues
+            const table = clonedReceipt.querySelector('.digicommerce-table');
+            if (table) {
+                // Ensure first column is left-aligned and last column is right-aligned
+                const headerCells = table.querySelectorAll('thead th');
+                if (headerCells.length >= 2) {
+                    headerCells[0].style.textAlign = 'left';
+                    headerCells[headerCells.length - 1].style.textAlign = 'right';
+                }
+                
+                // Fix all data cells
+                const dataCells = table.querySelectorAll('tbody td');
+                for (let i = 0; i < dataCells.length; i++) {
+                    if (i % 2 === 0) { // First column in each row
+                        dataCells[i].style.textAlign = 'left';
+                    } else { // Last column in each row
+                        dataCells[i].style.textAlign = 'right';
+                    }
+                }
+                
+                // Fix footer alignment
+                const footerCells = table.querySelectorAll('tfoot th, tfoot td');
+                for (let i = 0; i < footerCells.length; i += 2) {
+                    if (i < footerCells.length) {
+                        footerCells[i].style.textAlign = 'right';
+                    }
+                    if (i + 1 < footerCells.length) {
+                        footerCells[i + 1].style.textAlign = 'right';
+                    }
+                }
+            }
+            
+            // Add footer to the PDF with proper HTML support
+            if (digicommercePDF?.i18n?.allRightsReserved) {
+                const footerDiv = renderWindow.document.createElement('div');
+                footerDiv.className = 'pdf-footer';
+                
+                // Set footer HTML content directly to preserve HTML formatting
+                footerDiv.innerHTML = digicommercePDF.i18n.allRightsReserved;
+                
+                // Add extra bottom padding to ensure footer is not cut off
+                footerDiv.style.paddingBottom = '40px';
+                
+                clonedReceipt.appendChild(footerDiv);
+            }
+            
+            // Append the cleaned receipt to the render container
+            const container = renderWindow.document.querySelector('.render-container');
+            container.appendChild(clonedReceipt);
+            
+            // Wait for the window to load completely
+            renderWindow.document.close();
+            
+            renderWindow.onload = async function() {
+                // CRITICAL FIX: Apply comprehensive styling fixes to ALL text elements
+                const globalStyle = renderWindow.document.createElement('style');
+                globalStyle.textContent = `
+                    /* Global fix for letter-spacing issues */
+                    *, *::before, *::after {
+                        letter-spacing: normal !important;
+                        word-spacing: normal !important;
+                        text-rendering: optimizeLegibility !important;
+                        -webkit-font-smoothing: antialiased !important;
+                        -moz-osx-font-smoothing: grayscale !important;
+                        font-kerning: normal !important;
+                        white-space: normal !important;
+                    }
+                    
+                    /* Specific text elements that commonly have issues */
+                    h1, h2, h3, h4, h5, h6,
+                    p, span, div, td, th,
+                    .pdf-id, .progress-message {
+                        letter-spacing: normal !important;
+                        word-spacing: normal !important;
+                        text-transform: none !important;
+                        font-feature-settings: normal !important;
+                        white-space: normal !important;
+                    }
+                    
+                    /* Ensure consistent font rendering */
+                    body {
+                        font-family: Arial, Helvetica, sans-serif !important;
+                    }
+                    
+                    /* Override any problematic CSS transforms */
+                    [style*="letter-spacing"] {
+                        letter-spacing: normal !important;
+                    }
+                    
+                    /* Force proper rendering for specific text blocks */
+                    .progress-message {
+                        text-align: center !important;
+                        font-size: 16px !important;
+                    }
+                `;
+                renderWindow.document.head.appendChild(globalStyle);
+
+                // Create text using DOM methods instead of direct assignment
+                const progressMessage = renderWindow.document.querySelector('.progress-message');
+                progressMessage.innerHTML = ''; // Clear existing content
+                const progressText = renderWindow.document.createTextNode('Capturing image...');
+                progressMessage.appendChild(progressText);
+                
+                try {
+                    // FIX: Another pass of text fixes after DOM is loaded
+                    const loadedReceipt = renderWindow.document.querySelector('.render-container > *');
+                    fixTextContent(loadedReceipt);
+                    
+                    // Use setTimeout to ensure everything is rendered
+                    setTimeout(async function() {
+                        try {
+                            // Additional fixes for specific elements
+                            
+                            // Use html2canvas to capture the receipt
+                            const canvas = await html2canvas(loadedReceipt, {
+                                scale: 2, // Higher quality rendering
+                                useCORS: true,
+                                allowTaint: true,
+                                backgroundColor: '#ffffff',
+                                // Add more height to ensure the footer isn't cut off
+                                height: loadedReceipt.offsetHeight + 100,
+                                // FIX: Add rendering options to improve text quality
+                                letterRendering: true,
+                                logging: false,
+                                removeContainer: false
+                            });
+                            
+                            // Create text with DOM methods instead of direct assignment
+                            progressMessage.innerHTML = '';
+                            const createPdfText = renderWindow.document.createTextNode('Creating PDF...');
+                            progressMessage.appendChild(createPdfText);
+                            
+                            // Create PDF using jsPDF
+                            const pdf = new jspdf.jsPDF({
+                                orientation: 'portrait',
+                                unit: 'mm',
+                                format: 'a4'
+                            });
+                            
+                            // Calculate proper scaling
+                            const imgData = canvas.toDataURL('image/png');
+                            const pdfWidth = pdf.internal.pageSize.getWidth();
+                            const pdfHeight = pdf.internal.pageSize.getHeight();
+                            
+                            const canvasRatio = canvas.width / canvas.height;
+                            const pageRatio = pdfWidth / pdfHeight;
+                            
+                            let finalWidth, finalHeight;
+                            
+                            if (canvasRatio > pageRatio) {
+                                // Image is wider compared to PDF page
+                                finalWidth = pdfWidth - 20; // 10mm margins
+                                finalHeight = finalWidth / canvasRatio;
+                            } else {
+                                // Image is taller compared to PDF page
+                                finalHeight = pdfHeight - 20; // 10mm margins
+                                finalWidth = finalHeight * canvasRatio;
+                            }
+                            
+                            // Center the image on the page
+                            const x = (pdfWidth - finalWidth) / 2;
+                            const y = (pdfHeight - finalHeight) / 2;
+                            
+                            // Add the image to the PDF
+                            pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+                            
+                            // Save PDF
+                            pdf.save(`${digicommercePDF.i18n.invoice}-${pdfNumber}.pdf`);
+                            
+                            // Close the render window - create text with DOM methods
+                            progressMessage.innerHTML = '';
+                            const successText = renderWindow.document.createTextNode('PDF created successfully! This window will close shortly...');
+                            progressMessage.appendChild(successText);
+                            
+                            setTimeout(function() {
+                                renderWindow.close();
+                            }, 1500);
+                        } catch (err) {
+                            console.error('Error creating PDF:', err);
+                            
+                            // Create error message with DOM methods
+                            progressMessage.innerHTML = '';
+                            const errorText = renderWindow.document.createTextNode('Error creating PDF: ' + err.message);
+                            progressMessage.appendChild(errorText);
+                            
+                            // Add close button
+                            const closeBtn = document.createElement('button');
+                            closeBtn.textContent = 'Close Window';
+                            closeBtn.style.marginTop = '10px';
+                            closeBtn.style.padding = '8px 16px';
+                            closeBtn.style.backgroundColor = '#3b82f6';
+                            closeBtn.style.color = 'white';
+                            closeBtn.style.border = 'none';
+                            closeBtn.style.borderRadius = '4px';
+                            closeBtn.style.cursor = 'pointer';
+                            
+                            closeBtn.onclick = function() {
+                                renderWindow.close();
+                            };
+                            
+                            progressMessage.appendChild(document.createElement('br'));
+                            progressMessage.appendChild(closeBtn);
+                        }
+                    }, 1000);
+                } catch (error) {
+                    console.error('Error capturing invoice:', error);
+                    
+                    // Create error message with DOM methods
+                    progressMessage.innerHTML = '';
+                    const errorText = renderWindow.document.createTextNode('Error: ' + error.message);
+                    progressMessage.appendChild(errorText);
+                    
+                    // Add close button on error
+                    const closeBtn = document.createElement('button');
+                    closeBtn.textContent = 'Close Window';
+                    closeBtn.style.marginTop = '10px';
+                    closeBtn.style.padding = '8px 16px';
+                    closeBtn.style.backgroundColor = '#3b82f6';
+                    closeBtn.style.color = 'white';
+                    closeBtn.style.border = 'none';
+                    closeBtn.style.borderRadius = '4px';
+                    closeBtn.style.cursor = 'pointer';
+                    
+                    closeBtn.onclick = function() {
+                        renderWindow.close();
+                    };
+                    
+                    progressMessage.appendChild(document.createElement('br'));
+                    progressMessage.appendChild(closeBtn);
                 }
             };
-
-            pdfMake.createPdf(docDefinition).download(`${digicommercePDF.i18n.invoice}-${sanitizedpdfNumber}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert(digicommercePDF.i18n.errorMessage || 'An error occurred while generating the PDF.');
         }
     };
 
+    // Attach click event to the download button
     downloadButton.addEventListener('click', async function (e) {
         e.preventDefault();
         const originalText = downloadButton.querySelector('.text').innerHTML;

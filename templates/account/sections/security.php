@@ -1,6 +1,10 @@
 <?php
 /**
  * Profile security section template
+ *
+ * This template can be overridden by copying it to yourtheme/digicommerce/account/sections/security.php
+ *
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

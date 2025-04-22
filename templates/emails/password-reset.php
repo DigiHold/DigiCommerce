@@ -2,8 +2,9 @@
 /**
  * Password reset email template
  *
- * @var string $reset_url
- * @var string $user_login
+ * This template can be overridden by copying it to yourtheme/digicommerce/emails/password-reset.php
+ *
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

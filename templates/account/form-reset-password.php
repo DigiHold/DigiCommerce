@@ -2,9 +2,9 @@
 /**
  * Reset password form template
  *
- * @var string $login
- * @var string $key
- * @var bool $is_valid_key
+ * This template can be overridden by copying it to yourtheme/digicommerce/account/form-reset-password.php
+ *
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

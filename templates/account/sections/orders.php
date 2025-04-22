@@ -1,6 +1,10 @@
 <?php
 /**
  * Orders section template for My Account page
+ *
+ * This template can be overridden by copying it to yourtheme/digicommerce/account/sections/orders.php
+ *
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

@@ -3,12 +3,12 @@
     @apply m-0 w-full border-collapse border-0 bg-white;
 
     .end {
-        @apply ltr:text-right rtl:text-left;
+        @apply text-right;
     }
 
     th,
     td {
-        @apply border-0 p-4 leading-normal ltr:text-left rtl:text-right;
+        @apply border-0 p-4 text-left leading-normal;
     }
 
     th {
@@ -64,7 +64,7 @@
         }
 
         td {
-            @apply before:text-dark-blue before:text-medium relative flex justify-between before:float-left before:font-semibold before:content-[attr(data-label)] ltr:text-right rtl:text-left;
+            @apply before:text-dark-blue before:text-medium relative flex justify-between text-right before:float-left before:font-semibold before:content-[attr(data-label)];
         }
 
         td[rowspan] {
@@ -80,5 +80,27 @@
     th,
     td {
         @apply font-bold;
+    }
+}
+
+/* RTL fix */
+body.rtl {
+    .digicommerce-table {
+        .end {
+            @apply text-left;
+        }
+
+        th,
+        td {
+            @apply text-right;
+        }
+    }
+}
+
+@media only screen and (max-width: 768px) {
+    body.rtl .digicommerce-table {
+        td {
+            @apply text-left;
+        }
     }
 }

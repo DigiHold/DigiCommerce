@@ -1,6 +1,10 @@
 <?php
 /**
  * Success page template
+ *
+ * This template can be overridden by copying it to yourtheme/digicommerce/checkout/payment-success.php
+ *
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

@@ -50,6 +50,8 @@ https://digicommerce.me
 * Online courses and programs
 * Video lessons and tutorials
 * Downloadable course materials
+* Interactive quizzes and assessments
+* Professional completion certificates
 * Student progress tracking
 * Membership-based learning platforms
 
@@ -75,7 +77,7 @@ Generate steady revenue and foster long-term customer relationships with seamles
 Enhance user convenience with an intuitive scheduling add-on, making it easy for customers to book services effortlessly.
 
 **[Programs](https://digicommerce.me/programs/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)**
-Transform your website into a complete e-learning solution with courses, lessons, and student management tools.
+Transform your website into a complete e-learning solution with courses, quizzes, certificates and student management.
 
 **[License](https://digicommerce.me/license/?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi)**
 Effortlessly generate and securely manage license keys for your digital products, ensuring seamless access for your customers.
@@ -171,6 +173,8 @@ Note: Service booking features require the Pro version with the Booking addon.
 Yes! With the Pro version and the Programs addon, you can:
 - Create structured courses with sections and lessons
 - Upload videos, PDFs, and other learning materials
+- Create interactive quizzes to test student knowledge
+- Issue professional certificates upon course completion
 - Track student progress
 - Manage your students and their access
 

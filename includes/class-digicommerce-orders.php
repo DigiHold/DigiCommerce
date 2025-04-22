@@ -1429,25 +1429,25 @@ class DigiCommerce_Orders {
 		}
 
 		wp_enqueue_script(
-			'pdfmake',
-			DIGICOMMERCE_PLUGIN_URL . 'assets/js/vendor/pdfmake.js',
+			'html2canvas',
+			DIGICOMMERCE_PLUGIN_URL . 'assets/js/vendor/html2canvas.js',
 			array(),
-			'0.2.18',
+			'1.4.1',
 			true
 		);
 
 		wp_enqueue_script(
-			'pdfmake-fonts',
-			DIGICOMMERCE_PLUGIN_URL . 'assets/js/vendor/vfs_fonts.js',
-			array( 'pdfmake' ),
-			'0.2.18',
+			'jspdf',
+			DIGICOMMERCE_PLUGIN_URL . 'assets/js/vendor/jspdf.js',
+			array(),
+			'3.0.1',
 			true
 		);
 
 		wp_enqueue_script(
 			'digicommerce-pdf-generator',
 			DIGICOMMERCE_PLUGIN_URL . 'assets/js/front/pdf-generator.js',
-			array( 'pdfmake' ),
+			array( 'html2canvas', 'jspdf' ),
 			DIGICOMMERCE_VERSION,
 			true
 		);

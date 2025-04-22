@@ -34,7 +34,7 @@ Upgrade to [DigiCommerce Pro](https://digicommerce.me/pricing) to unlock powerfu
 
 - **Subscriptions:** Generate steady revenue with automated billing solutions
 - **Booking:** Offer an intuitive scheduling system for service businesses
-- **Programs:** Transform your site into a complete e-learning solution with courses and student management
+- **Programs:** Transform your site into a complete e-learning solution with courses, lessons, quizzes, student management
 - **License Keys:** Generate and manage license keys for software products
 - **Affiliation:** Expand your reach and increase sales with a powerful affiliate marketing system
 - **Abandoned Cart Recovery:** Recover lost sales with automated reminders

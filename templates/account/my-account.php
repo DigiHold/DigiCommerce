@@ -2,8 +2,9 @@
 /**
  * My Account template
  *
- * @var WP_User $user Current user object
- * @var array $billing_info Billing information
+ * This template can be overridden by copying it to yourtheme/digicommerce/account/my-account.php
+ *
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

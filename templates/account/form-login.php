@@ -1,6 +1,10 @@
 <?php
 /**
  * Login form template
+ *
+ * This template can be overridden by copying it to yourtheme/digicommerce/account/form-login.php
+ *
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -35,7 +39,7 @@ defined( 'ABSPATH' ) || exit;
 			$redirect_to = '';
 			if ( isset( $_GET['redirect_to'] ) ) { // phpcs:ignore
 				$redirect_to = esc_url_raw( wp_unslash( $_GET['redirect_to'] ) ); // phpcs:ignore
-				
+
 				// Additional security: ensure it's a local URL
 				if ( ! wp_validate_redirect( $redirect_to ) ) {
 					$redirect_to = '';

@@ -81,84 +81,79 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Media Uploader
-    let frame;
-    const uploadButtons = document.querySelectorAll('.upload-logo');
+	const uploadButtons = document.querySelectorAll('.upload-logo');
 
-    uploadButtons.forEach(uploadButton => {
-        const container = uploadButton.closest('.image-wrap');
-        const logoInput = container.querySelector('input[type="hidden"]');
-        const previewContainer = container.querySelector('[class*="image-preview"]');
+	uploadButtons.forEach(uploadButton => {
+		const container = uploadButton.closest('.image-wrap');
+		const logoInput = container.querySelector('input[type="hidden"]');
+		const previewContainer = container.querySelector('[class*="image-preview"]');
 
-        if (uploadButton) {
-            uploadButton.addEventListener('click', function(e) {
-                e.preventDefault();
+		if (uploadButton) {
+			uploadButton.addEventListener('click', function(e) {
+				e.preventDefault();
+				
+				// Create a new frame each time or use a dedicated one for this button
+				let frame = wp.media({
+					title: digiCommerceAdmin.mediaUploader.title,
+					button: {
+						text: digiCommerceAdmin.mediaUploader.buttonText
+					},
+					multiple: false
+				});
 
-                if (frame) {
-                    frame.open();
-                    return;
-                }
+				frame.on('select', function() {
+					const attachment = frame.state().get('selection').first().toJSON();
+					
+					if (logoInput) {
+						logoInput.value = attachment.id;
+					}
 
-                frame = wp.media({
-                    title: digiCommerceAdmin.mediaUploader.title,
-                    button: {
-                        text: digiCommerceAdmin.mediaUploader.buttonText
-                    },
-                    multiple: false
-                });
+					if (previewContainer) {
+						const img = document.createElement('img');
+						img.src = attachment.url;
+						img.className = 'max-w-64';
+						
+						// Only show preview once image is loaded
+						img.onload = function() {
+							previewContainer.classList.remove('hidden');
+							previewContainer.classList.add('flex');
+							previewContainer.innerHTML = '';
+							previewContainer.appendChild(img);
+						};
 
-                frame.on('select', function() {
-                    const attachment = frame.state().get('selection').first().toJSON();
-                    
-                    if (logoInput) {
-                        logoInput.value = attachment.id;
-                    }
+						// Handle image load error
+						img.onerror = function() {
+							console.error('Error loading image preview');
+						};
+					}
 
-                    if (previewContainer) {
-                        const img = document.createElement('img');
-                        img.src = attachment.url;
-                        img.className = 'max-w-64';
-                        
-                        // Only show preview once image is loaded
-                        img.onload = function() {
-                            previewContainer.classList.remove('hidden');
-                            previewContainer.classList.add('flex');
-                            previewContainer.innerHTML = '';
-                            previewContainer.appendChild(img);
-                        };
+					const buttonContainer = uploadButton.parentElement;
+					if (!buttonContainer.querySelector('.remove-logo')) {
+						const removeButton = document.createElement('button');
+						removeButton.type = 'button';
+						removeButton.className = 'remove-logo flex items-center justify-center gap-2 bg-red-600 hover:bg-red-400 text-white hover:text-white py-2 px-4 rounded default-transition';
+						removeButton.innerHTML = `<span class="text">${digiCommerceAdmin.mediaUploader.removeText}</span>`;
+						uploadButton.insertAdjacentElement('afterend', removeButton);
+						
+						// Add remove button event listener
+						removeButton.addEventListener('click', function() {
+							if (logoInput) {
+								logoInput.value = '';
+							}
+							if (previewContainer) {
+								previewContainer.innerHTML = '';
+								previewContainer.classList.add('hidden');
+								previewContainer.classList.remove('flex');
+							}
+							removeButton.remove();
+						});
+					}
+				});
 
-                        // Handle image load error
-                        img.onerror = function() {
-                            console.error('Error loading image preview');
-                        };
-                    }
-
-                    const buttonContainer = uploadButton.parentElement;
-                    if (!buttonContainer.querySelector('.remove-logo')) {
-                        const removeButton = document.createElement('button');
-                        removeButton.type = 'button';
-                        removeButton.className = 'remove-logo flex items-center justify-center gap-2 bg-red-600 hover:bg-red-400 text-white hover:text-white py-2 px-4 rounded default-transition';
-                        removeButton.innerHTML = `<span class="text">${digiCommerceAdmin.mediaUploader.removeText}</span>`;
-                        uploadButton.insertAdjacentElement('afterend', removeButton);
-                        
-                        // Add remove button event listener
-                        removeButton.addEventListener('click', function() {
-                            if (logoInput) {
-                                logoInput.value = '';
-                            }
-                            if (previewContainer) {
-                                previewContainer.innerHTML = '';
-                                previewContainer.classList.add('hidden');
-                                previewContainer.classList.remove('flex');
-                            }
-                            removeButton.remove();
-                        });
-                    }
-                });
-
-                frame.open();
-            });
-        }
-    });
+				frame.open();
+			});
+		}
+	});
 
     // Add event listeners to existing remove buttons
     document.querySelectorAll('.remove-logo').forEach(removeButton => {

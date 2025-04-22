@@ -2,7 +2,9 @@
 /**
  * Empty cart template template
  *
- * @package digicommerce
+ * This template can be overridden by copying it to yourtheme/digicommerce/checkout/empty-cart.php
+ *
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

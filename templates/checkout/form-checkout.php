@@ -1,6 +1,10 @@
 <?php
 /**
  * Checkout form template
+ *
+ * This template can be overridden by copying it to yourtheme/digicommerce/checkout/form-checkout.php
+ *
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

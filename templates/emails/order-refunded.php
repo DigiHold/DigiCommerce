@@ -2,8 +2,9 @@
 /**
  * Order refunded email template
  *
- * @var int $order_id Order ID
- * @var array $billing_details Billing information
+ * This template can be overridden by copying it to yourtheme/digicommerce/emails/order-refunded.php
+ *
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

@@ -2,9 +2,9 @@
 /**
  * Welcome email template
  *
- * @var string $username
- * @var string $password
- * @var string $login_url
+ * This template can be overridden by copying it to yourtheme/digicommerce/emails/welcome.php
+ *
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

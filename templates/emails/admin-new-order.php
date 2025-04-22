@@ -2,8 +2,9 @@
 /**
  * Admin new order notification email template
  *
- * @var int $order_id
- * @var array $order_data
+ * This template can be overridden by copying it to yourtheme/digicommerce/emails/admin-new-order.php
+ *
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

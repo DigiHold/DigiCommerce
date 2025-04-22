@@ -2,9 +2,9 @@
 /**
  * Single product template
  *
- * This template displays a single digital product with support for both single and variation pricing.
+ * This template can be overridden by copying it to yourtheme/digicommerce/single-product.php
  *
- * @package DigiCommerce
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

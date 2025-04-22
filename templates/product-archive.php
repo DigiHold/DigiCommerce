@@ -2,9 +2,9 @@
 /**
  * Template for displaying product archives, categories, and tags
  *
- * This template displays product archives with support for categories and tags.
+ * This template can be overridden by copying it to yourtheme/digicommerce/product-archive.php
  *
- * @package DigiCommerce
+ * @version 1.0.0
  */
 
 defined( 'ABSPATH' ) || exit;

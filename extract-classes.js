@@ -9,13 +9,24 @@ const frontCssFile = path.join(process.cwd(), 'assets/css/front.css');
 const adminCssFile = path.join(process.cwd(), 'assets/css/admin/admin.css');
 const outputFile = path.join(pluginsDir, 'digicommerce-pro', 'classes.txt');
 
+// Pre-process CSS to fix malformed selectors
+function fixCssSelectors(css) {
+    // Simple approach to fix the missing closing parentheses or complete patterns
+    // Add a closing parenthesis to any :where that's missing it
+    return css.replace(/:where\(\[dir="(ltr|rtl)"\](?!\))/g, ':where([dir="$1"])');
+}
+
 async function extractClassesFromFile(filePath) {
     try {
         if (!fs.existsSync(filePath)) {
             return new Set();
         }
 
-        const css = fs.readFileSync(filePath, 'utf8');
+        // Read the CSS file and fix malformed selectors
+        let css = fs.readFileSync(filePath, 'utf8');
+        css = fixCssSelectors(css);
+        
+        // Process with PostCSS
         const result = await postcss().process(css, { from: filePath });
 
         // Extract class names
@@ -25,7 +36,11 @@ async function extractClassesFromFile(filePath) {
                 rule.selector.split(',').forEach((selector) => {
                     selector = selector.trim();
                     if (selector.startsWith('.')) {
-                        classNames.add(selector);
+                        // Get just the class name part (up to a space, [, :, etc.)
+                        const match = selector.match(/\.([\w-\\:]+)/);
+                        if (match && match[0]) {
+                            classNames.add(match[0]);
+                        }
                     }
                 });
             }
@@ -33,7 +48,24 @@ async function extractClassesFromFile(filePath) {
 
         return classNames;
     } catch (error) {
-        return new Set();
+        // If PostCSS fails, try a direct regex approach as fallback
+        try {
+            const css = fs.readFileSync(filePath, 'utf8');
+            const fixedCss = fixCssSelectors(css);
+            const classRegex = /\.([\w-\\:]+)/g;
+            const classNames = new Set();
+            let match;
+            
+            while ((match = classRegex.exec(fixedCss)) !== null) {
+                if (match[0].startsWith('.')) {
+                    classNames.add(match[0]);
+                }
+            }
+            
+            return classNames;
+        } catch (fallbackError) {
+            return new Set();
+        }
     }
 }
 
@@ -75,7 +107,6 @@ if (watchMode) {
             process.exit(0);
         })
         .catch((error) => {
-            console.error('Error:', error);
             process.exit(1);
         });
 }
