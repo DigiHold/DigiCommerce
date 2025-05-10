@@ -1,0 +1,209 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@import '../_choices.css';
+@import '../_forms.css';
+@import '../_table.css';
+@import 'admin.css';
+
+.section {
+    @apply mb-10 flex flex-col md:flex-row md:gap-6;
+}
+
+.section-header {
+    @apply mb-4 flex-[0_0_auto];
+}
+
+@media (min-width: 768px) {
+    .section-header {
+        @apply w-2/12;
+    }
+}
+
+.section-title {
+    @apply text-dark-blue m-0 text-[1.2rem] font-medium;
+}
+
+.section-content {
+    @apply flex-1;
+}
+
+/* Cards */
+.card {
+    @apply m-0 rounded-lg border border-solid border-gray-200 bg-gray-50 p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-shadow delay-[0.3s] duration-[0.3s,transform] hover:shadow-[0_4px_6px_rgba(0,0,0,0.1)];
+}
+
+.card-header {
+    @apply mb-4;
+}
+
+.card-title {
+    @apply mx-0 mb-2 mt-0 text-base font-semibold text-gray-800;
+}
+
+.card-description {
+    @apply mx-0 mb-4 mt-0 text-[.9rem] leading-normal text-gray-600;
+}
+
+/* Form Elements */
+.checkbox-group {
+    @apply mb-6 flex flex-col gap-3;
+}
+
+.checkbox-item {
+    @apply flex cursor-pointer items-center gap-2 rounded-md p-2 transition-[background-color] duration-[0.2s] hover:bg-gray-100;
+
+    input[type='checkbox'] {
+        @apply h-5 w-5 cursor-pointer rounded border border-solid border-gray-300;
+
+        &:checked {
+            @apply border-[#4a6cf7] bg-[#4a6cf7];
+        }
+    }
+
+    span {
+        @apply text-[.9rem] font-medium text-gray-700;
+    }
+}
+
+.checkbox-parent {
+    @apply font-semibold;
+}
+
+.checkbox-children {
+    @apply ml-7 border-l-2 border-solid border-l-gray-100 pl-4;
+}
+
+.dropzone {
+    @apply mb-4 cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-8 text-center transition-[border-color] duration-[0.2s];
+
+    &:hover,
+    &.dragover {
+        @apply border-[#4a6cf7];
+    }
+}
+
+.dropzone-icon {
+    @apply mb-4 flex items-center justify-center text-gray-400;
+
+    svg {
+        @apply h-32 w-32;
+    }
+}
+
+.dropzone-text {
+    @apply mb-2 flex items-center justify-center gap-1 text-[.9rem] text-gray-600;
+}
+
+.dropzone-browse {
+    @apply cursor-pointer font-semibold text-[#4a6cf7];
+}
+
+.file-preview {
+    @apply mt-4 hidden items-center gap-3 rounded-md bg-gray-100 p-3;
+
+    &.active {
+        @apply flex;
+    }
+}
+
+.file-icon {
+    @apply flex h-10 w-10 items-center justify-center rounded-md bg-[#4a6cf7] text-xl text-[white];
+}
+
+.file-info {
+    @apply flex-1;
+}
+
+.file-name {
+    @apply mb-1 break-all text-[.9rem] font-medium text-gray-800;
+}
+
+.file-size {
+    @apply text-sm text-gray-500;
+}
+
+.file-remove {
+    @apply cursor-pointer rounded p-1 text-gray-500 transition-[color] delay-[0.2s] duration-[0.2s,background-color] hover:bg-gray-200 hover:text-[#ef4444];
+}
+
+.import-options {
+    @apply mt-6 border-t border-solid border-t-gray-200 pt-6;
+}
+
+.import-options-title {
+    @apply text-medium mb-4 font-semibold text-gray-800;
+}
+
+/* Buttons */
+.button-container {
+    @apply mt-6 flex justify-end;
+}
+
+.btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border-[none] px-4 py-2.5 text-[.9rem] font-medium transition-[background-color] duration-[0.2s];
+}
+
+.btn-primary {
+    @apply bg-[#4a6cf7] text-[white] hover:bg-[#3553d1];
+}
+
+/* Modals */
+.digi-modal {
+    @apply invisible fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(0,0,0,0.5)] opacity-0 transition-opacity delay-[0.3s] duration-[0.3s,visibility];
+
+    &.active {
+        @apply visible opacity-100;
+    }
+
+    &.closing {
+        @apply invisible opacity-0;
+    }
+}
+
+.digi-modal-content {
+    @apply w-[90%] max-w-[500px] translate-y-5 overflow-hidden rounded bg-white shadow-[0_4px_6px_rgba(0,0,0,0.1)] transition-transform duration-[0.3s];
+    outline: none;
+}
+
+.digi-modal.active .digi-modal-content {
+    @apply translate-y-0;
+}
+
+.digi-modal-header {
+    @apply flex items-center justify-between border-b border-solid border-b-[#eee] px-4 py-3;
+
+    .digi-modal-title {
+        @apply m-0 text-[1.2rem] font-bold text-[#1e385a];
+    }
+}
+
+.digi-modal-close {
+    @apply cursor-pointer border-[none] p-0 text-3xl text-[#999] shadow-none transition-[color] duration-[0.2s] hover:text-[#333];
+    background: none;
+}
+
+.digi-modal-body {
+    @apply px-4 py-3;
+
+    p:last-child {
+        @apply m-0;
+    }
+}
+
+.digi-modal-footer {
+    @apply flex justify-end gap-4 border-t border-solid border-t-[#eee] px-4 py-3;
+}
+
+.digi-btn {
+    @apply cursor-pointer rounded border-[none] px-4 py-2 text-[0.9rem] transition-[background] duration-[0.2s];
+}
+
+.digi-btn-primary {
+    @apply bg-[#4a6cf7] text-[white] hover:bg-[#3a5ce7];
+}
+
+.digi-btn-secondary {
+    @apply bg-[#f1f1f1] text-[#333] hover:bg-[#e1e1e1];
+}
