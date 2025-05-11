@@ -10,9 +10,9 @@ This document outlines the process for contributing to DigiCommerce and helps en
 
 If you've found a bug in DigiCommerce, we'd like to hear about it:
 
-1. **Check Existing Issues** - Search the [existing issues](https://github.com/DigiCommerceWP/DigiCommerce/issues) to see if someone else has already reported the problem.
+1. **Check Existing Issues** - Search the [existing issues](https://github.com/DigiHold/DigiCommerce/issues) to see if someone else has already reported the problem.
 
-2. **Create a New Issue** - If your bug hasn't been reported yet, [create a new issue](https://github.com/DigiCommerceWP/DigiCommerce/issues/new/choose) with the following information:
+2. **Create a New Issue** - If your bug hasn't been reported yet, [create a new issue](https://github.com/DigiHold/DigiCommerce/issues/new/choose) with the following information:
 
     - A clear, descriptive title
     - Steps to reproduce the bug
@@ -27,9 +27,9 @@ If you've found a bug in DigiCommerce, we'd like to hear about it:
 
 Have an idea for improving DigiCommerce?
 
-1. **Check Existing Issues** - Search [existing issues](https://github.com/DigiCommerceWP/DigiCommerce/issues) labeled as "enhancement" to see if your idea has already been suggested.
+1. **Check Existing Issues** - Search [existing issues](https://github.com/DigiHold/DigiCommerce/issues) labeled as "enhancement" to see if your idea has already been suggested.
 
-2. **Create a Feature Request** - If your idea is new, [create a feature request](https://github.com/DigiCommerceWP/DigiCommerce/issues/new/choose) with:
+2. **Create a Feature Request** - If your idea is new, [create a feature request](https://github.com/DigiHold/DigiCommerce/issues/new/choose) with:
     - A clear, descriptive title
     - Detailed description of the proposed functionality
     - Any relevant mockups or examples

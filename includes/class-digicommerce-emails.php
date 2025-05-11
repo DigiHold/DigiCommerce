@@ -611,7 +611,7 @@ class DigiCommerce_Emails {
 		}
 		
 		.social-links {
-			display: inline-block;
+			display: block;
 			margin-bottom: 30px;
 		}
 		

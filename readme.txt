@@ -130,8 +130,8 @@ Connect with fellow DigiCommerce users and stay updated:
 
 * [Documentation](https://docs.digicommerce.me?utm_source=wordpress.org&utm_medium=free%20plugin%20listing&amp;utm_campaign=digi) - Comprehensive guides and tutorials
 * [Support Forum](https://wordpress.org/support/plugin/digicommerce/) - Get help from our team and community
-* [Feature Requests](https://github.com/DigiCommerceWP/DigiCommerce/pulls) - Suggest new features and improvements
-* [GitHub Repository](https://github.com/DigiCommerceWP/DigiCommerce) - Access source code and contribute
+* [Feature Requests](https://github.com/DigiHold/DigiCommerce/pulls) - Suggest new features and improvements
+* [GitHub Repository](https://github.com/DigiHold/DigiCommerce) - Access source code and contribute
 
 = 🚀 Ready to Transform Your Digital Business? =
 
@@ -293,6 +293,9 @@ Yes, DigiCommerce is optimized for performance even with large product catalogs.
 11. **Order Details**: Detailed view of individual order information and status.
 
 == Changelog ==
+
+= 1.0.1 - May 11, 2025 =
+* Fix: Issue with social links in emails.
 
 = 1.0.0 - April 25, 2025 =
 * Initial public release of DigiCommerce

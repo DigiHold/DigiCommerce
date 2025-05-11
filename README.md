@@ -49,7 +49,7 @@ Upgrade to [DigiCommerce Pro](https://digicommerce.me/pricing) to unlock powerfu
 This repository is for development purposes. For support, please use the appropriate channels:
 
 - [Documentation](https://docs.digicommerce.me/)
-- [Premium Support Portal](https://digicommerce.me/my-account/?section=support) (for Pro customers)
+- [Premium Support Portal](https://digihold.me/my-account/?section=support) (for Pro customers)
 - [WordPress.org Community Forum](https://wordpress.org/support/plugin/digicommerce)
 - [Official DigiCommerce Facebook Group](https://www.facebook.com/groups/digicommerce)
 
@@ -57,7 +57,7 @@ This repository is for development purposes. For support, please use the appropr
 
 As an open-source project, we welcome contributions to improve DigiCommerce. Here's how you can help:
 
-1. **Report Issues**: If you find a bug, please [open an issue](https://github.com/DigiCommerceWP/DigiCommerce/issues) with detailed information
+1. **Report Issues**: If you find a bug, please [open an issue](https://github.com/DigiHold/DigiCommerce/issues) with detailed information
 2. **Suggest Features**: Have ideas? We'd love to hear them!
 3. **Submit Pull Requests**: Code contributions are welcome for open issues
 
@@ -73,4 +73,4 @@ DigiCommerce is licensed under the [GPLv2 or later](https://www.gnu.org/licenses
 
 - [Official Website](https://digicommerce.me)
 - [Facebook](https://www.facebook.com/DigiCommerceWP)
-- [YouTube](https://www.youtube.com/@DigiCommerceWP)
+- [YouTube](https://www.youtube.com/@DigiHoldWP)
