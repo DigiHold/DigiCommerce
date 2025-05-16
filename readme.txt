@@ -1,5 +1,5 @@
 === DigiCommerce - Conversion-Focused Digital Sales Platform ===
-Contributors: digicommercewp
+Contributors: digihold
 Tags: ecommerce, shop, digital products, appointments, sell online
 Requires at least: 5.8
 Tested up to: 6.8
@@ -293,9 +293,6 @@ Yes, DigiCommerce is optimized for performance even with large product catalogs.
 11. **Order Details**: Detailed view of individual order information and status.
 
 == Changelog ==
-
-= 1.0.1 - May 11, 2025 =
-* Fix: Issue with social links in emails.
 
 = 1.0.0 - April 25, 2025 =
 * Initial public release of DigiCommerce
