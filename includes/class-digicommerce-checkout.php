@@ -143,9 +143,12 @@ class DigiCommerce_Checkout {
 			$this->cart_items = $session_data['cart'];
 		} else {
 			$this->cart_items = array();
-			// For logged-in users, create a new session with empty cart if none exists
-			if ( is_user_logged_in() ) {
-				$this->save_session( $session_key, array( 'cart' => $this->cart_items ) );
+			// Create a new session with empty cart for BOTH logged-in and logged-out users
+			$this->save_session( $session_key, array( 'cart' => $this->cart_items ) );
+			
+			// For logged-out users, ensure the session cookie is set
+			if ( ! is_user_logged_in() ) {
+				$this->set_session_cookie( true, $session_key );
 			}
 		}
 
@@ -206,7 +209,7 @@ class DigiCommerce_Checkout {
 	 * @param bool   $force - Force setting the cookie.
 	 * @param string $session_key - Session key.
 	 */
-	private function set_session_cookie( $force = false, $session_key = null ) {
+	public function set_session_cookie( $force = false, $session_key = null ) {
 		if ( headers_sent() ) {
 			return;
 		}
@@ -425,7 +428,19 @@ class DigiCommerce_Checkout {
 	 */
 	public function add_to_cart() {
 		try {
-			check_ajax_referer( 'digicommerce_add_to_cart', 'nonce' );
+			// More lenient nonce check for cart operations
+			$nonce_check = check_ajax_referer( 'digicommerce_add_to_cart', 'nonce', false );
+        
+			// For cart operations, we allow non-logged users but still verify the nonce when possible
+			if ( ! $nonce_check && is_user_logged_in() ) {
+				wp_send_json_error( array( 'message' => __( 'Security check failed.', 'digicommerce' ) ) );
+				return;
+			}
+
+			// Ensure session is initialized for AJAX requests
+			if ( ! did_action( 'init' ) || empty( $this->cart_items ) ) {
+				$this->init_session();
+			}
 
 			$product_id      = isset( $_POST['product_id'] ) ? intval( $_POST['product_id'] ) : 0;
 			$variation_name  = isset( $_POST['variation_name'] ) ? sanitize_text_field( $_POST['variation_name'] ) : ''; // phpcs:ignore
@@ -708,8 +723,19 @@ class DigiCommerce_Checkout {
 	 */
 	public function remove_cart_item() {
 		try {
-			// Verify nonce
-			check_ajax_referer( 'digicommerce_order_nonce', 'nonce' );
+			// More lenient nonce check for cart operations
+			$nonce_check = check_ajax_referer( 'digicommerce_order_nonce', 'nonce', false );
+        
+			// For cart operations, we allow non-logged users but still verify the nonce when possible
+			if ( ! $nonce_check && is_user_logged_in() ) {
+				wp_send_json_error( array( 'message' => __( 'Security check failed.', 'digicommerce' ) ) );
+				return;
+			}
+	
+			// Ensure session is initialized
+			if ( empty( $this->cart_items ) ) {
+				$this->init_session();
+			}
 
 			// Ensure cart exists
 			$session_key  = $this->get_current_session_key();
