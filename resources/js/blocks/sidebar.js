@@ -1213,6 +1213,169 @@
 		);
 	};
 
+	// Bundle Panel Component
+	const BundlePanel = () => {
+		const [bundleProducts, setBundleProducts] = useState([]);
+		const [products, setProducts] = useState([]);
+		const [selectedProductsInfo, setSelectedProductsInfo] = useState([]);
+		const { editPost } = useDispatch("core/editor");
+		const postMeta = useSelect((select) => {
+			return select("core/editor").getEditedPostAttribute("meta");
+		});
+		
+		// Get current post ID at component level
+		const currentPostId = useSelect(select => select('core/editor').getCurrentPostId());
+
+		// Load products on mount
+		useEffect(() => {
+			wp.apiFetch({
+				path: '/wp/v2/digi_product?per_page=-1&status=publish',
+				_fields: 'id,title,meta'
+			}).then(fetchedProducts => {
+				// Filter out current product
+				const filteredProducts = fetchedProducts.filter(product => product.id !== currentPostId);
+				setProducts(filteredProducts);
+			}).catch(error => {
+				console.error('Error fetching products:', error);
+			});
+		}, [currentPostId]);
+
+		// Load current bundle data
+		useEffect(() => {
+			if (postMeta?.digi_bundle_products) {
+				setBundleProducts(postMeta.digi_bundle_products);
+			}
+		}, [postMeta?.digi_bundle_products]);
+
+		// Update selected products info when bundle products change
+		useEffect(() => {
+			if (bundleProducts.length > 0 && products.length > 0) {
+				const selectedInfo = bundleProducts
+					.filter(productId => productId && productId !== '')
+					.map(productId => {
+						const product = products.find(p => p.id === parseInt(productId));
+						if (product) {
+							// Get file count
+							const files = product.meta?.digi_files || [];
+							const fileCount = Array.isArray(files) ? files.length : 0;
+							
+							return {
+								id: product.id,
+								name: product.title.rendered,
+								fileCount: fileCount
+							};
+						}
+						return null;
+					})
+					.filter(Boolean);
+				
+				setSelectedProductsInfo(selectedInfo);
+			} else {
+				setSelectedProductsInfo([]);
+			}
+		}, [bundleProducts, products]);
+
+		const addProduct = () => {
+			const newProducts = [...bundleProducts, ''];
+			setBundleProducts(newProducts);
+			editPost({ meta: { digi_bundle_products: newProducts } });
+		};
+
+		const updateProduct = (index, productId) => {
+			const updatedProducts = [...bundleProducts];
+			updatedProducts[index] = productId;
+			setBundleProducts(updatedProducts);
+			editPost({ meta: { digi_bundle_products: updatedProducts } });
+		};
+
+		const removeProduct = (index) => {
+			const updatedProducts = bundleProducts.filter((_, i) => i !== index);
+			setBundleProducts(updatedProducts);
+			editPost({ meta: { digi_bundle_products: updatedProducts } });
+		};
+
+		return (
+			<PanelBody title={__("Bundle Products", "digicommerce")} initialOpen={false}>
+				<div className="digi-container">
+					<div className="digi-bundle-info">
+						<p>{__("Select products to include in this bundle. Customer will receive downloads for all selected products with a single master license.", "digicommerce")}</p>
+					</div>
+
+					{bundleProducts.map((productId, index) => (
+						<Card key={index} className="digi-bundle-product-card">
+							<CardBody className="digi-inputs">
+								<SelectControl
+									label={__("Product", "digicommerce")}
+									value={productId}
+									options={[
+										{ label: __("Select a product...", "digicommerce"), value: '' },
+										...products.map(product => ({
+											label: product.title.rendered,
+											value: product.id.toString()
+										}))
+									]}
+									onChange={(value) => updateProduct(index, value)}
+									__nextHasNoMarginBottom={true}
+								/>
+
+								<Button
+									variant="secondary"
+									isDestructive={true}
+									onClick={() => removeProduct(index)}
+									className="digi-remove-button"
+								>
+									{__("Remove Product", "digicommerce")}
+								</Button>
+							</CardBody>
+						</Card>
+					))}
+
+					<Button
+						variant="primary"
+						onClick={addProduct}
+						className="digi-add-button"
+					>
+						{__("Add Product", "digicommerce")}
+					</Button>
+
+					{/* Bundle Preview */}
+					{selectedProductsInfo.length > 0 && (
+						<Card className="digi-bundle-preview" style={{ marginTop: '20px', backgroundColor: '#f8f9fa' }}>
+							<CardBody>
+								<h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600' }}>
+									{__("Bundle Preview", "digicommerce")}
+								</h4>
+								<div style={{ fontSize: '13px', color: '#666' }}>
+									<p style={{ margin: '0 0 8px 0' }}>
+										{sprintf(
+											__("This bundle includes %d products:", "digicommerce"), 
+											selectedProductsInfo.length
+										)}
+									</p>
+									<ul style={{ margin: '0' }}>
+										{selectedProductsInfo.map(product => (
+											<li key={product.id} style={{ marginBottom: '4px' }}>
+												<strong>{product.name}</strong>
+												{product.fileCount > 0 && (
+													<span style={{ color: '#888', fontSize: '12px' }}>
+														{' '}({sprintf(__("%d files", "digicommerce"), product.fileCount)})
+													</span>
+												)}
+											</li>
+										))}
+									</ul>
+									<p style={{ margin: '8px 0 0 0', fontSize: '12px', fontStyle: 'italic' }}>
+										{__("Customers will get one master license that works for all bundled products.", "digicommerce")}
+									</p>
+								</div>
+							</CardBody>
+						</Card>
+					)}
+				</div>
+			</PanelBody>
+		);
+	};
+
     // Main Product Sidebar Component
     const ProductSidebar = () => {
         const [price, setPrice] = useState(0);
@@ -1846,6 +2009,8 @@
 					<UpgradePathPanel />
 
 					<ApiDataPanel />
+
+					<BundlePanel />
                 </PluginSidebar>
             </>
         );

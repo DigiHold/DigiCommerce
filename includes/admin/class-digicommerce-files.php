@@ -372,6 +372,9 @@ Options -Indexes
 	 * @param string $license_key License key.
 	 */
 	public function serve_update_file( $license_key ) {
+		// Define the correct product slug for filename
+		$product_slug = 'digicommerce-pro';
+		
 		if ( ! class_exists( 'DigiCommerce_Pro_License' ) ) {
 			return new WP_Error( 'missing_license_class', esc_html__( 'License class not found.', 'digicommerce' ) );
 		}
@@ -424,52 +427,125 @@ Options -Indexes
 			return new WP_Error( 'no_update', esc_html__( 'No update file available.', 'digicommerce' ) );
 		}
 
-		// Get file path using DigiCommerce_Files class
-		$file_path = $this->get_file_path( $latest_file['id'] );
-		if ( ! $file_path ) {
-			return new WP_Error( 'file_not_found', esc_html__( 'Update file not found.', 'digicommerce' ) );
+		// Check if S3 is enabled
+		$s3_enabled = DigiCommerce()->get_option( 'enable_s3' );
+		$s3_available = $this->pro && $this->s3 && class_exists('DigiCommerce_Pro_S3');
+		
+		// Handle S3 vs Local files differently
+		if ( $s3_available && $s3_enabled ) {
+			// S3 file handling
+			$s3_key = $latest_file['file'];
+			
+			try {
+				// Get the S3 object
+				$s3_result = $this->s3->get_object( $s3_key );
+				
+				if ( ! $s3_result || ! isset( $s3_result['Body'] ) ) {
+					return new WP_Error( 'file_not_found', esc_html__( 'Update file not found on S3.', 'digicommerce' ) );
+				}
+
+				// Force correct filename for plugin updates
+				// WordPress expects plugin zip files to match the plugin folder name
+				$filename = $product_slug . '.zip';
+				$content_length = isset( $s3_result['ContentLength'] ) ? $s3_result['ContentLength'] : null;
+
+				// Clear any output buffers
+				while ( ob_get_level() ) {
+					ob_end_clean();
+				}
+
+				// Send headers - ensure correct content type and filename
+				nocache_headers();
+				header( 'Content-Type: application/zip' );
+				header( 'Content-Disposition: attachment; filename="' . rawurlencode( $filename ) . '"' );
+				if ( $content_length ) {
+					header( 'Content-Length: ' . $content_length );
+				}
+				header( 'X-Content-Type-Options: nosniff' );
+
+				// Disable max execution time
+				@set_time_limit( 0 ); // phpcs:ignore
+
+				// Stream the file from S3
+				$body = $s3_result['Body'];
+				if ( $body ) {
+					$bytes_sent = 0;
+					while ( ! $body->eof() ) {
+						$chunk = $body->read( 8192 );
+						echo $chunk; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Required for binary file streaming
+						flush();
+						$bytes_sent += strlen($chunk);
+						
+						// Check connection status
+						if ( connection_status() != CONNECTION_NORMAL ) {
+							break;
+						}
+					}
+				}
+
+				exit();
+
+			} catch ( Exception $e ) {
+				return new WP_Error( 'file_error', esc_html__( 'Unable to read update file from S3.', 'digicommerce' ) );
+			}
+			
+		} else {
+			// Local file handling (original code)
+			$file_path = $this->get_file_path( $latest_file['id'] );
+			if ( ! $file_path ) {
+				return new WP_Error( 'file_not_found', esc_html__( 'Update file not found.', 'digicommerce' ) );
+			}
+
+			// Make sure file exists
+			if ( ! file_exists( $file_path ) ) {
+				return new WP_Error( 'file_not_found', esc_html__( 'Update file not found.', 'digicommerce' ) );
+			}
+
+			// Get file size
+			$size     = filesize( $file_path );
+			$filename = $product_slug . '.zip'; // Use correct plugin slug, not original filename
+
+			// Clear any output buffers
+			while ( ob_get_level() ) {
+				ob_end_clean();
+			}
+
+			// Send headers
+			nocache_headers();
+			header( 'Content-Type: application/zip' );
+			header( 'Content-Disposition: attachment; filename="' . rawurlencode( $filename ) . '"' );
+			header( 'Content-Length: ' . $size );
+			header( 'X-Content-Type-Options: nosniff' );
+
+			// Open file and send it in chunks
+			$fp = fopen( $file_path, 'rb' ); // phpcs:ignore
+
+			// Make sure file was opened successfully
+			if ( false === $fp ) {
+				return new WP_Error( 'file_error', esc_html__( 'Unable to read update file.', 'digicommerce' ) );
+			}
+
+			// Disable max execution time
+			@set_time_limit( 0 ); // phpcs:ignore
+
+			// Send file contents
+			$bytes_sent = 0;
+			while ( ! feof( $fp ) ) {
+				$chunk = fread( $fp, 8192 ); // phpcs:ignore
+				echo $chunk; // phpcs:ignore
+				flush();
+				$bytes_sent += strlen($chunk);
+				
+				// Check connection status
+				if ( connection_status() != CONNECTION_NORMAL ) {
+					fclose( $fp ); // phpcs:ignore
+					break;
+				}
+			}
+
+			fclose( $fp ); // phpcs:ignore
+			exit();
 		}
-
-		// Make sure file exists
-		if ( ! file_exists( $file_path ) ) {
-			return new WP_Error( 'file_not_found', esc_html__( 'Update file not found.', 'digicommerce' ) );
-		}
-
-		// Get file size
-		$size     = filesize( $file_path );
-		$filename = basename( $file_path );
-
-		// Send headers
-		nocache_headers();
-		header( 'Content-Type: application/zip' );
-		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
-		header( 'Content-Length: ' . $size );
-		header( 'X-Content-Type-Options: nosniff' );
-
-		// Clear any output buffers
-		while ( ob_get_level() ) {
-			ob_end_clean();
-		}
-
-		// Open file and send it in chunks
-		$fp = fopen( $file_path, 'rb' ); // phpcs:ignore
-
-		// Make sure file was opened successfully
-		if ( false === $fp ) {
-			return new WP_Error( 'file_error', esc_html__( 'Unable to read update file.', 'digicommerce' ) );
-		}
-
-		// Disable max execution time
-		@set_time_limit( 0 ); // phpcs:ignore
-
-		// Send file contents
-		while ( ! feof( $fp ) ) {
-			echo fread( $fp, 8192 ); // phpcs:ignore
-			flush();
-		}
-
-		fclose( $fp ); // phpcs:ignore
-		exit();
 	}
 
 	/**

@@ -643,6 +643,25 @@ class DigiCommerce_Emails {
 			margin-top: 15px;
 			font-size: 13px;
 		}
+
+		.bundle-product-item {
+			border-left: 2px solid #e5e7eb;
+			padding-left: 1rem;
+			margin: 0.5rem 0;
+		}
+		
+		.bundle-product-name {
+			font-weight: 500;
+			font-size: 0.875rem;
+			color: #374151;
+			margin-bottom: 0.5rem;
+		}
+		
+		.bundle-downloads {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
 		
 		@media screen and (max-width: 600px) {
 			.container {

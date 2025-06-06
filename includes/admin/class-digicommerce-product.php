@@ -493,6 +493,27 @@ class DigiCommerce_Product {
 				)
 			);
 		}
+
+		register_post_meta(
+			'digi_product',
+			'digi_bundle_products',
+			array(
+				'show_in_rest'  => array(
+					'schema' => array(
+						'type'  => 'array',
+						'items' => array(
+							'type' => 'string',
+						),
+					),
+				),
+				'single'        => true,
+				'type'          => 'array',
+				'default'       => array(),
+				'auth_callback' => function () {
+					return current_user_can( 'edit_posts' );
+				},
+			)
+		);
 	}
 
 	/**

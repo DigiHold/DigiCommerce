@@ -1,22 +1,21 @@
 <?php
 /**
- * DigiCommerce
- *
- * @package       DigiCommerce
- * @author        DigiCommerce
- *
- * @wordpress-plugin
- * Plugin Name:       DigiCommerce
- * Plugin URI:        https://digicommerce.me/
- * Description:       Powerful ecommerce plugin to sell digital products, services and online courses.
- * Version:           1.0.0
- * Author:            DigiHold
- * Author URI:        https://digicommerce.me?utm_source=wordpress.org&utm_medium=referral&utm_campaign=plugin_directory&utm_content=digicommerce
- * Text Domain:       digicommerce
- * Domain Path:       /languages
- * Requires PHP:      7.4
+ * Plugin Name: DigiCommerce
+ * Plugin URI: https://digicommerce.me/
+ * Description: Powerful ecommerce plugin to sell digital products, services and online courses.
+ * Version: 1.0.1
+ * Author: DigiHold
+ * Author URI: https://digihold.me?utm_source=wordpress.org&utm_medium=referral&utm_campaign=plugin_directory&utm_content=digicommerce
+ * Text Domain: digicommerce
+ * Domain Path: /languages
  * Requires at least: 6.0
- * License: GPLv2
+ * Tested up to: 6.7
+ * Requires PHP: 7.4
+ * Network: false
+ * License: GPL v2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ *
+ * @package DigiCommerce
  */
 
 defined( 'ABSPATH' ) || exit;

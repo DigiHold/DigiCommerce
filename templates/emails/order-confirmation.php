@@ -164,62 +164,171 @@ if ( 'stripe' === $payment_method ) {
 									$product_id = isset( $item['product_id'] ) ? absint( $item['product_id'] ) : 0;
 
 									if ( $product_id && $order_id ) {
-										$price_mode           = get_post_meta( $product_id, 'digi_price_mode', true );
-										$variation_name       = isset( $item['variation_name'] ) ? $item['variation_name'] : '';
-										$show_variation_files = false;
-										$variation_files      = array();
-										$regular_files        = array();
+										// Check if this is a bundle product by checking order item data first
+										$is_bundle_item = !empty($item['is_bundle']) && !empty($item['bundle_products']);
 
-										// First check for variation files if it's a variable product
-										if ( 'variations' === $price_mode && ! empty( $variation_name ) ) {
-											$variations = get_post_meta( $product_id, 'digi_price_variations', true );
+										// Fallback: check product meta if order item doesn't have bundle flag
+										if (!$is_bundle_item) {
+											$bundle_products_meta = get_post_meta( $product_id, 'digi_bundle_products', true );
+											$is_bundle_from_meta = !empty($bundle_products_meta) && is_array($bundle_products_meta) && count(array_filter($bundle_products_meta)) > 0;
+											
+											// If it's a bundle from meta but doesn't have bundle_products in item, reconstruct the data
+											if ($is_bundle_from_meta) {
+												$item['is_bundle'] = true;
+												$item['bundle_products'] = array();
+												
+												foreach ($bundle_products_meta as $bundle_product_id) {
+													if (empty($bundle_product_id)) continue;
+													
+													$bundle_product_id = intval($bundle_product_id);
+													$bundle_product = get_post($bundle_product_id);
+													if ($bundle_product) {
+														$bundle_files = get_post_meta($bundle_product_id, 'digi_files', true);
+														$item['bundle_products'][] = array(
+															'product_id' => $bundle_product_id,
+															'name' => $bundle_product->post_title,
+															'files' => $bundle_files ?: array(),
+														);
+													}
+												}
+												$is_bundle_item = true;
+											}
+										}
 
-											if ( ! empty( $variations ) && is_array( $variations ) ) {
-												foreach ( $variations as $variation ) {
-													if ( isset( $variation['name'] ) && $variation['name'] === $variation_name ) {
-														if ( ! empty( $variation['files'] ) && is_array( $variation['files'] ) ) {
-															$variation_files      = $variation['files'];
-															$show_variation_files = true;
-															break;
+										if ( $is_bundle_item ) {
+											// Display bundle products in email
+											?>
+											<div style="margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+												<div style="font-weight: 600; font-size: 14px; margin-bottom: 10px; color: #374151;">
+													<?php esc_html_e( 'Bundle includes:', 'digicommerce' ); ?>
+												</div>
+												<?php 
+												// Ensure bundle_products exists and is an array
+												$bundle_products = isset($item['bundle_products']) && is_array($item['bundle_products']) ? $item['bundle_products'] : array();
+												
+												foreach ( $bundle_products as $bundle_product ) : 
+													$bundle_product_id = isset($bundle_product['product_id']) ? intval($bundle_product['product_id']) : 0;
+													$bundle_product_name = isset($bundle_product['name']) ? $bundle_product['name'] : '';
+													
+													if (!$bundle_product_id || !$bundle_product_name) continue;
+												?>
+													<div style="margin: 8px 0; padding: 8px; border-left: 3px solid #e5e7eb;">
+														<div style="font-weight: 500; font-size: 14px; color: #374151; margin-bottom: 5px;">
+															<?php echo esc_html( $bundle_product_name ); ?>
+														</div>
+														<?php
+														$bundle_files = isset($bundle_product['files']) && is_array($bundle_product['files']) ? $bundle_product['files'] : array();
+														
+														if ( !empty( $bundle_files ) ) :
+															// For email, show all available files as individual download links
+															$downloadable_files = array();
+															
+															foreach ( $bundle_files as $file ) {
+																if ( ! empty( $file['id'] ) ) {
+																	$downloadable_files[] = $file;
+																}
+															}
+
+															if ( count( $downloadable_files ) > 1 ) :
+																// Multiple files - show all as individual links
+																?>
+																<div style="margin: 5px 0;">
+																	<?php foreach ( $downloadable_files as $file ) : 
+																		$file_name = $file['itemName'] ?? $file['name'] ?? esc_html__( 'Download', 'digicommerce' );
+																	?>
+																		<div style="margin: 3px 0;">
+																			<a href="<?php echo esc_url( DigiCommerce_Files::instance()->generate_secure_download_url( $file['id'], $order_id, true ) ); ?>" 
+																			style="display: inline-block; padding: 6px 12px; background-color: #e5e7eb; color: #374151; text-decoration: none; border-radius: 4px; font-size: 13px; margin-right: 5px;">
+																				<?php echo esc_html( $file_name ); ?>
+																			</a>
+																		</div>
+																	<?php endforeach; ?>
+																</div>
+																<?php
+															elseif ( count( $downloadable_files ) === 1 ) :
+																// Single file - show as single link
+																$file = reset( $downloadable_files );
+																$file_name = $file['itemName'] ?? $file['name'] ?? esc_html__( 'Download', 'digicommerce' );
+																?>
+																<div style="margin: 5px 0;">
+																	<a href="<?php echo esc_url( DigiCommerce_Files::instance()->generate_secure_download_url( $file['id'], $order_id, true ) ); ?>" 
+																	style="display: inline-block; padding: 6px 12px; background-color: #e5e7eb; color: #374151; text-decoration: none; border-radius: 4px; font-size: 13px;">
+																		<?php echo esc_html( $file_name ); ?>
+																	</a>
+																</div>
+																<?php
+															endif;
+														else :
+															// No files available for this bundle product
+															?>
+															<div style="font-size: 12px; color: #9ca3af; font-style: italic;">
+																<?php esc_html_e( 'No downloadable files', 'digicommerce' ); ?>
+															</div>
+															<?php
+														endif;
+														?>
+													</div>
+												<?php endforeach; ?>
+											</div>
+											<?php
+										} else {
+											$price_mode           = get_post_meta( $product_id, 'digi_price_mode', true );
+											$variation_name       = isset( $item['variation_name'] ) ? $item['variation_name'] : '';
+											$show_variation_files = false;
+											$variation_files      = array();
+											$regular_files        = array();
+
+											// First check for variation files if it's a variable product
+											if ( 'variations' === $price_mode && ! empty( $variation_name ) ) {
+												$variations = get_post_meta( $product_id, 'digi_price_variations', true );
+
+												if ( ! empty( $variations ) && is_array( $variations ) ) {
+													foreach ( $variations as $variation ) {
+														if ( isset( $variation['name'] ) && $variation['name'] === $variation_name ) {
+															if ( ! empty( $variation['files'] ) && is_array( $variation['files'] ) ) {
+																$variation_files      = $variation['files'];
+																$show_variation_files = true;
+																break;
+															}
 														}
 													}
 												}
 											}
-										}
 
-										// Only get regular files if no variation files were found
-										if ( ! $show_variation_files ) {
-											$cache_key     = 'product_files_' . $product_id;
-											$regular_files = wp_cache_get( $cache_key, 'digicommerce_files' );
+											// Only get regular files if no variation files were found
+											if ( ! $show_variation_files ) {
+												$cache_key     = 'product_files_' . $product_id;
+												$regular_files = wp_cache_get( $cache_key, 'digicommerce_files' );
 
-											if ( false === $regular_files ) {
-												$regular_files = get_post_meta( $product_id, 'digi_files', true );
+												if ( false === $regular_files ) {
+													$regular_files = get_post_meta( $product_id, 'digi_files', true );
 
-												if ( ! empty( $regular_files ) && is_array( $regular_files ) ) {
-													wp_cache_set( $cache_key, $regular_files, 'digicommerce_files', HOUR_IN_SECONDS );
+													if ( ! empty( $regular_files ) && is_array( $regular_files ) ) {
+														wp_cache_set( $cache_key, $regular_files, 'digicommerce_files', HOUR_IN_SECONDS );
+													}
 												}
 											}
-										}
 
-										// Use variation files if available, otherwise fall back to regular files
-										$files_to_show = $show_variation_files ? $variation_files : $regular_files;
+											// Use variation files if available, otherwise fall back to regular files
+											$files_to_show = $show_variation_files ? $variation_files : $regular_files;
 
-										if ( ! empty( $files_to_show ) && is_array( $files_to_show ) ) :
-											// Get only the latest file (last item in the array)
-											$latest_file = end( $files_to_show );
+											if ( ! empty( $files_to_show ) && is_array( $files_to_show ) ) :
+												// Get only the latest file (last item in the array)
+												$latest_file = end( $files_to_show );
 
-											if ( ! empty( $latest_file['id'] ) ) :
-												?>
-												<div style="margin-top: 10px;">
-													<div style="margin: 5px 0;">
-														<a href="<?php echo esc_url( DigiCommerce_Files::instance()->generate_secure_download_url( $latest_file['id'], $order_id, true ) ); ?>" style="display: inline-block; padding: 8px 15px; background-color: #e5e7eb; color: #374151; text-decoration: none; border-radius: 4px; font-size: 14px;">
-															<?php esc_html_e( 'Download', 'digicommerce' ); ?>
-														</a>
+												if ( ! empty( $latest_file['id'] ) ) :
+													?>
+													<div style="margin-top: 10px;">
+														<div style="margin: 5px 0;">
+															<a href="<?php echo esc_url( DigiCommerce_Files::instance()->generate_secure_download_url( $latest_file['id'], $order_id, true ) ); ?>" style="display: inline-block; padding: 8px 15px; background-color: #e5e7eb; color: #374151; text-decoration: none; border-radius: 4px; font-size: 14px;">
+																<?php esc_html_e( 'Download', 'digicommerce' ); ?>
+															</a>
+														</div>
 													</div>
-												</div>
-												<?php
+													<?php
+												endif;
 											endif;
-										endif;
+										}
 									}
 									?>
 								</div>

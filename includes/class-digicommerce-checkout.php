@@ -1611,32 +1611,90 @@ class DigiCommerce_Checkout {
 	 */
 	private function prepare_order_items() {
 		$items_data = array();
-		foreach ( $this->cart_items as $item ) {
-			$product   = get_post( $item['product_id'] );
+		foreach ($this->cart_items as $item) {
+			$product = get_post($item['product_id']);
 			$item_data = array(
-				'product_id'     => $item['product_id'],
-				'name'           => $product->post_title,
+				'product_id' => $item['product_id'],
+				'name' => $product->post_title,
 				'variation_name' => $item['variation_name'] ?? '',
-				'price'          => $item['price'],
-				'quantity'       => 1,
+				'price' => $item['price'],
+				'quantity' => 1,
 			);
-
+	
+			// Check if this is a bundle product (automatically detect)
+			$bundle_products = get_post_meta($item['product_id'], 'digi_bundle_products', true);
+			$is_bundle = !empty($bundle_products) && is_array($bundle_products) && count(array_filter($bundle_products)) > 0;
+	
+			if ($is_bundle) {
+				$item_data['is_bundle'] = true;
+				$item_data['bundle_products'] = array();
+				
+				foreach ($bundle_products as $bundle_product_id) {
+					if (empty($bundle_product_id)) continue; // Skip empty selections
+					
+					$bundle_product_id = intval($bundle_product_id);
+					$bundle_product = get_post($bundle_product_id);
+					if ($bundle_product && $bundle_product->post_status === 'publish') {
+						// Get files for this bundled product - check both regular files and variation files
+						$bundle_files = array();
+						
+						// Get regular files first
+						$regular_files = get_post_meta($bundle_product_id, 'digi_files', true);
+						if (!empty($regular_files) && is_array($regular_files)) {
+							$bundle_files = $regular_files;
+						}
+						
+						// Check if the bundled product has variations and get files from default variation
+						$price_mode = get_post_meta($bundle_product_id, 'digi_price_mode', true);
+						if ($price_mode === 'variations') {
+							$variations = get_post_meta($bundle_product_id, 'digi_price_variations', true);
+							if (!empty($variations) && is_array($variations)) {
+								// Find default variation or use first variation
+								$default_variation = null;
+								foreach ($variations as $variation) {
+									if (!empty($variation['isDefault'])) {
+										$default_variation = $variation;
+										break;
+									}
+								}
+								
+								// If no default found, use first variation
+								if (!$default_variation && !empty($variations[0])) {
+									$default_variation = $variations[0];
+								}
+								
+								// Use variation files if available and not empty
+								if ($default_variation && !empty($default_variation['files']) && is_array($default_variation['files'])) {
+									$bundle_files = $default_variation['files'];
+								}
+							}
+						}
+						
+						$item_data['bundle_products'][] = array(
+							'product_id' => $bundle_product_id,
+							'name' => $bundle_product->post_title,
+							'files' => $bundle_files,
+						);
+					}
+				}
+			}
+	
 			// Add subscription data if present
-			if ( ! empty( $item['subscription_enabled'] ) ) {
-				$item_data['subscription_enabled']    = $item['subscription_enabled'];
-				$item_data['subscription_period']     = $item['subscription_period'];
+			if (!empty($item['subscription_enabled'])) {
+				$item_data['subscription_enabled'] = $item['subscription_enabled'];
+				$item_data['subscription_period'] = $item['subscription_period'];
 				$item_data['subscription_free_trial'] = $item['subscription_free_trial'];
 				$item_data['subscription_signup_fee'] = $item['subscription_signup_fee'];
 			}
-
+	
 			// Add any meta data from cart item
-			if ( ! empty( $item['meta'] ) ) {
+			if (!empty($item['meta'])) {
 				$item_data['meta'] = $item['meta'];
 			}
-
+	
 			$items_data[] = $item_data;
 		}
-
+	
 		return $items_data;
 	}
 

@@ -4,7 +4,7 @@ Tags: ecommerce, shop, digital products, appointments, sell online
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -295,6 +295,9 @@ Yes, DigiCommerce is optimized for performance even with large product catalogs.
 11. **Order Details**: Detailed view of individual order information and status.
 
 == Changelog ==
+
+= 1.0.1 =
+* Added: Bundle panel for Product CPT, now you can create a bundle product.
 
 = 1.0.0 - April 25, 2025 =
 * Initial public release of DigiCommerce
