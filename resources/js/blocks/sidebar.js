@@ -20,12 +20,266 @@
     const { useState, useEffect } = wp.element;
     const { __ } = wp.i18n;
 
-	const formatFileName = (fileName) => {
-		// Remove file extension
-		const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
-		// Replace hyphens with spaces
-		return nameWithoutExt.replace(/-/g, " ");
-	};
+    // Shared utility functions
+    const formatFileName = (fileName) => {
+        // Remove file extension
+        const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
+        // Replace hyphens with spaces
+        return nameWithoutExt.replace(/-/g, " ");
+    };
+
+    // Helper function to format file sizes
+    const formatFileSize = (bytes) => {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    // Shared upload functions
+    const createFileUploader = () => {
+        // Enhanced file upload with better S3 integration and error handling
+        const initFileUpload = async (onSuccess) => {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.multiple = false;
+            
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Validate file size (max 100MB)
+                const maxSize = 100 * 1024 * 1024; // 100MB
+                if (file.size > maxSize) {
+                    wp.data.dispatch('core/notices').createNotice(
+                        'error',
+                        __('File size too large. Maximum size is 100MB.', 'digicommerce'),
+                        { type: 'snackbar' }
+                    );
+                    return;
+                }
+
+                // Validate file type
+                const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'zip', 'rar', '7z', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'mp4', 'mp3', 'wav'];
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                
+                if (!allowedExtensions.includes(fileExtension)) {
+                    wp.data.dispatch('core/notices').createNotice(
+                        'error',
+                        __('Invalid file type. Please upload a supported file format.', 'digicommerce'),
+                        { type: 'snackbar' }
+                    );
+                    return;
+                }
+
+                try {
+                    const uploadedFile = await handleFileUpload(file);
+                    if (uploadedFile && onSuccess) {
+                        onSuccess(uploadedFile);
+                    }
+                } catch (error) {
+                    // Error is already handled in handleFileUpload
+                    console.error('Upload failed:', error);
+                }
+            });
+
+            fileInput.click();
+        };
+
+        // Enhanced file upload handler with S3 optimization
+        const handleFileUpload = async (file) => {
+            const formData = new FormData();
+            formData.append('action', 'digicommerce_upload_file');
+            formData.append('file', file);
+            formData.append('upload_nonce', digicommerceVars.upload_nonce);
+
+            // Create a unique notice ID for this upload
+            const noticeId = 'upload_' + Date.now();
+            
+            try {
+                // Show initial upload notice based on S3 status
+                const uploadMessage = digicommerceVars.s3_enabled 
+                    ? digicommerceVars.i18n.s3_uploading 
+                    : __('Uploading file...', 'digicommerce');
+                    
+                wp.data.dispatch('core/notices').createNotice(
+                    'info',
+                    uploadMessage,
+                    { 
+                        type: 'snackbar', 
+                        isDismissible: false,
+                        id: noticeId
+                    }
+                );
+
+                // Create a timeout for long uploads
+                const uploadTimeout = setTimeout(() => {
+                    wp.data.dispatch('core/notices').removeNotice(noticeId);
+                    wp.data.dispatch('core/notices').createNotice(
+                        'warning',
+                        __('Upload is taking longer than expected. Please wait...', 'digicommerce'),
+                        { type: 'snackbar', id: noticeId + '_timeout' }
+                    );
+                }, 30000); // 30 seconds
+
+                const response = await fetch(digicommerceVars.ajaxurl, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                // Clear the timeout
+                clearTimeout(uploadTimeout);
+                
+                // Remove upload notice
+                wp.data.dispatch('core/notices').removeNotice(noticeId);
+                wp.data.dispatch('core/notices').removeNotice(noticeId + '_timeout');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    const newFile = {
+                        name: data.data.name,
+                        file: data.data.file,
+                        id: data.data.id,
+                        type: data.data.type,
+                        size: data.data.size,
+                        itemName: formatFileName(data.data.name),
+                        s3: data.data.s3 || false
+                    };
+
+                    // Success message based on storage type
+                    const successMessage = digicommerceVars.s3_enabled 
+                        ? __('File successfully uploaded to Amazon S3', 'digicommerce')
+                        : __('File uploaded successfully', 'digicommerce');
+                        
+                    wp.data.dispatch('core/notices').createNotice(
+                        'success',
+                        successMessage,
+                        { type: 'snackbar' }
+                    );
+                    
+                    return newFile;
+                    
+                } else {
+                    // Handle specific S3 errors
+                    let errorMessage = data.data || __('Upload failed. Please try again.', 'digicommerce');
+                    
+                    if (data.data && data.data.includes('S3')) {
+                        errorMessage = digicommerceVars.i18n.s3_upload_failed;
+                    } else if (data.data && data.data.includes('timeout')) {
+                        errorMessage = __('Upload timed out. Please try again with a smaller file.', 'digicommerce');
+                    } else if (data.data && data.data.includes('size')) {
+                        errorMessage = __('File too large. Please choose a smaller file.', 'digicommerce');
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+                
+            } catch (error) {
+                // Clear any existing notices
+                wp.data.dispatch('core/notices').removeNotice(noticeId);
+                wp.data.dispatch('core/notices').removeNotice(noticeId + '_timeout');
+                
+                console.error('Upload error:', error);
+                
+                // Show specific error message
+                let errorMessage = error.message;
+                
+                if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                    errorMessage = __('Network error. Please check your connection and try again.', 'digicommerce');
+                } else if (error.message.includes('413') || error.message.includes('payload too large')) {
+                    errorMessage = __('File too large for upload. Please try a smaller file.', 'digicommerce');
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = __('Upload timed out. Please try again.', 'digicommerce');
+                }
+                
+                wp.data.dispatch('core/notices').createNotice(
+                    'error',
+                    errorMessage,
+                    { type: 'snackbar' }
+                );
+                
+                throw error; // Re-throw for caller to handle if needed
+            }
+        };
+
+        // Enhanced file removal with S3 support
+        const removeFile = async (fileToRemove, onSuccess) => {
+            if (!fileToRemove) {
+                wp.data.dispatch('core/notices').createNotice(
+                    'error',
+                    __('File not found for removal.', 'digicommerce'),
+                    { type: 'snackbar' }
+                );
+                return false;
+            }
+
+            try {
+                const response = await wp.apiFetch({
+                    path: '/wp/v2/digicommerce/delete-file',
+                    method: 'POST',
+                    data: { 
+                        file: fileToRemove,
+                        is_s3: fileToRemove.s3 || digicommerceVars.s3_enabled
+                    }
+                });
+
+                if (response.success) {
+                    let noticeMessage = response.message;
+                    
+                    // Customize message based on status
+                    if (response.status === 'not_found') {
+                        noticeMessage = digicommerceVars.s3_enabled 
+                            ? __('File removed from product (was already deleted from S3)', 'digicommerce')
+                            : __('File removed from product (was already deleted from server)', 'digicommerce');
+                    } else if (digicommerceVars.s3_enabled) {
+                        noticeMessage = __('File successfully removed from S3', 'digicommerce');
+                    }
+                    
+                    wp.data.dispatch('core/notices').createNotice(
+                        'success',
+                        noticeMessage,
+                        { type: 'snackbar' }
+                    );
+                    
+                    if (onSuccess) {
+                        onSuccess();
+                    }
+                    
+                    return true;
+                }
+                
+            } catch (error) {
+                console.error('Error deleting file:', error);
+                
+                let errorMessage = error.message || __('Failed to delete file. Please try again.', 'digicommerce');
+                
+                if (digicommerceVars.s3_enabled && error.message.includes('S3')) {
+                    errorMessage = __('Failed to delete file from S3. Please try again.', 'digicommerce');
+                }
+                
+                wp.data.dispatch('core/notices').createNotice(
+                    'error',
+                    errorMessage,
+                    { type: 'snackbar' }
+                );
+                
+                return false;
+            }
+        };
+
+        return { initFileUpload, handleFileUpload, removeFile };
+    };
+
+    // Create uploader instance
+    const fileUploader = createFileUploader();
 
 	// Version Modal Component
 	const VersionModal = ({ isOpen, onClose, onSave, initialVersion = '', initialChangelog = '' }) => {
@@ -281,126 +535,26 @@
 
     // Price Variation Row Component
     const PriceVariationRow = ({ variation, index, onUpdate, onRemove, onDragStart, onDragOver, onDrop, onDragLeave, onDragEnd }) => {
-        const initFileUpload = async () => {
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.multiple = false;
-            
-            fileInput.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const formData = new FormData();
-                formData.append('action', 'digicommerce_upload_file');
-                formData.append('file', file);
-                formData.append('upload_nonce', digicommerceVars.upload_nonce);
-
-                try {
-                    // Show initial upload notice
-                    if (digicommerceVars.s3_enabled) {
-                        wp.data.dispatch('core/notices').createNotice(
-                            'info',
-                            digicommerceVars.i18n.s3_uploading,
-                            { type: 'snackbar', isDismissible: false }
-                        );
-                    } else {
-                        wp.data.dispatch('core/notices').createNotice(
-                            'info',
-                            __('Uploading file...', 'digicommerce'),
-                            { type: 'snackbar', isDismissible: false }
-                        );
-                    }
-
-                    const response = await fetch(digicommerceVars.ajaxurl, {
-                        method: 'POST',
-                        body: formData,
-                    });
-
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        const newFile = {
-                            name: data.data.name,
-                            file: data.data.file,
-                            id: data.data.id,
-                            type: data.data.type,
-                            size: data.data.size,
-							itemName: formatFileName(data.data.name)
-                        };
-                        
-                        const updatedFiles = [...(variation.files || []), newFile];
-                        onUpdate(index, { ...variation, files: updatedFiles });
-
-                        // Success message based on storage type
-                        if (digicommerceVars.s3_enabled) {
-                            wp.data.dispatch('core/notices').createNotice(
-                                'success',
-                                __('File successfully uploaded to Amazon S3', 'digicommerce'),
-                                { type: 'snackbar' }
-                            );
-                        } else {
-                            wp.data.dispatch('core/notices').createNotice(
-                                'success',
-                                __('File uploaded successfully', 'digicommerce'),
-                                { type: 'snackbar' }
-                            );
-                        }
-                    } else {
-                        // Handle S3 specific errors
-                        if (data.data?.s3_error) {
-                            wp.data.dispatch('core/notices').createNotice(
-                                'error',
-                                digicommerceVars.i18n.s3_upload_failed,
-                                { type: 'snackbar' }
-                            );
-                        } else {
-                            throw new Error(data.data || 'Upload failed');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    wp.data.dispatch('core/notices').createNotice(
-                        'error',
-                        __('Upload failed. Please try again.', 'digicommerce'),
-                        { type: 'snackbar' }
-                    );
-                }
-            });
-
-            fileInput.click();
+        const addFileToVariation = async (newFile) => {
+            const updatedFiles = [...(variation.files || []), newFile];
+            onUpdate(index, { ...variation, files: updatedFiles });
         };
 
-        const removeFile = async (fileIndex) => {
+        const removeFileFromVariation = async (fileIndex) => {
             const fileToRemove = variation.files[fileIndex];
+            
+            // Optimistically remove the file from state
             const updatedFiles = variation.files.filter((_, i) => i !== fileIndex);
             onUpdate(index, { ...variation, files: updatedFiles });
 
-            try {
-                const response = await wp.apiFetch({
-                    path: '/wp/v2/digicommerce/delete-file',
-                    method: 'POST',
-                    data: { file: fileToRemove }
-                });
+            // Attempt to delete the file
+            const success = await fileUploader.removeFile(fileToRemove, () => {
+                // File successfully removed - state already updated optimistically
+            });
 
-                if (response.success) {
-                    let noticeMessage = response.message;
-                    if (response.status === 'not_found') {
-                        noticeMessage = __('File removed from variation (was already deleted from server)', 'digicommerce');
-                    }
-                    wp.data.dispatch('core/notices').createNotice(
-                        'success',
-                        noticeMessage,
-                        { type: 'snackbar' }
-                    );
-                }
-            } catch (error) {
-                console.error('Error deleting file:', error);
+            // If deletion failed, revert the state
+            if (!success) {
                 onUpdate(index, { ...variation, files: [...variation.files] });
-                wp.data.dispatch('core/notices').createNotice(
-                    'error',
-                    error.message || __('Failed to delete file. Please try again.', 'digicommerce'),
-                    { type: 'snackbar' }
-                );
             }
         };
 
@@ -559,7 +713,7 @@
                                         <Button
                                             variant="secondary"
                                             isDestructive={true}
-                                            onClick={() => removeFile(fileIndex)}
+                                            onClick={() => removeFileFromVariation(fileIndex)}
                                         >
                                             {__("Remove File", "digicommerce")}
                                         </Button>
@@ -569,7 +723,7 @@
                         ))}
                         <Button
                             variant="secondary"
-                            onClick={initFileUpload}
+                            onClick={() => fileUploader.initFileUpload(addFileToVariation)}
                             className="digi-add-button"
                         >
                             {__("Add Download File", "digicommerce")}
@@ -1242,9 +1396,10 @@
 
 		// Load current bundle data
 		useEffect(() => {
-			if (postMeta?.digi_bundle_products) {
-				setBundleProducts(postMeta.digi_bundle_products);
-			}
+			const metaBundleProducts = postMeta?.digi_bundle_products;
+			// Ensure we always have an array, even if meta is null/undefined
+			const bundleProductsArray = Array.isArray(metaBundleProducts) ? metaBundleProducts : [];
+			setBundleProducts(bundleProductsArray);
 		}, [postMeta?.digi_bundle_products]);
 
 		// Update selected products info when bundle products change
@@ -1291,6 +1446,7 @@
 		const removeProduct = (index) => {
 			const updatedProducts = bundleProducts.filter((_, i) => i !== index);
 			setBundleProducts(updatedProducts);
+			// FIXED: Always save as array, never null or undefined
 			editPost({ meta: { digi_bundle_products: updatedProducts } });
 		};
 
@@ -1393,7 +1549,6 @@
         // Function to get checkout page URL
         const getCheckoutUrl = () => {
             if (!checkoutPageId) return '';
-            // Use wp.url to get the permalink for the checkout page
             return `${wp.url.addQueryArgs(digicommerceVars.checkout_url, {})}`;
         };
         
@@ -1414,98 +1569,13 @@
             }
         }, [postMeta]);
 
-        // File Upload Handler
-        const initFileUpload = () => {
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.multiple = false;
-            
-            fileInput.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-        
-                const formData = new FormData();
-                formData.append('action', 'digicommerce_upload_file');
-                formData.append('file', file);
-                formData.append('upload_nonce', digicommerceVars.upload_nonce);
-        
-                try {
-                    // Show initial upload notice
-                    if (digicommerceVars.s3_enabled) {
-                        wp.data.dispatch('core/notices').createNotice(
-                            'info',
-                            digicommerceVars.i18n.s3_uploading,
-                            { type: 'snackbar', isDismissible: false }
-                        );
-                    } else {
-                        wp.data.dispatch('core/notices').createNotice(
-                            'info',
-                            __('Uploading file...', 'digicommerce'),
-                            { type: 'snackbar', isDismissible: false }
-                        );
-                    }
-        
-                    const response = await fetch(digicommerceVars.ajaxurl, {
-                        method: 'POST',
-                        body: formData,
-                    });
-        
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        const newFile = {
-                            name: data.data.name,
-                            file: data.data.file,
-                            id: data.data.id,
-                            type: data.data.type,
-                            size: data.data.size,
-							itemName: formatFileName(data.data.name)
-                        };
-                        
-                        const updatedFiles = [...files, newFile];
-                        setFiles(updatedFiles);
-                        editPost({ meta: { digi_files: updatedFiles } });
-        
-                        // Success message based on storage type
-                        if (digicommerceVars.s3_enabled) {
-                            wp.data.dispatch('core/notices').createNotice(
-                                'success',
-                                __('File successfully uploaded to Amazon S3', 'digicommerce'),
-                                { type: 'snackbar' }
-                            );
-                        } else {
-                            wp.data.dispatch('core/notices').createNotice(
-                                'success',
-                                __('File uploaded successfully', 'digicommerce'),
-                                { type: 'snackbar' }
-                            );
-                        }
-                    } else {
-                        // Handle S3 specific errors
-                        if (data.data?.s3_error) {
-                            wp.data.dispatch('core/notices').createNotice(
-                                'error',
-                                digicommerceVars.i18n.s3_upload_failed,
-                                { type: 'snackbar' }
-                            );
-                        } else {
-                            throw new Error(data.data || 'Upload failed');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    wp.data.dispatch('core/notices').createNotice(
-                        'error',
-                        __('Upload failed. Please try again.', 'digicommerce'),
-                        { type: 'snackbar' }
-                    );
-                }
-            });
-        
-            fileInput.click();
+        // File handlers for main product files
+        const addFileToProduct = async (newFile) => {
+            const updatedFiles = [...files, newFile];
+            setFiles(updatedFiles);
+            editPost({ meta: { digi_files: updatedFiles } });
         };
 
-        // File Handlers
         const updateFile = (index, updatedFile) => {
             const updatedFiles = [...files];
             updatedFiles[index] = updatedFile;
@@ -1513,50 +1583,24 @@
             editPost({ meta: { digi_files: updatedFiles } });
         };
 
-        // File deletion handler function
-        const removeFile = (index) => {
+        const removeFileFromProduct = async (index) => {
             const fileToRemove = files[index];
-        
-            // Optimistically remove the file from state and meta
+            
+            // Optimistically remove the file from state
             const updatedFiles = files.filter((_, i) => i !== index);
             setFiles(updatedFiles);
             editPost({ meta: { digi_files: updatedFiles } });
-        
-            // Make AJAX call to delete the file using wp.apiFetch
-            wp.apiFetch({
-                path: '/wp/v2/digicommerce/delete-file',
-                method: 'POST',
-                data: {
-                    file: fileToRemove,
-                    is_s3: fileToRemove.s3 || false // Pass S3 flag to the backend
-                }
-            }).then((response) => {
-                if (response.success) {
-                    let noticeMessage = response.message;
-                    if (response.status === 'not_found') {
-                        noticeMessage = digicommerceVars.s3_enabled ? 
-                            __('File removed from product (was already deleted from S3)', 'digicommerce') :
-                            __('File removed from product (was already deleted from server)', 'digicommerce');
-                    }
-                    wp.data.dispatch('core/notices').createNotice(
-                        'success',
-                        noticeMessage,
-                        { type: 'snackbar' }
-                    );
-                }
-            }).catch((error) => {
-                console.error('Error deleting file:', error);
-        
-                // Revert the change in case of failure
+
+            // Attempt to delete the file
+            const success = await fileUploader.removeFile(fileToRemove, () => {
+                // File successfully removed - state already updated optimistically
+            });
+
+            // If deletion failed, revert the state
+            if (!success) {
                 setFiles([...files]);
                 editPost({ meta: { digi_files: [...files] } });
-        
-                wp.data.dispatch('core/notices').createNotice(
-                    'error',
-                    error.message || __('Failed to delete file. Please try again.', 'digicommerce'),
-                    { type: 'snackbar' }
-                );
-            });
+            }
         };
 
         // Price Mode Toggle Handler
@@ -1600,14 +1644,7 @@
                 // Delete each file associated with the variation
                 for (const file of variationToRemove.files) {
                     try {
-                        await wp.apiFetch({
-                            path: '/wp/v2/digicommerce/delete-file',
-                            method: 'POST',
-                            data: { 
-                                file: file,
-                                is_s3: file.s3 || false // Pass S3 flag to the backend
-                            }
-                        });
+                        await fileUploader.removeFile(file);
                     } catch (error) {
                         console.error('Error deleting variation file:', error);
                         // Show error notification but continue with variation removal
@@ -1861,7 +1898,7 @@
                                     file={file}
                                     index={index}
                                     onUpdate={updateFile}
-                                    onRemove={removeFile}
+                                    onRemove={removeFileFromProduct}
                                     onDragStart={handleDragStart}
                                     onDragOver={handleDragOver}
                                     onDrop={handleFileDrop}
@@ -1872,7 +1909,7 @@
                         </div>
                         <Button
                             variant="primary"
-                            onClick={initFileUpload}
+                            onClick={() => fileUploader.initFileUpload(addFileToProduct)}
                             className="digi-add-button"
                         >
                             {__("Add New File", "digicommerce")}

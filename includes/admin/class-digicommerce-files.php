@@ -26,7 +26,7 @@ class DigiCommerce_Files {
 	 *
 	 * @var int
 	 */
-	private $token_expiry = 3600; // 1 hour token validity
+	private $token_expiry = 7200; // 2 hours for regular downloads
 
 	/**
 	 * Chunk size for file streaming
@@ -43,9 +43,9 @@ class DigiCommerce_Files {
 	private $cache_group = 'digicommerce_files';
 
 	/**
-	 * S3 handler instance
+	 * Product file cache
 	 *
-	 * @var DigiCommerce_Pro_S3
+	 * @var array
 	 */
 	private static $product_file_cache = array();
 
@@ -113,6 +113,27 @@ class DigiCommerce_Files {
 		if ( ! $this->pro || ( $this->s3 && ! DigiCommerce()->get_option( 'enable_s3' ) ) ) {
 			$this->initialize_directory();
 		}
+	}
+
+	/**
+	 * Check if S3 is enabled and available
+	 */
+	public function is_s3_enabled() {
+		return $this->pro && $this->s3 && DigiCommerce()->get_option( 'enable_s3' );
+	}
+
+	/**
+	 * Get S3 instance
+	 */
+	public function get_s3_instance() {
+		return $this->s3;
+	}
+
+	/**
+	 * Get upload directory path
+	 */
+	public function get_upload_dir() {
+		return $this->upload_dir;
 	}
 
 	/**
@@ -223,38 +244,70 @@ Options -Indexes
 		if ( ! get_query_var( 'digicommerce_download' ) ) {
 			return;
 		}
-
+	
 		try {
 			$token = get_query_var( 'digicommerce_download' );
-
+	
 			if ( ! $token ) {
 				wp_die( esc_html__( 'Unable to process download request.', 'digicommerce' ) );
 				return;
 			}
-
+	
 			// Get and validate token data
 			$token_data = get_transient( 'digicommerce_download_' . $token );
-
+	
 			if ( ! $token_data || ! is_array( $token_data ) ) {
 				wp_die( esc_html__( 'Download link has expired. Please click the download button again.', 'digicommerce' ) );
 				return;
 			}
-
+	
 			// Check expiration
 			if ( time() > $token_data['expires'] ) {
 				delete_transient( 'digicommerce_download_' . $token );
 				wp_die( esc_html__( 'Download link has expired. Please click the download button again.', 'digicommerce' ) );
 				return;
 			}
-
+	
 			// Check access based on context
-			if ( ! empty( $token_data['license_key'] ) ) {
-				// License update context
-				$license = DigiCommerce_Pro_License::instance()->get_license_by_key( $token_data['license_key'] );
+			if ( ! empty( $token_data['license_key'] ) || ! empty( $token_data['is_license_download'] ) ) {
+				// License update context - handle directly here
+				if ( ! class_exists( 'DigiCommerce_Pro_License' ) ) {
+					wp_die( esc_html__( 'License system not available.', 'digicommerce' ) );
+					return;
+				}
+	
+				$license_instance = DigiCommerce_Pro_License::instance();
+				$license = $license_instance->get_license_by_key( $token_data['license_key'] );
+				
 				if ( ! $license || 'active' !== $license['status'] ) {
 					wp_die( esc_html__( 'Invalid or inactive license.', 'digicommerce' ) );
 					return;
 				}
+	
+				// Check expiration
+				if ( $license['expires_at'] && strtotime( $license['expires_at'] ) < time() ) {
+					wp_die( esc_html__( 'License has expired.', 'digicommerce' ) );
+					return;
+				}
+	
+				// Get file info and serve it
+				$file_info = $this->get_file_info( $token_data['file_id'] );
+				if ( ! $file_info ) {
+					wp_die( esc_html__( 'File not available.', 'digicommerce' ) );
+					return;
+				}
+	
+				// Handle the file download
+				if ( $this->is_s3_enabled() ) {
+					$this->handle_s3_download( $file_info, $token_data );
+				} else {
+					$this->handle_local_download( $file_info, $token_data );
+				}
+	
+				// Log and cleanup
+				$this->log_download( $token_data['file_id'], 0, 0 );
+				delete_transient( 'digicommerce_download_' . $token );
+				exit;
 			} elseif ( ! empty( $token_data['order_token'] ) ) {
 				// Thank you page context
 				if ( ! DigiCommerce_Orders::instance()->verify_order_token( $token_data['order_id'], $token_data['order_token'] ) ) {
@@ -268,515 +321,96 @@ Options -Indexes
 					return;
 				}
 			}
-
-			// Get and validate file path
-			$file_path = $this->get_file_path( $token_data['file_id'] );
-
-			if ( ! $file_path ) {
+	
+			// Get file information for regular downloads
+			$file_info = $this->get_file_info( $token_data['file_id'] );
+	
+			if ( ! $file_info ) {
 				delete_transient( 'digicommerce_download_' . $token );
 				wp_die( esc_html__( 'File not available. Please contact support.', 'digicommerce' ) );
 				return;
 			}
-
-			// Handle the file download
-			if ( $this->pro && $this->s3 && DigiCommerce()->get_option( 'enable_s3' ) ) {
-				if ( ! $this->send_file( $file_path, true ) ) {
-					wp_die( esc_html__( 'Unable to download file. Please try again.', 'digicommerce' ) );
-					return;
-				}
-			} else { // phpcs:ignore
-				if ( ! $this->send_file( $file_path, false ) ) {
-					wp_die( esc_html__( 'File not available. Please contact support.', 'digicommerce' ) );
-					return;
-				}
+	
+			// Handle the file download based on storage type
+			if ( $this->is_s3_enabled() ) {
+				$this->handle_s3_download( $file_info, $token_data );
+			} else {
+				$this->handle_local_download( $file_info, $token_data );
 			}
-
+	
 			// Log and cleanup after successful download
 			$this->log_download( $token_data['file_id'], $token_data['order_id'], $token_data['user_id'] ?? 0 );
 			delete_transient( 'digicommerce_download_' . $token );
-			exit;
-
+	
 		} catch ( Exception $e ) {
 			wp_die( esc_html__( 'An error occurred. Please try again.', 'digicommerce' ) );
 		}
 	}
 
 	/**
-	 * Function to manually flush rewrite rules
+	 * Handle S3 downloads using presigned URLs
 	 */
-	public function flush_rewrite_rules() {
-		$this->register_download_endpoint();
-		flush_rewrite_rules( false );
-		update_option( 'digicommerce_rewrite_rules_flushed', true );
-	}
-
-	/**
-	 * Get file path with caching
-	 *
-	 * @param string $file_id File ID.
-	 */
-	private function get_file_path( $file_id ) {
+	private function handle_s3_download( $file_info, $token_data ) {
 		try {
-			// Get product ID
-			$product_id = $this->get_product_by_file_id( $file_id );
-
-			if ( ! $product_id ) {
-				return false;
+			// Use original filename, fallback to itemName only for display, then basename
+			$filename = $file_info['name'] ?? $file_info['itemName'] ?? basename( $file_info['file'] );
+	
+			$signed_url = $this->s3->get_file_download_url( $file_info['file'], $filename );
+	
+			if ( ! $signed_url ) {
+				throw new Exception( 'Failed to generate S3 signed URL' );
 			}
-
-			// Check variations first
-			$variations = get_post_meta( $product_id, 'digi_price_variations', true );
-			if ( ! empty( $variations ) && is_array( $variations ) ) {
-				foreach ( $variations as $variation ) {
-					if ( ! empty( $variation['files'] ) && is_array( $variation['files'] ) ) {
-						foreach ( $variation['files'] as $file ) {
-							if ( isset( $file['id'] ) && $file['id'] === $file_id && isset( $file['file'] ) ) {
-								// Return only file name for AWS S3 and full path for local files
-								if ( $this->pro && $this->s3 && DigiCommerce()->get_option( 'enable_s3' ) ) {
-									$file_path = $file['file'];
-								} else {
-									$file_path = trailingslashit( $this->upload_dir ) . $file['file'];
-								}
-								return $file_path;
-							}
-						}
-					}
-				}
-			}
-
-			// Check regular files
-			$files = get_post_meta( $product_id, 'digi_files', true );
-			if ( ! empty( $files ) && is_array( $files ) ) {
-				foreach ( $files as $file ) {
-					if ( isset( $file['id'] ) && $file['id'] === $file_id && isset( $file['file'] ) ) {
-						// Return only file name for AWS S3 and full path for local files
-						if ( $this->pro && $this->s3 && DigiCommerce()->get_option( 'enable_s3' ) ) {
-							$file_path = $file['file'];
-						} else {
-							$file_path = trailingslashit( $this->upload_dir ) . $file['file'];
-						}
-						return $file_path;
-					}
-				}
-			}
-			return false;
-
+	
+			// Redirect to the presigned URL
+			wp_redirect( $signed_url );
+			exit;
+	
 		} catch ( Exception $e ) {
-			return false;
+			throw $e;
 		}
 	}
 
 	/**
-	 * Serve the update file directly
+	 * Handle local file downloads
+	 */
+	private function handle_local_download( $file_info, $token_data ) {
+		$file_path = trailingslashit( $this->upload_dir ) . $file_info['file'];
+	
+		if ( ! file_exists( $file_path ) ) {
+			throw new Exception( 'Local file not found' );
+		}
+	
+		// Use original filename for download
+		$filename = $file_info['name'] ?? $file_info['itemName'] ?? basename( $file_info['file'] );
+	
+		if ( ! $this->send_file( $file_path, $filename ) ) {
+			throw new Exception( 'Failed to send local file' );
+		}
+	
+		exit;
+	}
+
+	/**
+	 * Send file for download (public method for use by license class)
 	 *
-	 * @param string $license_key License key.
+	 * @param string $file_path Path to the file.
+	 * @param string $filename Optional filename for download.
+	 * @return bool Success status.
 	 */
-	public function serve_update_file( $license_key ) {
-		// Define the correct product slug for filename
-		$product_slug = 'digicommerce-pro';
-		
-		if ( ! class_exists( 'DigiCommerce_Pro_License' ) ) {
-			return new WP_Error( 'missing_license_class', esc_html__( 'License class not found.', 'digicommerce' ) );
-		}
-
-		// Get license
-		$license = DigiCommerce_Pro_License::instance()->get_license_by_key( $license_key );
-		if ( ! $license || 'active' !== $license['status'] ) {
-			return new WP_Error( 'invalid_license', esc_html__( 'Invalid or inactive license.', 'digicommerce' ) );
-		}
-
-		// Get latest file
-		$latest_file    = null;
-		$latest_version = '1.0.0';
-
-		// Check variations first
-		$variations = get_post_meta( $license['product_id'], 'digi_price_variations', true );
-		if ( ! empty( $variations ) && is_array( $variations ) ) {
-			foreach ( $variations as $variation ) {
-				if ( ! empty( $variation['files'] ) && is_array( $variation['files'] ) ) {
-					foreach ( $variation['files'] as $file ) {
-						if ( ! empty( $file['versions'] ) && is_array( $file['versions'] ) ) {
-							foreach ( $file['versions'] as $version_info ) {
-								if ( version_compare( $version_info['version'], $latest_version, '>' ) ) {
-									$latest_version = $version_info['version'];
-									$latest_file    = $file;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
-		// Then check regular files
-		$files = get_post_meta( $license['product_id'], 'digi_files', true );
-		if ( ! empty( $files ) && is_array( $files ) ) {
-			foreach ( $files as $file ) {
-				if ( ! empty( $file['versions'] ) && is_array( $file['versions'] ) ) {
-					foreach ( $file['versions'] as $version_info ) {
-						if ( version_compare( $version_info['version'], $latest_version, '>' ) ) {
-							$latest_version = $version_info['version'];
-							$latest_file    = $file;
-						}
-					}
-				}
-			}
-		}
-
-		if ( ! $latest_file ) {
-			return new WP_Error( 'no_update', esc_html__( 'No update file available.', 'digicommerce' ) );
-		}
-
-		// Check if S3 is enabled
-		$s3_enabled = DigiCommerce()->get_option( 'enable_s3' );
-		$s3_available = $this->pro && $this->s3 && class_exists('DigiCommerce_Pro_S3');
-		
-		// Handle S3 vs Local files differently
-		if ( $s3_available && $s3_enabled ) {
-			// S3 file handling
-			$s3_key = $latest_file['file'];
-			
-			try {
-				// Get the S3 object
-				$s3_result = $this->s3->get_object( $s3_key );
-				
-				if ( ! $s3_result || ! isset( $s3_result['Body'] ) ) {
-					return new WP_Error( 'file_not_found', esc_html__( 'Update file not found on S3.', 'digicommerce' ) );
-				}
-
-				// Force correct filename for plugin updates
-				// WordPress expects plugin zip files to match the plugin folder name
-				$filename = $product_slug . '.zip';
-				$content_length = isset( $s3_result['ContentLength'] ) ? $s3_result['ContentLength'] : null;
-
-				// Clear any output buffers
-				while ( ob_get_level() ) {
-					ob_end_clean();
-				}
-
-				// Send headers - ensure correct content type and filename
-				nocache_headers();
-				header( 'Content-Type: application/zip' );
-				header( 'Content-Disposition: attachment; filename="' . rawurlencode( $filename ) . '"' );
-				if ( $content_length ) {
-					header( 'Content-Length: ' . $content_length );
-				}
-				header( 'X-Content-Type-Options: nosniff' );
-
-				// Disable max execution time
-				@set_time_limit( 0 ); // phpcs:ignore
-
-				// Stream the file from S3
-				$body = $s3_result['Body'];
-				if ( $body ) {
-					$bytes_sent = 0;
-					while ( ! $body->eof() ) {
-						$chunk = $body->read( 8192 );
-						echo $chunk; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Required for binary file streaming
-						flush();
-						$bytes_sent += strlen($chunk);
-						
-						// Check connection status
-						if ( connection_status() != CONNECTION_NORMAL ) {
-							break;
-						}
-					}
-				}
-
-				exit();
-
-			} catch ( Exception $e ) {
-				return new WP_Error( 'file_error', esc_html__( 'Unable to read update file from S3.', 'digicommerce' ) );
-			}
-			
-		} else {
-			// Local file handling (original code)
-			$file_path = $this->get_file_path( $latest_file['id'] );
-			if ( ! $file_path ) {
-				return new WP_Error( 'file_not_found', esc_html__( 'Update file not found.', 'digicommerce' ) );
-			}
-
-			// Make sure file exists
-			if ( ! file_exists( $file_path ) ) {
-				return new WP_Error( 'file_not_found', esc_html__( 'Update file not found.', 'digicommerce' ) );
-			}
-
-			// Get file size
-			$size     = filesize( $file_path );
-			$filename = $product_slug . '.zip'; // Use correct plugin slug, not original filename
-
-			// Clear any output buffers
-			while ( ob_get_level() ) {
-				ob_end_clean();
-			}
-
-			// Send headers
-			nocache_headers();
-			header( 'Content-Type: application/zip' );
-			header( 'Content-Disposition: attachment; filename="' . rawurlencode( $filename ) . '"' );
-			header( 'Content-Length: ' . $size );
-			header( 'X-Content-Type-Options: nosniff' );
-
-			// Open file and send it in chunks
-			$fp = fopen( $file_path, 'rb' ); // phpcs:ignore
-
-			// Make sure file was opened successfully
-			if ( false === $fp ) {
-				return new WP_Error( 'file_error', esc_html__( 'Unable to read update file.', 'digicommerce' ) );
-			}
-
-			// Disable max execution time
-			@set_time_limit( 0 ); // phpcs:ignore
-
-			// Send file contents
-			$bytes_sent = 0;
-			while ( ! feof( $fp ) ) {
-				$chunk = fread( $fp, 8192 ); // phpcs:ignore
-				echo $chunk; // phpcs:ignore
-				flush();
-				$bytes_sent += strlen($chunk);
-				
-				// Check connection status
-				if ( connection_status() != CONNECTION_NORMAL ) {
-					fclose( $fp ); // phpcs:ignore
-					break;
-				}
-			}
-
-			fclose( $fp ); // phpcs:ignore
-			exit();
-		}
-	}
-
-	/**
-	 * Handle AJAX file upload
-	 */
-	public function handle_upload_ajax() {
-		$this->initialize_directory();
-
-		check_ajax_referer( 'digicommerce_upload', 'upload_nonce' );
-
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			wp_send_json_error(
-				array(
-					'message' => esc_html__( 'Permission denied', 'digicommerce' ),
-				)
-			);
-		}
-
-		if ( ! isset( $_FILES['file'] ) ) {
-			wp_send_json_error(
-				array(
-					'message' => esc_html__( 'No file uploaded', 'digicommerce' ),
-				)
-			);
-		}
-
-		$result = $this->handle_upload( $_FILES['file'] ); // phpcs:ignore
-
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( $result->get_error_message() );
-		}
-
-		wp_send_json_success( $result );
-	}
-
-	/**
-	 * Handle file upload
-	 *
-	 * @param array $file File data.
-	 */
-	public function handle_upload( $file ) {
-		if ( ! isset( $file['tmp_name'] ) || UPLOAD_ERR_OK !== $file['error'] ) {
-			return new WP_Error( 'upload_error', esc_html__( 'File upload failed', 'digicommerce' ) );
-		}
-
-		// Basic security checks
-		$allowed_types = array(
-			'pdf',
-			'doc',
-			'docx',
-			'xls',
-			'xlsx',
-			'txt',
-			'zip',
-			'rar',
-			'7z',
-			'jpg',
-			'jpeg',
-			'png',
-			'gif',
-			'svg',
-			'mp4',
-			'mp3',
-			'wav',
-		);
-
-		$file_ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
-		if ( ! in_array( $file_ext, $allowed_types ) ) {
-			return new WP_Error( 'invalid_type', esc_html__( 'Invalid file type', 'digicommerce' ) );
-		}
-
-		// Generate unique ID and filename
-		$file_id = wp_generate_uuid4();
-		$year    = date( 'Y' ); // phpcs:ignore
-		$month   = date( 'm' ); // phpcs:ignore
-
-		// Create year/month directories if they don't exist
-		$year_dir  = $this->upload_dir . '/' . $year;
-		$month_dir = $year_dir . '/' . $month;
-
-		if ( ! file_exists( $year_dir ) ) {
-			wp_mkdir_p( $year_dir );
-		}
-		if ( ! file_exists( $month_dir ) ) {
-			wp_mkdir_p( $month_dir );
-		}
-
-		$filename      = wp_unique_filename( $month_dir, $file['name'] );
-		$relative_path = $year . '/' . $month . '/' . $filename;
-		$full_path     = trailingslashit( $this->upload_dir ) . $relative_path;
-
-		// If S3 is enabled, upload to S3
-		if ( $this->pro && $this->s3 && DigiCommerce()->get_option( 'enable_s3' ) ) {
-			// First use WordPress functions to handle upload
-			$upload_overrides = array( 'test_form' => false );
-			$moved_file       = wp_handle_upload( $file, $upload_overrides );
-			if ( ! $moved_file || isset( $moved_file['error'] ) ) {
-				return new WP_Error( 'move_error', $moved_file['error'] ?? __( 'Failed to move uploaded file', 'digicommerce' ) );
-			}
-
-			// Copy the file from WordPress location to S3
-			$s3_key = 'digicommerce/' . $relative_path;
-			$s3_url = $this->s3->upload_file( $moved_file['file'], $s3_key );
-			if ( ! $s3_url ) {
-				return new WP_Error( 's3_upload_error', __( 'Failed to upload file to S3', 'digicommerce' ) );
-			}
-
-			// Delete the local file WordPress created
-			@unlink( $moved_file['file'] ); // phpcs:ignore
-			$this->cleanup_empty_directories( $month_dir );
-			$this->cleanup_empty_directories( $year_dir );
-
-			return array(
-				'id'   => $file_id,
-				'name' => $file['name'],
-				'file' => $s3_key,
-				'type' => $file['type'],
-				'size' => $file['size'],
-				's3'   => true,
-			);
-		}
-
-		// Regular local upload using WordPress functions
-		$upload_overrides = array( 'test_form' => false );
-		$moved_file       = wp_handle_upload( $file, $upload_overrides );
-		if ( ! $moved_file || isset( $moved_file['error'] ) ) {
-			return new WP_Error( 'move_error', $moved_file['error'] ?? __( 'Failed to move uploaded file', 'digicommerce' ) );
-		}
-
-		// Copy from WordPress upload location to our desired location
-		$full_path = trailingslashit( $this->upload_dir ) . $relative_path;
-		copy( $moved_file['file'], $full_path );
-		@unlink( $moved_file['file'] ); // phpcs:ignore
-
-		return array(
-			'id'   => $file_id,
-			'name' => $file['name'],
-			'file' => $relative_path,
-			'type' => $file['type'],
-			'size' => $file['size'],
-			's3'   => false,
-		);
-	}
-
-	/**
-	 * Clean up empty directories
-	 *
-	 * @param string $dir Directory path.
-	 */
-	private function cleanup_empty_directories( $dir ) {
-		if ( is_dir( $dir ) ) {
-			$files = array_diff( scandir( $dir ), array( '.', '..' ) );
-			if ( empty( $files ) ) {
-				@rmdir( $dir ); // phpcs:ignore
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Optimized file serving with memory management
-	 *
-	 * @param string $file_path File path.
-	 * @param bool   $is_s3     Is file on S3.
-	 */
-	private function send_file( $file_path, $is_s3 = false ) {
-		if ( $is_s3 ) {
-			try {
-				$s3_result = $this->s3->get_object( $file_path );
-
-				if ( ! $s3_result || ! isset( $s3_result['Body'] ) ) {
-					return false;
-				}
-
-				// Get file info and send headers
-				$filename  = basename( $file_path );
-				$mime_type = $s3_result['ContentType'] ?? 'application/octet-stream';
-
-				// Clean output buffer
-				if ( ob_get_level() ) {
-					ob_end_clean();
-				}
-
-				// Send headers
-				nocache_headers();
-				header( 'Content-Type: ' . $mime_type );
-				header( 'Content-Disposition: attachment; filename="' . rawurlencode( $filename ) . '"' );
-				if ( isset( $s3_result['ContentLength'] ) ) {
-					header( 'Content-Length: ' . $s3_result['ContentLength'] );
-				}
-				header( 'X-Content-Type-Options: nosniff' );
-
-				// Stream the file
-				$body = $s3_result['Body'];
-				if ( $body ) {
-					$total_read = 0;
-					while ( ! $body->eof() ) {
-						$chunk        = $body->read( 8192 );
-						$chunk_length = strlen( $chunk );
-						$total_read  += $chunk_length;
-						if ( function_exists( 'wp_sanitize_redirect' ) && ! headers_sent() ) {
-							echo wp_kses_post( $chunk ); // Safe output for file content
-						} else {
-							echo $chunk; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Required for binary file streaming
-						}
-						flush();
-					}
-				}
-
-				return true;
-
-			} catch ( Exception $e ) {
-				return false;
-			}
-		}
-
-		// Regular local file delivery
+	public function send_file( $file_path, $filename = null ) {
 		if ( ! file_exists( $file_path ) ) {
 			return false;
 		}
 
 		$size      = filesize( $file_path );
 		$mime_type = $this->get_mime_type( $file_path );
-		$filename  = basename( $file_path );
+		$filename  = $filename ?? basename( $file_path );
 
 		// Support for range requests (resumable downloads)
 		$range = isset( $_SERVER['HTTP_RANGE'] ) ? $this->get_range_header( $_SERVER['HTTP_RANGE'], $size ) : null; // phpcs:ignore
 
 		// Clean output buffer
-		if ( ob_get_level() ) {
+		while ( ob_get_level() ) {
 			ob_end_clean();
 		}
 
@@ -830,10 +464,287 @@ Options -Indexes
 	}
 
 	/**
+	 * Get file information
+	 */
+	public function get_file_info( $file_id ) {
+		try {
+			// Get product ID
+			$product_id = $this->get_product_by_file_id( $file_id );
+
+			if ( ! $product_id ) {
+				return false;
+			}
+
+			// Check variations first
+			$variations = get_post_meta( $product_id, 'digi_price_variations', true );
+			if ( ! empty( $variations ) && is_array( $variations ) ) {
+				foreach ( $variations as $variation ) {
+					if ( ! empty( $variation['files'] ) && is_array( $variation['files'] ) ) {
+						foreach ( $variation['files'] as $file ) {
+							if ( isset( $file['id'] ) && $file['id'] === $file_id ) {
+								return $file;
+							}
+						}
+					}
+				}
+			}
+
+			// Check regular files
+			$files = get_post_meta( $product_id, 'digi_files', true );
+			if ( ! empty( $files ) && is_array( $files ) ) {
+				foreach ( $files as $file ) {
+					if ( isset( $file['id'] ) && $file['id'] === $file_id ) {
+						return $file;
+					}
+				}
+			}
+
+			return false;
+
+		} catch ( Exception $e ) {
+			return false;
+		}
+	}
+
+	/**
+	 * Handle AJAX file upload with improved S3 integration
+	 */
+	public function handle_upload_ajax() {
+		if ( ! $this->is_s3_enabled() ) {
+			$this->initialize_directory();
+		}
+
+		check_ajax_referer( 'digicommerce_upload', 'upload_nonce' );
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'Permission denied', 'digicommerce' ),
+				)
+			);
+		}
+
+		if ( ! isset( $_FILES['file'] ) ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'No file uploaded', 'digicommerce' ),
+				)
+			);
+		}
+
+		$result = $this->handle_upload( $_FILES['file'] ); // phpcs:ignore
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error(
+				array(
+					'message' => $result->get_error_message(),
+				)
+			);
+		}
+
+		wp_send_json_success( $result );
+	}
+
+	/**
+	 * Handle file upload with improved S3 support
+	 */
+	public function handle_upload( $file ) {
+		if ( ! isset( $file['tmp_name'] ) || UPLOAD_ERR_OK !== $file['error'] ) {
+			return new WP_Error( 'upload_error', esc_html__( 'File upload failed', 'digicommerce' ) );
+		}
+
+		// Basic security checks
+		$allowed_types = array(
+			'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'zip', 'rar', '7z',
+			'jpg', 'jpeg', 'png', 'gif', 'svg', 'mp4', 'mp3', 'wav',
+		);
+
+		$file_ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
+		if ( ! in_array( $file_ext, $allowed_types ) ) {
+			return new WP_Error( 'invalid_type', esc_html__( 'Invalid file type', 'digicommerce' ) );
+		}
+
+		// Generate unique ID and filename
+		$file_id = wp_generate_uuid4();
+		$year    = date( 'Y' ); // phpcs:ignore
+		$month   = date( 'm' ); // phpcs:ignore
+
+		$filename      = wp_unique_filename( '', $file['name'] );
+		$relative_path = 'digicommerce/' . $year . '/' . $month . '/' . $filename;
+
+		// If S3 is enabled, upload directly to S3
+		if ( $this->is_s3_enabled() ) {
+			return $this->handle_s3_upload( $file, $file_id, $relative_path );
+		} else {
+			return $this->handle_local_upload( $file, $file_id, $relative_path );
+		}
+	}
+
+	/**
+	 * Handle S3 upload
+	 */
+	private function handle_s3_upload( $file, $file_id, $s3_key ) {
+		try {
+			// Upload directly to S3
+			$s3_url = $this->s3->upload_file( $file['tmp_name'], $s3_key );
+
+			if ( ! $s3_url ) {
+				return new WP_Error( 's3_upload_error', __( 'Failed to upload file to S3', 'digicommerce' ) );
+			}
+
+			return array(
+				'id'   => $file_id,
+				'name' => $file['name'],
+				'file' => $s3_key, // Store S3 key, not local path
+				'type' => $file['type'],
+				'size' => $file['size'],
+				's3'   => true,
+			);
+
+		} catch ( Exception $e ) {
+			return new WP_Error( 's3_upload_error', __( 'Failed to upload file to S3', 'digicommerce' ) );
+		}
+	}
+
+	/**
+	 * Handle local upload
+	 */
+	private function handle_local_upload( $file, $file_id, $relative_path ) {
+		// Create year/month directories if they don't exist
+		$year_dir  = $this->upload_dir . '/' . date( 'Y' );
+		$month_dir = $year_dir . '/' . date( 'm' );
+
+		if ( ! file_exists( $year_dir ) ) {
+			wp_mkdir_p( $year_dir );
+		}
+		if ( ! file_exists( $month_dir ) ) {
+			wp_mkdir_p( $month_dir );
+		}
+
+		// Use WordPress functions to handle upload
+		$upload_overrides = array( 'test_form' => false );
+		$moved_file       = wp_handle_upload( $file, $upload_overrides );
+
+		if ( ! $moved_file || isset( $moved_file['error'] ) ) {
+			return new WP_Error( 'move_error', $moved_file['error'] ?? __( 'Failed to move uploaded file', 'digicommerce' ) );
+		}
+
+		// Copy to our directory structure
+		$final_path = trailingslashit( $this->upload_dir ) . ltrim( str_replace( 'digicommerce/', '', $relative_path ), '/' );
+		if ( ! copy( $moved_file['file'], $final_path ) ) {
+			@unlink( $moved_file['file'] ); // phpcs:ignore
+			return new WP_Error( 'copy_error', __( 'Failed to copy file to final location', 'digicommerce' ) );
+		}
+
+		// Clean up temporary file
+		@unlink( $moved_file['file'] ); // phpcs:ignore
+
+		return array(
+			'id'   => $file_id,
+			'name' => $file['name'],
+			'file' => ltrim( str_replace( 'digicommerce/', '', $relative_path ), '/' ),
+			'type' => $file['type'],
+			'size' => $file['size'],
+			's3'   => false,
+		);
+	}
+
+	/**
+	 * Generate secure download URL with context-aware expiration
+	 */
+	public function generate_secure_download_url( $file_id, $order_id, $is_email = false, $order_token = null, $license_key = null ) {
+		// Generate token
+		$token = bin2hex( random_bytes( 32 ) );
+
+		// Determine expiration based on context
+		$expiry = $license_key ? ( 24 * HOUR_IN_SECONDS ) : $this->token_expiry; // 24 hours for license updates
+
+		// Prepare token data
+		$token_data = array(
+			'file_id'     => $file_id,
+			'order_id'    => $order_id,
+			'user_id'     => get_current_user_id(),
+			'expires'     => time() + $expiry,
+			'is_email'    => $is_email,
+			'order_token' => $order_token,
+			'license_key' => $license_key,
+		);
+
+		// Store token
+		set_transient( 'digicommerce_download_' . $token, $token_data, $expiry );
+
+		return home_url( "download/{$token}" );
+	}
+
+	/**
+	 * Delete physical file with improved S3 support
+	 */
+	public function delete_physical_file( $result, $file ) {
+		// If S3 is enabled, use S3 methods for deletion
+		if ( $this->is_s3_enabled() ) {
+			try {
+				if ( ! isset( $file['file'] ) ) {
+					return false;
+				}
+
+				$s3_deleted = $this->s3->delete_file( $file['file'] );
+				if ( $s3_deleted ) {
+					// Clear related caches
+					$this->clear_file_caches( $file['id'] );
+					return true;
+				}
+				return false;
+			} catch ( Exception $e ) {
+				return false;
+			}
+		}
+
+		// If S3 is not enabled, handle local file deletion
+		$this->initialize_directory();
+
+		if ( empty( $file['file'] ) ) {
+			return false;
+		}
+
+		$file_path = trailingslashit( $this->upload_dir ) . $file['file'];
+
+		if ( file_exists( $file_path ) && is_file( $file_path ) ) {
+			$deleted = @unlink( $file_path ); // phpcs:ignore
+
+			if ( $deleted ) {
+				// Clear related caches
+				$this->clear_file_caches( $file['id'] );
+
+				// Clean up empty directories
+				$this->cleanup_empty_directories( dirname( $file_path ) );
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Clean up empty directories
+	 */
+	private function cleanup_empty_directories( $dir ) {
+		if ( ! is_dir( $dir ) || $dir === $this->upload_dir ) {
+			return false;
+		}
+
+		$files = array_diff( scandir( $dir ), array( '.', '..' ) );
+		if ( empty( $files ) ) {
+			@rmdir( $dir ); // phpcs:ignore
+			// Recursively clean parent directories
+			$this->cleanup_empty_directories( dirname( $dir ) );
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Parse range header
-	 *
-	 * @param string $range_header Range header.
-	 * @param int    $file_size    File size.
 	 */
 	private function get_range_header( $range_header, $file_size ) {
 		$range       = array();
@@ -859,8 +770,6 @@ Options -Indexes
 
 	/**
 	 * Cached mime type detection
-	 *
-	 * @param string $file_path File path.
 	 */
 	private function get_mime_type( $file_path ) {
 		$cache_key = 'mime_' . md5( $file_path );
@@ -868,6 +777,9 @@ Options -Indexes
 		$mime_type = wp_cache_get( $cache_key, $this->cache_group );
 		if ( false === $mime_type ) {
 			$mime_type = mime_content_type( $file_path );
+			if ( ! $mime_type ) {
+				$mime_type = 'application/octet-stream';
+			}
 			wp_cache_set( $cache_key, $mime_type, $this->cache_group, 3600 );
 		}
 
@@ -875,9 +787,7 @@ Options -Indexes
 	}
 
 	/**
-	 * Optimized product query (continued)
-	 *
-	 * @param string $file_id File ID.
+	 * Get product by file ID with caching
 	 */
 	private function get_product_by_file_id( $file_id ) {
 		global $wpdb;
@@ -894,10 +804,10 @@ Options -Indexes
 		$product_id = $wpdb->get_var( // phpcs:ignore
 			$wpdb->prepare(
 				"SELECT post_id 
-            FROM {$wpdb->postmeta} 
-            WHERE (meta_key = 'digi_files' OR meta_key = 'digi_price_variations')
-            AND meta_value LIKE %s 
-            LIMIT 1",
+				FROM {$wpdb->postmeta} 
+				WHERE (meta_key = 'digi_files' OR meta_key = 'digi_price_variations')
+				AND meta_value LIKE %s 
+				LIMIT 1",
 				'%' . $wpdb->esc_like( $file_id ) . '%'
 			)
 		);
@@ -910,11 +820,7 @@ Options -Indexes
 	}
 
 	/**
-	 * Log download attempt with rate limiting
-	 *
-	 * @param string $file_id  File ID.
-	 * @param int    $order_id Order ID.
-	 * @param int    $user_id  User ID.
+	 * Log download attempt
 	 */
 	private function log_download( $file_id, $order_id, $user_id ) {
 		$log = array(
@@ -945,7 +851,6 @@ Options -Indexes
 			if ( ! is_array( $download_logs ) ) {
 				$download_logs = array();
 			}
-			wp_cache_set( $cache_key, $download_logs, $this->cache_group, 3600 );
 		}
 
 		// Add new log at the beginning
@@ -964,8 +869,6 @@ Options -Indexes
 
 	/**
 	 * Increment download count with caching
-	 *
-	 * @param string $file_id File ID.
 	 */
 	private function increment_download_count( $file_id ) {
 		$cache_key = 'download_count_' . $file_id;
@@ -1010,75 +913,9 @@ Options -Indexes
 	}
 
 	/**
-	 * Delete physical file with cleanup
-	 *
-	 * @param bool  $result Result of previous deletion.
-	 * @param array $file   File data.
-	 */
-	public function delete_physical_file( $result, $file ) {
-		// If S3 is enabled, use S3 methods for deletion
-		if ( $this->pro && $this->s3 && DigiCommerce()->get_option( 'enable_s3' ) ) {
-			try {
-				if ( ! isset( $file['file'] ) ) {
-					return false;
-				}
-
-				$s3_deleted = $this->s3->delete_file( $file['file'] );
-				if ( $s3_deleted ) {
-					// Clear related caches
-					$this->clear_file_caches( $file['id'] );
-					return true;
-				}
-				return false;
-			} catch ( Exception $e ) {
-				return false;
-			}
-		}
-
-		// If S3 is not enabled, handle local file deletion
-		$this->initialize_directory();
-
-		if ( empty( $file['file'] ) ) {
-			return false;
-		}
-
-		$file_path = trailingslashit( $this->upload_dir ) . $file['file'];
-
-		if ( file_exists( $file_path ) && is_file( $file_path ) ) {
-			$deleted = @unlink( $file_path ); // phpcs:ignore
-
-			if ( $deleted ) {
-				// Clear related caches
-				$this->clear_file_caches( $file['id'] );
-
-				// Clean up empty directories
-				$dir      = dirname( $file_path );
-				$base_dir = rtrim( $this->upload_dir, '/' );
-
-				while ( $dir !== $base_dir && is_dir( $dir ) ) {
-					$files = array_diff( scandir( $dir ), array( '.', '..' ) );
-					if ( count( $files ) === 0 ) {
-						@rmdir( $dir ); // phpcs:ignore
-						$dir = dirname( $dir );
-					} else {
-						break;
-					}
-				}
-
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
 	 * Clear all caches related to a file
-	 *
-	 * @param string $file_id File ID.
 	 */
 	private function clear_file_caches( $file_id ) {
-		wp_cache_delete( 'file_path_' . $file_id, $this->cache_group );
 		wp_cache_delete( 'product_' . $file_id, $this->cache_group );
 		wp_cache_delete( 'download_count_' . $file_id, $this->cache_group );
 		unset( self::$product_file_cache[ 'file_path_' . $file_id ] );
@@ -1086,8 +923,6 @@ Options -Indexes
 
 	/**
 	 * Add SVG to allowed MIME types
-	 *
-	 * @param array $mimes Allowed MIME types.
 	 */
 	public function add_svg_mime_type( $mimes ) {
 		$mimes['svg'] = 'image/svg+xml';
@@ -1095,33 +930,12 @@ Options -Indexes
 	}
 
 	/**
-	 * Generate secure download URL
-	 *
-	 * @param string $file_id     File ID.
-	 * @param int    $order_id    Order ID.
-	 * @param bool   $is_email    Is email context.
-	 * @param string $order_token Order token.
+	 * Function to manually flush rewrite rules
 	 */
-	public function generate_secure_download_url( $file_id, $order_id, $is_email = false, $order_token = null ) {
-		// Generate token
-		$token = bin2hex( random_bytes( 32 ) );
-
-		// Prepare token data
-		$token_data = array(
-			'file_id'     => $file_id,
-			'order_id'    => $order_id,
-			'user_id'     => get_current_user_id(),
-			'expires'     => time() + $this->token_expiry,
-			'is_email'    => $is_email,
-			'order_token' => $order_token,
-		);
-
-		// Store token
-		$stored = set_transient( 'digicommerce_download_' . $token, $token_data, $this->token_expiry );
-
-		$url = home_url( "download/{$token}" );
-
-		return $url;
+	public function flush_rewrite_rules() {
+		$this->register_download_endpoint();
+		flush_rewrite_rules( false );
+		update_option( 'digicommerce_rewrite_rules_flushed', true );
 	}
 }
 DigiCommerce_Files::instance();
