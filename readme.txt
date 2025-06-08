@@ -298,6 +298,8 @@ Yes, DigiCommerce is optimized for performance even with large product catalogs.
 
 = 1.0.1 =
 * Added: Bundle panel for Product CPT, now you can create a bundle product.
+* Added: Metaboxes for Product CPT, you can use DigiCommerce even without Gutenberg.
+* Tweak: Better download file and updates handling.
 
 = 1.0.0 - April 25, 2025 =
 * Initial public release of DigiCommerce

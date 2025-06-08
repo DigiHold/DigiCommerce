@@ -1,0 +1,730 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    /* Product Metaboxes Base Styles */
+    .digicommerce-pricing-wrap,
+    .digicommerce-files-wrap,
+    .digicommerce-gallery-wrap,
+    .digicommerce-product-data-wrap,
+    .digicommerce-bundle-wrap,
+    .digicommerce-upgrade-paths-wrap,
+    .digicommerce-api-data-wrap {
+        @apply space-y-4;
+    }
+
+    .digi-url-field-wrapper {
+        position: relative;
+    }
+
+    .digi-url-tooltip {
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #1e1e1e;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-top: 4px;
+        z-index: 1000;
+        pointer-events: none;
+        white-space: nowrap;
+    }
+
+    .digi-url-tooltip::before {
+        content: '';
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-bottom: 6px solid #1e1e1e;
+    }
+
+    /* Pricing Mode Toggle */
+    .digicommerce-pricing-wrap > p:first-child {
+        @apply flex items-center gap-6 rounded-md border bg-gray-50 p-3;
+    }
+
+    .digicommerce-pricing-wrap label {
+        @apply flex cursor-pointer items-center gap-2 font-medium text-gray-700;
+    }
+
+    .digicommerce-pricing-wrap input[type='radio'] {
+        @apply h-4 w-4 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500;
+    }
+
+    /* Pricing Sections */
+    .pricing-single,
+    .pricing-variations {
+        @apply mt-4 rounded-md border bg-white p-4;
+    }
+
+    .pricing-single p,
+    .pricing-variations p {
+        @apply mb-3;
+    }
+
+    .pricing-single label,
+    .pricing-variations label {
+        @apply mb-1 block text-sm font-medium text-gray-700;
+    }
+
+    .pricing-single input[type='number'],
+    .pricing-variations input[type='number'],
+    .pricing-single input[type='text'],
+    .pricing-variations input[type='text'],
+    .pricing-single select,
+    .pricing-variations select {
+        @apply w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+    }
+
+    /* Pro Features Sections within Single Price */
+    .pricing-subscription-section,
+    .pricing-license-section {
+        @apply mt-6 rounded-md border border-blue-200 bg-blue-50 p-4;
+    }
+
+    .pricing-subscription-section h4,
+    .pricing-license-section h4 {
+        @apply mb-3 border-b border-blue-200 pb-2 text-sm font-semibold text-blue-800;
+    }
+
+    .pricing-subscription-section .subscription-toggle,
+    .pricing-license-section .license-toggle {
+        @apply mr-2 h-4 w-4 rounded border-blue-300 text-blue-600 focus:ring-2 focus:ring-blue-500;
+    }
+
+    .subscription-options,
+    .license-options {
+        @apply mt-3 space-y-3 rounded-md border border-blue-300 bg-white p-3;
+    }
+
+    .subscription-options label,
+    .license-options label {
+        @apply mb-1 block text-sm font-medium text-blue-700;
+    }
+
+    .subscription-options input,
+    .subscription-options select,
+    .license-options input,
+    .license-options select {
+        @apply w-full rounded-md border border-blue-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+    }
+
+    .subscription-options .description,
+    .license-options .description {
+        @apply mt-1 text-blue-600;
+    }
+
+    /* Price Variations */
+    .variations-list {
+        @apply mb-4 space-y-4;
+    }
+
+    .variation-item {
+        @apply relative rounded-md border border-gray-200 bg-gray-50 p-4;
+    }
+
+    .variation-item h4 {
+        @apply mb-3 border-b border-gray-200 pb-2 text-base font-semibold text-gray-800;
+    }
+
+    .variation-item p {
+        @apply mb-3 last:mb-0;
+    }
+
+    .variation-item label {
+        @apply mb-1 block text-sm font-medium text-gray-600;
+    }
+
+    .variation-item input[type='text'],
+    .variation-item input[type='number'],
+    .variation-item select {
+        @apply w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+    }
+
+    .variation-item input[type='checkbox'] {
+        @apply mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500;
+    }
+
+    /* Pro Features Sections within Variations */
+    .variation-subscription-section,
+    .variation-license-section {
+        @apply mt-4 rounded-md border border-purple-200 bg-purple-50 p-3;
+    }
+
+    .variation-subscription-section h5,
+    .variation-license-section h5 {
+        @apply mb-2 border-b border-purple-200 pb-1 text-sm font-semibold text-purple-800;
+    }
+
+    .variation-subscription-section .variation-subscription-toggle,
+    .variation-license-section .variation-license-toggle {
+        @apply mr-2 h-4 w-4 rounded border-purple-300 text-purple-600 focus:ring-2 focus:ring-purple-500;
+    }
+
+    .variation-subscription-options,
+    .variation-license-options {
+        @apply mt-2 space-y-2 rounded-md border border-purple-300 bg-white p-2;
+    }
+
+    .variation-subscription-options label,
+    .variation-license-options label {
+        @apply mb-1 block text-sm font-medium text-purple-700;
+    }
+
+    .variation-subscription-options input,
+    .variation-subscription-options select,
+    .variation-license-options input,
+    .variation-license-options select {
+        @apply w-full rounded-md border border-purple-300 px-2 py-1 text-sm shadow-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500;
+    }
+
+    .add-variation {
+        @apply inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    }
+
+    .remove-variation {
+        @apply text-sm font-medium text-red-600 hover:text-red-700;
+    }
+
+    /* Files Management - UPDATED SECTION */
+    .digicommerce-files-wrap {
+        @apply space-y-6;
+    }
+
+    .files-container,
+    .files-list {
+        @apply space-y-4;
+    }
+
+    .files-container:empty::before,
+    .files-list:empty::before {
+        content: 'No files added yet.';
+        @apply block rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm italic text-gray-500;
+    }
+
+    .file-item {
+        @apply overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:border-blue-300 hover:shadow-md;
+    }
+
+    .file-header {
+        @apply flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-3;
+    }
+
+    .file-header h4 {
+        @apply m-0 text-sm font-semibold text-gray-900;
+    }
+
+    .file-details {
+        @apply space-y-4 p-4;
+    }
+
+    .field-group {
+        @apply space-y-2;
+    }
+
+    .field-group label {
+        @apply block text-sm font-medium text-gray-700;
+    }
+
+    .field-group input[type='text'],
+    .field-group input[type='url'] {
+        @apply w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+    }
+
+    .field-group input[readonly] {
+        @apply cursor-not-allowed bg-gray-50 text-gray-600;
+    }
+
+    .file-size {
+        @apply text-sm text-gray-500;
+    }
+
+    /* Variation Files */
+    .variation-files-section {
+        @apply mt-4 rounded-md border border-indigo-200 bg-indigo-50 p-4;
+    }
+
+    .variation-files-section h5 {
+        @apply mb-3 border-b border-indigo-200 pb-2 text-sm font-semibold text-indigo-800;
+    }
+
+    .variation-files-container {
+        @apply mb-3 space-y-3;
+    }
+
+    .variation-files-container:empty::before,
+    .no-variation-files {
+        @apply block rounded-md border border-indigo-300 bg-white p-3 text-center text-sm italic text-indigo-600;
+    }
+
+    .variation-files-container:empty::before {
+        content: 'No files added yet.';
+    }
+
+    .variation-file-item {
+        @apply rounded-md border border-indigo-300 bg-white p-3;
+    }
+
+    .variation-file-header {
+        @apply mb-3 flex items-center justify-between border-b border-indigo-200 pb-2;
+    }
+
+    .variation-file-header span {
+        @apply text-sm font-medium text-indigo-800;
+    }
+
+    .variation-file-details {
+        @apply space-y-3;
+    }
+
+    .variation-file-details input {
+        @apply w-full rounded-md border border-indigo-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500;
+    }
+
+    .variation-file-details input[readonly] {
+        @apply cursor-not-allowed bg-indigo-50 text-indigo-600;
+    }
+
+    .add-variation-file-btn {
+        @apply inline-flex items-center gap-2 rounded-md border border-indigo-300 bg-white px-3 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2;
+    }
+
+    .remove-variation-file-btn {
+        @apply text-sm font-medium text-red-600 hover:text-red-700;
+    }
+
+    /* File Versions */
+    .file-versions {
+        @apply mt-4 flex flex-col p-4;
+    }
+
+    .file-versions h5 {
+        @apply mb-3 border-b pb-2 text-sm font-semibold;
+    }
+
+    .versions-container,
+    .variation-file-versions {
+        @apply mb-3 space-y-3;
+    }
+
+    .versions-container:empty::before,
+    .variation-file-versions:empty::before,
+    .no-versions {
+        @apply flex flex-col rounded-md border bg-white p-3 text-center text-sm italic;
+    }
+
+    .version-item {
+        @apply rounded-md border bg-white p-3;
+    }
+
+    .version-header {
+        @apply mb-3 flex items-center justify-between border-b pb-2;
+    }
+
+    .version-label {
+        @apply text-sm font-medium;
+    }
+
+    .version-fields {
+        @apply flex flex-col gap-3;
+
+        p {
+            @apply flex flex-col gap-1;
+        }
+
+        input,
+        textarea {
+            @apply w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1;
+        }
+    }
+
+    .upload-version-btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-md border bg-white px-3 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2;
+    }
+
+    .add-version-btn {
+        @apply inline-flex items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2;
+    }
+
+    .remove-version-btn {
+        @apply text-sm font-medium text-red-600 hover:text-red-700;
+    }
+
+    /* File Actions */
+    .file-actions,
+    .files-actions {
+        @apply flex items-center gap-3 border-t border-gray-200 pt-4;
+    }
+
+    .upload-file-btn,
+    .upload-file {
+        @apply inline-flex items-center gap-2 rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    }
+
+    .remove-file-btn,
+    .remove-file {
+        @apply cursor-pointer border-none bg-none p-0 text-sm font-medium text-red-600 transition-colors hover:text-red-800;
+    }
+
+    /* Upload Progress */
+    .digicommerce-upload-progress {
+        @apply fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-black bg-opacity-80 px-6 py-4 text-white shadow-xl;
+    }
+
+    /* File Validation States */
+    .file-item.uploading {
+        @apply pointer-events-none opacity-60;
+    }
+
+    .file-item.error {
+        @apply border-red-300 bg-red-50;
+    }
+
+    .file-item.error input {
+        @apply border-red-300 focus:border-red-500 focus:ring-red-500;
+    }
+
+    .file-item.success {
+        @apply border-green-300;
+    }
+
+    /* Responsive File Management */
+    @media (max-width: 782px) {
+        .file-details {
+            @apply space-y-3;
+        }
+
+        .file-header {
+            @apply flex-col items-start gap-3;
+        }
+
+        .variation-files-section,
+        .file-versions {
+            @apply p-3;
+        }
+
+        .file-actions,
+        .files-actions {
+            @apply flex-col items-start gap-3;
+        }
+    }
+
+    /* Gallery Management */
+    .select-gallery {
+        @apply inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    }
+
+    .gallery-preview {
+        @apply mt-3;
+    }
+
+    .gallery-images {
+        @apply flex flex-wrap gap-2;
+    }
+
+    .gallery-image {
+        @apply relative;
+    }
+
+    .gallery-image img {
+        @apply rounded-md border border-gray-200;
+    }
+
+    /* Features Management */
+    .features-list {
+        @apply mb-4 space-y-3;
+    }
+
+    .feature-item {
+        @apply rounded-md border border-gray-200 bg-gray-50 p-3;
+    }
+
+    .feature-item p {
+        @apply mb-2 last:mb-0;
+    }
+
+    .feature-item label {
+        @apply mb-1 block text-sm font-medium text-gray-600;
+    }
+
+    .feature-item input[type='text'] {
+        @apply w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+    }
+
+    .add-feature {
+        @apply inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    }
+
+    .remove-feature {
+        @apply text-sm font-medium text-red-600 hover:text-red-700;
+    }
+
+    /* Product Data */
+    .digicommerce-product-data-wrap h4 {
+        @apply mb-2 mt-4 text-base font-semibold text-gray-800 first:mt-0;
+    }
+
+    .digicommerce-product-data-wrap textarea {
+        @apply w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+    }
+
+    /* Bundle Products Management */
+    .digicommerce-bundle-wrap p:first-child {
+        @apply rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800;
+    }
+
+    .bundle-products-list {
+        @apply mb-4 space-y-3;
+    }
+
+    .bundle-product-item {
+        @apply rounded-md border border-gray-200 bg-gray-50 p-3;
+    }
+
+    .bundle-product-item p {
+        @apply mb-2 last:mb-0;
+    }
+
+    .bundle-product-item label {
+        @apply mb-1 block text-sm font-medium text-gray-600;
+    }
+
+    .bundle-product-item select {
+        @apply w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+    }
+
+    .add-bundle-product {
+        @apply inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    }
+
+    .remove-bundle-product {
+        @apply text-sm font-medium text-red-600 hover:text-red-700;
+    }
+
+    .bundle-preview {
+        @apply mt-4 rounded-md border border-green-200 bg-green-50 p-3;
+    }
+
+    .bundle-preview h4 {
+        @apply mb-2 text-sm font-semibold text-green-800;
+    }
+
+    .bundle-preview p {
+        @apply mb-0 text-sm text-green-700;
+    }
+
+    /* Upgrade Paths Management */
+    .upgrade-paths-list {
+        @apply mb-4 space-y-4;
+    }
+
+    .upgrade-path-item {
+        @apply relative rounded-md border border-gray-200 bg-gray-50 p-4;
+    }
+
+    .upgrade-path-item h4 {
+        @apply mb-3 border-b border-gray-200 pb-2 text-base font-semibold text-gray-800;
+    }
+
+    .upgrade-path-item p {
+        @apply mb-3 last:mb-0;
+    }
+
+    .upgrade-path-item label {
+        @apply mb-1 block text-sm font-medium text-gray-600;
+    }
+
+    .upgrade-path-item input[type='text'],
+    .upgrade-path-item input[type='number'],
+    .upgrade-path-item select {
+        @apply w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+    }
+
+    .upgrade-path-item input[type='checkbox'] {
+        @apply mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500;
+    }
+
+    .upgrade-path-item .coupon-options {
+        @apply ml-6 mt-2 space-y-3 rounded-md border border-gray-200 bg-white p-3;
+    }
+
+    .add-upgrade-path {
+        @apply inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    }
+
+    .remove-upgrade-path {
+        @apply text-sm font-medium text-red-600 hover:text-red-700;
+    }
+
+    /* API Data Management */
+    .api-data-sections {
+        @apply space-y-6;
+    }
+
+    .api-section {
+        @apply rounded-md border border-gray-200 bg-white p-4;
+    }
+
+    .api-section h4 {
+        @apply mb-3 border-b border-gray-200 pb-2 text-base font-semibold text-gray-800;
+    }
+
+    .api-section p {
+        @apply mb-3 last:mb-0;
+    }
+
+    .api-section label {
+        @apply mb-1 block text-sm font-medium text-gray-600;
+    }
+
+    .api-section input[type='text'],
+    .api-section input[type='url'],
+    .api-section input[type='number'],
+    .api-section textarea,
+    .api-section select {
+        @apply w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+    }
+
+    .api-section textarea {
+        @apply resize-y;
+    }
+
+    /* Contributors Management */
+    .contributors-list {
+        @apply mb-4 space-y-3;
+    }
+
+    .contributor-item {
+        @apply rounded-md border border-gray-200 bg-gray-50 p-3;
+    }
+
+    .contributor-item p {
+        @apply mb-2 last:mb-0;
+    }
+
+    .contributor-item label {
+        @apply mb-1 block text-sm font-medium text-gray-600;
+    }
+
+    .contributor-item input[type='text'],
+    .contributor-item input[type='url'] {
+        @apply w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+    }
+
+    .add-contributor {
+        @apply inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    }
+
+    .remove-contributor {
+        @apply text-sm font-medium text-red-600 hover:text-red-700;
+    }
+
+    /* General Button Styles */
+    .button-link-delete {
+        @apply cursor-pointer border-none bg-none p-0 text-sm font-medium text-red-600 hover:text-red-700;
+    }
+
+    /* Empty States */
+    .features-list p,
+    .bundle-products-list p,
+    .upgrade-paths-list p,
+    .contributors-list p {
+        @apply text-sm italic text-gray-500;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 782px) {
+        .digicommerce-pricing-wrap > p:first-child {
+            @apply flex-col items-start gap-3;
+        }
+
+        .variation-item,
+        .feature-item,
+        .bundle-product-item,
+        .pricing-subscription-section,
+        .pricing-license-section,
+        .variation-subscription-section,
+        .variation-license-section {
+            @apply p-3;
+        }
+
+        .subscription-options,
+        .license-options,
+        .variation-subscription-options,
+        .variation-license-options {
+            @apply ml-0 mt-3 p-2;
+        }
+    }
+
+    /* Focus States */
+    .variation-item:focus-within,
+    .file-item:focus-within,
+    .feature-item:focus-within,
+    .bundle-product-item:focus-within,
+    .pricing-subscription-section:focus-within,
+    .pricing-license-section:focus-within,
+    .variation-subscription-section:focus-within,
+    .variation-license-section:focus-within {
+        @apply border-blue-300 ring-1 ring-blue-500;
+    }
+
+    /* Loading/Disabled States */
+    .variation-item.loading,
+    .file-item.loading,
+    .feature-item.loading,
+    .bundle-product-item.loading {
+        @apply pointer-events-none opacity-50;
+    }
+
+    /* Error States */
+    .variation-item.error,
+    .feature-item.error,
+    .bundle-product-item.error {
+        @apply border-red-300 bg-red-50;
+    }
+
+    .variation-item.error input,
+    .feature-item.error input,
+    .bundle-product-item.error input,
+    .bundle-product-item.error select {
+        @apply border-red-300 focus:border-red-500 focus:ring-red-500;
+    }
+}
+
+/* WordPress Admin Compatibility */
+.post-php #poststuff .digicommerce-pricing-wrap,
+.post-new-php #poststuff .digicommerce-pricing-wrap,
+.post-php #poststuff .digicommerce-files-wrap,
+.post-new-php #poststuff .digicommerce-files-wrap,
+.post-php #poststuff .digicommerce-gallery-wrap,
+.post-new-php #poststuff .digicommerce-gallery-wrap,
+.post-php #poststuff .digicommerce-product-data-wrap,
+.post-new-php #poststuff .digicommerce-product-data-wrap,
+.post-php #poststuff .digicommerce-bundle-wrap,
+.post-new-php #poststuff .digicommerce-bundle-wrap,
+.post-php #poststuff .digicommerce-upgrade-paths-wrap,
+.post-new-php #poststuff .digicommerce-upgrade-paths-wrap,
+.post-php #poststuff .digicommerce-api-data-wrap,
+.post-new-php #poststuff .digicommerce-api-data-wrap {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu,
+        Cantarell, 'Helvetica Neue', sans-serif;
+}
+
+/* WordPress Metabox Styling */
+#digicommerce_pricing .inside,
+#digicommerce_files .inside,
+#digicommerce_gallery .inside,
+#digicommerce_product_data .inside,
+#digicommerce_bundle .inside,
+#digicommerce_upgrade_paths .inside,
+#digicommerce_api_data .inside {
+    margin: 0;
+    padding: 12px;
+}

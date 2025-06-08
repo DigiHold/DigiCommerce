@@ -33,9 +33,8 @@ class DigiCommerce_Product {
 		add_action( 'init', array( $this, 'register_taxonomies' ) );
 		add_action( 'init', array( $this, 'register_meta' ) );
 
-		// Block editor assets.
-		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_block_editor_assets' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
+		// Load editor interface after post type is registered
+		add_action( 'admin_init', array( $this, 'load_editor_interface' ), 20 );
 
 		// If CPT is not disabled.
 		if ( ! DigiCommerce()->get_option( 'product_cpt' ) ) {
@@ -161,6 +160,53 @@ class DigiCommerce_Product {
 	}
 
 	/**
+	 * Load appropriate editor interface after post type registration
+	 */
+	public function load_editor_interface() {
+		// Conditionally load editor interface based on editor type
+		if ( $this->is_using_gutenberg() ) {
+			// Load Gutenberg sidebar for block editor
+			add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_block_editor_assets' ) );
+			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
+		} else {
+			// Load metaboxes for classic editor
+			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-product-metaboxes.php';
+		}
+	}
+
+	/**
+	 * Check if Gutenberg editor is being used for product post type
+	 * 
+	 * @return bool True if using Gutenberg, false if using Classic Editor
+	 */
+	public function is_using_gutenberg() {
+		// Only check in admin
+		if ( ! is_admin() ) {
+			return false;
+		}
+
+		// Check if block editor functions exist
+		if ( ! function_exists( 'use_block_editor_for_post_type' ) ) {
+			return false;
+		}
+
+		// Check if block editor is enabled for our product post type
+		if ( ! use_block_editor_for_post_type( 'digi_product' ) ) {
+			return false;
+		}
+
+		// Check if Classic Editor plugin is forcing classic mode
+		if ( class_exists( 'Classic_Editor' ) ) {
+			$settings = get_option( 'classic-editor-settings', array() );
+			if ( isset( $settings['editor'] ) && 'classic' === $settings['editor'] ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
 	 * Register meta fields
 	 */
 	public function register_meta() {
@@ -234,6 +280,7 @@ class DigiCommerce_Product {
 											'type'     => array( 'type' => 'string' ),
 											'size'     => array( 'type' => 'integer' ),
 											'itemName' => array( 'type' => 'string' ),
+											's3'       => array( 'type' => 'boolean', 'default' => false ),
 											'versions' => array(
 												'type'  => 'array',
 												'items' => array(
@@ -305,6 +352,7 @@ class DigiCommerce_Product {
 								'type'     => array( 'type' => 'string' ),
 								'size'     => array( 'type' => 'integer' ),
 								'itemName' => array( 'type' => 'string' ),
+								's3'       => array( 'type' => 'boolean', 'default' => false ),
 								'versions' => array(
 									'type'  => 'array',
 									'items' => array(
@@ -498,18 +546,29 @@ class DigiCommerce_Product {
 			'digi_product',
 			'digi_bundle_products',
 			array(
-				'show_in_rest'  => array(
+				'show_in_rest'      => array(
 					'schema' => array(
-						'type'  => 'array',
-						'items' => array(
+						'type'    => 'array',
+						'items'   => array(
 							'type' => 'string',
 						),
+						'default' => array(),
 					),
 				),
-				'single'        => true,
-				'type'          => 'array',
-				'default'       => array(),
-				'auth_callback' => function () {
+				'single'            => true,
+				'type'              => 'array',
+				'default'           => array(),
+				'sanitize_callback' => function( $value ) {
+					// Ensure we always return an array
+					if ( ! is_array( $value ) ) {
+						return array();
+					}
+					// Filter out empty values and ensure all values are strings
+					return array_values( array_filter( array_map( 'strval', $value ), function( $item ) {
+						return ! empty( $item ) && is_numeric( $item );
+					}));
+				},
+				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
 			)

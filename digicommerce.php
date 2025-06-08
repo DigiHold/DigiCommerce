@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 
 // Define constants first.
 if ( ! defined( 'DIGICOMMERCE_VERSION' ) ) {
-	define( 'DIGICOMMERCE_VERSION', '1.0.0' );
+	define( 'DIGICOMMERCE_VERSION', '1.0.1' );
 }
 if ( ! defined( 'DIGICOMMERCE_PLUGIN_DIR' ) ) {
 	define( 'DIGICOMMERCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
