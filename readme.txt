@@ -4,7 +4,7 @@ Tags: ecommerce, shop, digital products, appointments, sell online
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -296,7 +296,13 @@ Yes, DigiCommerce is optimized for performance even with large product catalogs.
 
 == Changelog ==
 
-= 1.0.1 =
+= 1.0.2 - June 10, 2025 =
+* Added: State field across entire plugin.
+* Fixed: Product not selectable for the Bundle Products metabox.
+* Fixed: Product downloads was running without extensions.
+* Fixed: Account URL wasn't added on account page.
+
+= 1.0.1 - June 08, 2025 =
 * Added: Bundle panel for Product CPT, now you can create a bundle product.
 * Added: Metaboxes for Product CPT, you can use DigiCommerce even without Gutenberg.
 * Tweak: Better download file and updates handling.

@@ -121,7 +121,6 @@ class DigiCommerce_PayPal {
 	 */
 	public function create_paypal_plan() {
 		try {
-
 			if ( ! check_ajax_referer( 'digicommerce_process_checkout', 'nonce', false ) ) {
 				throw new Exception( __( 'Security check failed', 'digicommerce' ) );
 			}
@@ -135,18 +134,29 @@ class DigiCommerce_PayPal {
 				throw new Exception( __( 'Cart is empty', 'digicommerce' ) );
 			}
 
-			// Find subscription item
-			$subscription_item = null;
+			// Find subscription items and one-time items
+			$subscription_items = array();
+			$one_time_items = array();
+			
 			foreach ( $session_data['cart'] as $item ) {
 				if ( ! empty( $item['subscription_enabled'] ) ) {
-					$subscription_item = $item;
-					break;
+					$subscription_items[] = $item;
+				} else {
+					$one_time_items[] = $item;
 				}
 			}
 
-			if ( ! $subscription_item ) {
-				throw new Exception( esc_html__( 'No subscription product found', 'digicommerce' ) );
+			// PayPal subscriptions only support one subscription product
+			if ( count( $subscription_items ) !== 1 ) {
+				throw new Exception( esc_html__( 'PayPal subscriptions require exactly one subscription product', 'digicommerce' ) );
 			}
+
+			// We should not have one-time items with subscriptions for PayPal
+			if ( ! empty( $one_time_items ) ) {
+				throw new Exception( esc_html__( 'PayPal subscriptions cannot be mixed with one-time products', 'digicommerce' ) );
+			}
+
+			$subscription_item = $subscription_items[0];
 
 			// Get base price and VAT information
 			$base_price = floatval( $subscription_item['price'] );
@@ -182,7 +192,7 @@ class DigiCommerce_PayPal {
 				// Non-EU sale - no VAT (vat_rate remains 0)
 			}
 
-			// Calculate subscription price (no discount, only VAT)
+			// Calculate subscription price (no discount on recurring, only on first payment)
 			$subscription_vat_amount = $base_price * $vat_rate;
 			$subscription_price      = $base_price + $subscription_vat_amount;
 
@@ -195,9 +205,10 @@ class DigiCommerce_PayPal {
 				$final_signup_fee    = $signup_fee_with_vat;
 			}
 
-			// Apply discount if exists
+			// Apply discount if exists (only to first payment)
 			$has_discount             = false;
 			$final_subscription_price = $subscription_price;
+			$discounted_first_payment = $subscription_price;
 
 			if ( ! empty( $session_data['discount'] ) ) {
 				$has_discount = true;
@@ -212,21 +223,26 @@ class DigiCommerce_PayPal {
 					}
 					$final_signup_fee = $signup_fee_with_vat - $discount_amount;
 				} else {
-					// Apply discount to subscription price if no signup fee
+					// Apply discount to first subscription payment if no signup fee
 					if ( 'percentage' === $discount['type'] ) {
 						$discount_amount = ( $subscription_price * floatval( $discount['amount'] ) ) / 100;
 					} else {
 						$discount_amount = min( floatval( $discount['amount'] ), $subscription_price );
 					}
-					$final_subscription_price = $subscription_price - $discount_amount;
+					$discounted_first_payment = $subscription_price - $discount_amount;
 				}
 			}
 
 			// Create PayPal plan
+			$plan_name = $subscription_item['name'];
+			if ( ! empty( $subscription_item['variation_name'] ) ) {
+				$plan_name .= " - {$subscription_item['variation_name']}";
+			}
+
 			$plan_id = $this->create_plan(
 				$subscription_item['product_id'],
-				$subscription_item['name'] . ( $subscription_item['variation_name'] ? " - {$subscription_item['variation_name']}" : '' ),
-				$final_subscription_price, // Pass discounted subscription price
+				$plan_name,
+				$final_subscription_price, // Regular subscription price
 				array(
 					'subscription_enabled'    => true,
 					'subscription_period'     => $subscription_item['subscription_period'],
@@ -234,6 +250,7 @@ class DigiCommerce_PayPal {
 					'subscription_signup_fee' => $final_signup_fee,
 					'has_discount'            => $has_discount,
 					'regular_price'           => $subscription_price,
+					'discounted_first_payment' => $discounted_first_payment,
 				)
 			);
 
@@ -242,6 +259,7 @@ class DigiCommerce_PayPal {
 					'plan_id'           => $plan_id,
 					'has_signup_fee'    => ( $signup_fee > 0 ),
 					'signup_fee_amount' => $final_signup_fee,
+					'has_discount'      => $has_discount,
 				)
 			);
 
@@ -322,7 +340,7 @@ class DigiCommerce_PayPal {
 					'pricing_scheme' => array(
 						'fixed_price' => array(
 							'currency_code' => strtoupper( DigiCommerce()->get_option( 'currency', 'USD' ) ),
-							'value'         => number_format( $price, 2, '.', '' ), // Discounted price
+							'value'         => number_format( $subscription_data['discounted_first_payment'], 2, '.', '' ), // Discounted price
 						),
 					),
 				);

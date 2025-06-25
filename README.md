@@ -51,7 +51,7 @@ This repository is for development purposes. For support, please use the appropr
 - [Documentation](https://docs.digicommerce.me/)
 - [Premium Support Portal](https://digihold.me/my-account/?section=support) (for Pro customers)
 - [WordPress.org Community Forum](https://wordpress.org/support/plugin/digicommerce)
-- [Official DigiCommerce Facebook Group](https://www.facebook.com/groups/digicommerce)
+- [Official DigiCommerce Facebook Group](https://www.facebook.com/groups/digihold)
 
 ## Contributing to DigiCommerce
 

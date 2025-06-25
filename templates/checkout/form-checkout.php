@@ -238,6 +238,14 @@ if ( ! $minimal_style ) {
 											<span class="text-red-500">*</span>
 										</label>
 									</div>
+
+									<div class="field relative col-span-6 lg:col-span-2">
+										<input type="text" id="billing_state" name="billing_state" class="default-transition" value="<?php echo esc_attr( $user_data['state'] ?? '' ); ?>" required>
+										<label class="flex justify-start gap-[.1rem]" for="billing_state">
+											<?php esc_html_e( 'State', 'digicommerce' ); ?>
+											<span class="text-red-500">*</span>
+										</label>
+									</div>
 								<?php endif; ?>
 
 								<!-- After the country field -->
@@ -465,13 +473,57 @@ if ( ! $minimal_style ) {
 														} else {
 															$subtotal += $item['price'];
 														}
+
+														// Check if this is a bundle product
+														$bundle_products_meta = get_post_meta( $item['product_id'], 'digi_bundle_products', true );
+														$is_bundle = ! empty( $bundle_products_meta ) && is_array( $bundle_products_meta ) && count( array_filter( $bundle_products_meta ) ) > 0;
+
 														?>
 														<div class="cart-item flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0" data-item-index="<?php echo esc_attr( $index ); ?>">
 															<div class="flex-1">
 																<div class="cart-item-name<?php echo esc_attr( $class ); ?> flex justify-between flex-col md:flex-row gap-1 text-medium font-bold text-dark-blue">
 																	<div class="flex-1 flex flex-col gap-2">
-																		<?php echo esc_html( $item['name'] ); ?>
-																		<?php if ( $subscription_enabled ) : ?>
+																		<?php
+																		echo esc_html( $item['name'] );
+
+																		if ( $is_bundle ) :
+																			$valid_bundles = array();
+																			
+																			foreach ( $bundle_products_meta as $bundle_product_id ) {
+																				if ( empty( $bundle_product_id ) ) continue;
+																				
+																				$bundle_product_id = intval( $bundle_product_id );
+																				$bundle_product = get_post( $bundle_product_id );
+																				if ( $bundle_product && 'publish' === $bundle_product->post_status ) {
+																					$valid_bundles[] = $bundle_product->post_title;
+																				}
+																			}
+																			
+																			if ( ! empty( $valid_bundles ) ) :
+																				$bundle_title = apply_filters( 
+																					'digicommerce_bundle_includes_title', 
+																					esc_html__( 'This bundle includes:', 'digicommerce' ),
+																					$item
+																				);
+																				?>
+																				<div class="flex flex-col gap-1 text-sm font-normal text-gray-600">
+																					<div class="font-medium text-dark-blue">
+																						<?php echo esc_html( $bundle_title ); ?>
+																					</div>
+																					<ul class="list-none ml-0 pl-0 space-y-1">
+																						<?php foreach ( $valid_bundles as $bundle_name ) : ?>
+																							<li class="flex items-center gap-2">
+																								<span class="text-gold">•</span>
+																								<strong><?php echo esc_html( $bundle_name ); ?></strong>
+																							</li>
+																						<?php endforeach; ?>
+																					</ul>
+																				</div>
+																				<?php
+																			endif;
+																		endif;
+																		
+																		if ( $subscription_enabled ) : ?>
 																			<div class="flex flex-col gap-1 text-sm font-normal text-gray-600">
 																				<div class="flex items-center gap-2">
 																					<?php

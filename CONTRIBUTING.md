@@ -135,6 +135,6 @@ DigiCommerce follows the [WordPress Coding Standards](https://developer.wordpres
 
 If you have any questions about contributing, please:
 
-- Join our [Facebook Community Group](https://www.facebook.com/groups/digicommerce)
+- Join our [Facebook Community Group](https://www.facebook.com/groups/digihold)
 
 Thank you for contributing to DigiCommerce!

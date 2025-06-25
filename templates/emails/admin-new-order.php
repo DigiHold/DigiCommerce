@@ -24,6 +24,7 @@ $phone                = ! empty( $data ) ? $data['phone'] : '';
 $billing_address      = ! empty( $data ) ? $data['address'] : '';
 $billing_city         = ! empty( $data ) ? $data['city'] : '';
 $billing_postcode     = ! empty( $data ) ? $data['postcode'] : '';
+$state                = ! empty( $data ) ? $data['state'] : '';
 $vat_number           = ! empty( $data ) ? $data['vat_number'] : '';
 $billing_country      = ! empty( $data ) ? $data['country'] : '';
 $billing_country_name = isset( $countries[ $billing_country ] ) ? $countries[ $billing_country ]['name'] : $billing_country;
@@ -281,6 +282,11 @@ if ( 'stripe' === $payment_method ) {
 						);
 						echo '<br>';
 					}
+
+					if ( ! empty( $state ) ) :
+						echo esc_html( $state );
+						echo '<br>';
+					endif;
 
 					if ( ! empty( $billing_country_name ) ) {
 						echo esc_html( $billing_country_name ) . '<br>';

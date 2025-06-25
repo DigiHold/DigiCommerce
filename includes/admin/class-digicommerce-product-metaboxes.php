@@ -640,17 +640,25 @@ class DigiCommerce_Product_Metaboxes {
 	public function render_bundle_metabox( $post ) {
 		$bundle_products = get_post_meta( $post->ID, 'digi_bundle_products', true ) ?: array();
 		
-		// Get all products except current one
+		// Get all products except current one - FIXED: Remove 'fields' => 'ids' to get full objects
 		$products = get_posts( array(
-			'post_type' => 'digi_product',
+			'post_type'   => 'digi_product',
 			'post_status' => 'publish',
 			'numberposts' => -1,
-			'exclude' => array( $post->ID ),
-			'fields' => 'ids'
+			'exclude'     => array( $post->ID ),
 		) );
+		
+		// Debug: Check if we have products
+		if ( empty( $products ) ) {
+			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'No other products found to add to bundle.', 'digicommerce' ) . '</p></div>';
+		}
 		?>
 		<div class="digicommerce-bundle-wrap">
-			<p><?php esc_html_e( 'Select products to include in this bundle. Customer will receive downloads for all selected products with a single master license.', 'digicommerce' ); ?></p>
+			<p><?php esc_html_e( 'Select products to include in this bundle. Customer will receive downloads for all selected products.', 'digicommerce' ); ?></p>
+			
+			<?php if ( class_exists( 'DigiCommerce_Pro' ) && DigiCommerce()->get_option( 'enable_license', false ) ) : ?>
+				<p><em><?php esc_html_e( 'If this bundle product has license system enabled, customers will get one master license that works for all bundled products.', 'digicommerce' ); ?></em></p>
+			<?php endif; ?>
 			
 			<div class="bundle-products-list">
 				<?php $this->render_bundle_products_list( $bundle_products, $products ); ?>
@@ -664,26 +672,30 @@ class DigiCommerce_Product_Metaboxes {
 				<div class="bundle-preview">
 					<h4><?php esc_html_e( 'Bundle Preview', 'digicommerce' ); ?></h4>
 					<p><?php printf( esc_html__( 'This bundle includes %d products.', 'digicommerce' ), count( array_filter( $bundle_products ) ) ); ?></p>
+					
+					<?php
+					// Check if current product has license enabled
+					$current_license_enabled = get_post_meta( $post->ID, 'digi_license_enabled', true );
+					$price_variations = get_post_meta( $post->ID, 'digi_price_variations', true );
+					$has_license_variation = false;
+					
+					if ( is_array( $price_variations ) ) {
+						foreach ( $price_variations as $variation ) {
+							if ( ! empty( $variation['license_enabled'] ) ) {
+								$has_license_variation = true;
+								break;
+							}
+						}
+					}
+					
+					if ( ( $current_license_enabled || $has_license_variation ) && class_exists( 'DigiCommerce_Pro' ) ) : ?>
+						<p class="bundle-license-info" style="color: #0073aa; font-style: italic;">
+							<?php esc_html_e( '✓ Master license will be generated for all bundled products.', 'digicommerce' ); ?>
+						</p>
+					<?php endif; ?>
 				</div>
 			<?php endif; ?>
 		</div>
-		
-		<script type="text/template" id="bundle-product-template">
-			<div class="bundle-product-item">
-				<p>
-					<label><?php esc_html_e( 'Product', 'digicommerce' ); ?></label>
-					<select name="bundle_products[{{INDEX}}]">
-						<option value=""><?php esc_html_e( 'Select a product...', 'digicommerce' ); ?></option>
-						<?php foreach ( $products as $product_id ) : ?>
-							<option value="<?php echo esc_attr( $product_id ); ?>"><?php echo esc_html( get_the_title( $product_id ) ); ?></option>
-						<?php endforeach; ?>
-					</select>
-				</p>
-				<p>
-					<button type="button" class="button-link-delete remove-bundle-product"><?php esc_html_e( 'Remove', 'digicommerce' ); ?></button>
-				</p>
-			</div>
-		</script>
 		<?php
 	}
 
@@ -698,7 +710,7 @@ class DigiCommerce_Product_Metaboxes {
 			echo '<p>' . esc_html__( 'No products selected yet.', 'digicommerce' ) . '</p>';
 			return;
 		}
-
+	
 		foreach ( $bundle_products as $index => $selected_product ) {
 			?>
 			<div class="bundle-product-item">
@@ -706,9 +718,9 @@ class DigiCommerce_Product_Metaboxes {
 					<label><?php esc_html_e( 'Product', 'digicommerce' ); ?></label>
 					<select name="bundle_products[<?php echo esc_attr( $index ); ?>]">
 						<option value=""><?php esc_html_e( 'Select a product...', 'digicommerce' ); ?></option>
-						<?php foreach ( $products as $product_id ) : ?>
-							<option value="<?php echo esc_attr( $product_id ); ?>" <?php selected( $selected_product, $product_id ); ?>>
-								<?php echo esc_html( get_the_title( $product_id ) ); ?>
+						<?php foreach ( $products as $product ) : ?>
+							<option value="<?php echo esc_attr( $product->ID ); ?>" <?php selected( $selected_product, $product->ID ); ?>>
+								<?php echo esc_html( $product->post_title ); ?>
 							</option>
 						<?php endforeach; ?>
 					</select>
@@ -1424,7 +1436,7 @@ private function render_upgrade_paths_list( $upgrade_paths, $products ) {
 	 * @param string $hook_suffix Current admin page.
 	 */
 	public function enqueue_scripts( $hook_suffix ) {
-		global $post_type;
+		global $post_type, $post;
 
 		if ( ! in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) || 'digi_product' !== $post_type ) {
 			return;
@@ -1447,6 +1459,24 @@ private function render_upgrade_paths_list( $upgrade_paths, $products ) {
 			true
 		);
 
+		// Get available products for bundle selection
+		$available_products = array();
+		if ( $post && $post->ID ) {
+			$products = get_posts( array(
+				'post_type'   => 'digi_product',
+				'post_status' => 'publish',
+				'numberposts' => -1,
+				'exclude'     => array( $post->ID ),
+			) );
+			
+			foreach ( $products as $product ) {
+				$available_products[] = array(
+					'id'    => $product->ID,
+					'title' => $product->post_title,
+				);
+			}
+		}
+
 		// Localization
 		$pro_active = class_exists( 'DigiCommerce_Pro' );
 		$s3_enabled = $pro_active && class_exists( 'DigiCommerce_Pro_S3' ) && DigiCommerce()->get_option( 'enable_s3', false );
@@ -1464,6 +1494,7 @@ private function render_upgrade_paths_list( $upgrade_paths, $products ) {
 				'pro_active'       => $pro_active,
 				's3_enabled'       => $s3_enabled,
 				'license_enabled'  => $license_enabled,
+				'available_products' => $available_products,
 				'i18n' => array(
 					// Purchase URL
 					'clickToCopy'                  => __( 'Click to copy', 'digicommerce' ),
@@ -1526,6 +1557,7 @@ private function render_upgrade_paths_list( $upgrade_paths, $products ) {
 					'noLicensedVariations'         => __( 'No licensed variations available', 'digicommerce' ),
 					'unnamedVariation'             => __( 'Unnamed variation', 'digicommerce' ),
 					'errorLoadingVariations'       => __( 'Error loading variations', 'digicommerce' ),
+					'noProductsSelected'           => __( 'No products selected yet.', 'digicommerce' ),
 					
 					// Status messages
 					'saved'                        => __( 'Saved successfully', 'digicommerce' ),

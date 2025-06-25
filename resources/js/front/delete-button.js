@@ -9,6 +9,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }, 200);
         }
     });
+
+    // Function to check if PayPal is the selected payment method
+    function isPayPalSelected() {
+        const paypalRadio = document.getElementById('payment_method_paypal');
+        return paypalRadio && paypalRadio.checked;
+    }
 	
     const removeButtons = document.querySelectorAll('.remove-item-btn');
 
@@ -34,6 +40,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     const result = await response.json();
 
                     if (result.success && result.data) {
+                        // If PayPal is selected, reload page with clean URL after successful deletion
+                        if (isPayPalSelected()) {
+                            window.location.href = window.location.pathname;
+                            return;
+                        }
+
+                        // Continue with existing Stripe logic
 						// Remove the cart item from DOM
 						const parentElement = this.closest('.cart-item');
 						parentElement.remove();

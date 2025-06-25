@@ -1454,7 +1454,12 @@
 			<PanelBody title={__("Bundle Products", "digicommerce")} initialOpen={false}>
 				<div className="digi-container">
 					<div className="digi-bundle-info">
-						<p>{__("Select products to include in this bundle. Customer will receive downloads for all selected products with a single master license.", "digicommerce")}</p>
+						<p>{__("Select products to include in this bundle. Customer will receive downloads for all selected products.", "digicommerce")}</p>
+						{digicommerceVars.license_enabled && (
+							<p className="text-sm text-gray-600 italic">
+								{__("If this bundle product has license system enabled, customers will get one master license that works for all bundled products.", "digicommerce")}
+							</p>
+						)}
 					</div>
 
 					{bundleProducts.map((productId, index) => (

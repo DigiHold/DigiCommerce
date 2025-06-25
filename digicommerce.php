@@ -3,7 +3,7 @@
  * Plugin Name: DigiCommerce
  * Plugin URI: https://digicommerce.me/
  * Description: Powerful ecommerce plugin to sell digital products, services and online courses.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: DigiHold
  * Author URI: https://digihold.me?utm_source=wordpress.org&utm_medium=referral&utm_campaign=plugin_directory&utm_content=digicommerce
  * Text Domain: digicommerce
@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 
 // Define constants first.
 if ( ! defined( 'DIGICOMMERCE_VERSION' ) ) {
-	define( 'DIGICOMMERCE_VERSION', '1.0.1' );
+	define( 'DIGICOMMERCE_VERSION', '1.0.2' );
 }
 if ( ! defined( 'DIGICOMMERCE_PLUGIN_DIR' ) ) {
 	define( 'DIGICOMMERCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -183,8 +183,8 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			$table_name      = $wpdb->prefix . 'digicommerce';
 			$charset_collate = $wpdb->get_charset_collate();
 
-			// Ensure table exists.
-			$sql = "CREATE TABLE IF NOT EXISTS $table_name (
+			// Create table.
+			$sql = "CREATE TABLE $table_name (
                 id mediumint(9) NOT NULL AUTO_INCREMENT,
                 option_name varchar(191) NOT NULL,
                 option_value longtext NOT NULL,
@@ -203,7 +203,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				$this->set_flag( 'pages_created', true ); // Set the flag in the custom table.
 			}
 
-			// Call orders table installation
+			// Call tables installation
 			DigiCommerce_Orders::instance()->install_tables();
 			DigiCommerce_Checkout::instance()->install_tables();
 
@@ -436,8 +436,8 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 
 			$table_name = $wpdb->prefix . 'digicommerce';
 
-			// Only proceed if the value is not empty
-			if ( ! empty( $value ) ) {
+			// Only proceed if the value is not empty (but allow 0)
+			if ( ! empty( $value ) || $value === 0 || $value === '0' ) {
 				$this->options[ $key ] = $value;
 
 				$serialized_options = maybe_serialize( $this->options );
@@ -502,6 +502,28 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			}
 
 			return true;
+		}
+
+		/**
+		 * Check for db version
+		 *
+		 * @param string $addon addon.
+		 */
+		public function get_db_version( $addon ) {
+			$versions = get_option( 'digicommerce_db_versions', array() );
+			return isset( $versions[ $addon ] ) ? $versions[ $addon ] : false;
+		}
+
+		/**
+		 * Update db version
+		 *
+		 * @param string $addon addon.
+		 * @param string $version version.
+		 */
+		public function update_db_version( $addon, $version ) {
+			$versions           = get_option( 'digicommerce_db_versions', array() );
+			$versions[ $addon ] = $version;
+			update_option( 'digicommerce_db_versions', $versions );
 		}
 
 		/**
@@ -856,6 +878,19 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				'download_failed'       => esc_html__( 'Download failed', 'digicommerce' ),
 				'select_option'         => esc_html__( 'Select an option', 'digicommerce' ),
 				'purchase_for'          => esc_html__( 'Purchase for', 'digicommerce' ),
+				
+				// PayPal specific messages
+				'paypal_failed'                    => esc_html__( 'PayPal payment failed', 'digicommerce' ),
+				'paypal_cancelled'                 => esc_html__( 'Payment cancelled', 'digicommerce' ),
+				'paypal_processing_failed'         => esc_html__( 'Payment processing failed', 'digicommerce' ),
+				'paypal_subscription_creation_failed' => esc_html__( 'Failed to create subscription', 'digicommerce' ),
+				'paypal_plan_creation_failed'      => esc_html__( 'Failed to create PayPal plan', 'digicommerce' ),
+				'paypal_order_creation_failed'     => esc_html__( 'Failed to create PayPal order', 'digicommerce' ),
+				'checkout_form_not_found'          => esc_html__( 'Checkout form not found', 'digicommerce' ),
+				'invalid_order_total'              => esc_html__( 'Invalid order total', 'digicommerce' ),
+				'multiple_subscriptions_error'     => esc_html__( 'PayPal does not support multiple subscription products in one transaction.', 'digicommerce' ),
+				'mixed_cart_error'                 => esc_html__( 'PayPal subscriptions cannot be combined with one-time products. Please checkout subscription and one-time products separately.', 'digicommerce' ),
+
 			);
 		}
 
@@ -1195,6 +1230,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				'postcode'   => get_user_meta( $user->ID, 'billing_postcode', true ) ?? '',
 				'city'       => get_user_meta( $user->ID, 'billing_city', true ) ?? '',
 				'country'    => get_user_meta( $user->ID, 'billing_country', true ) ?? '',
+				'state'      => get_user_meta( $user->ID, 'billing_state', true ) ?? '',
 				'vat_number' => get_user_meta( $user->ID, 'billing_vat_number', true ) ?? '',
 			);
 		}

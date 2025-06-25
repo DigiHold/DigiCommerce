@@ -33,6 +33,7 @@ $last_name            = ! empty( $billing_details ) ? DigiCommerce()->get_billin
 $billing_address      = ! empty( $billing_details ) ? DigiCommerce()->get_billing_value( $billing_details['address'], $billing_info['address'] ) : '';
 $billing_city         = ! empty( $billing_details ) ? DigiCommerce()->get_billing_value( $billing_details['city'], $billing_info['city'] ) : '';
 $billing_postcode     = ! empty( $billing_details ) ? DigiCommerce()->get_billing_value( $billing_details['postcode'], $billing_info['postcode'] ) : '';
+$billing_state        = ! empty( $billing_details ) ? DigiCommerce()->get_billing_value( $billing_details['state'], $billing_info['state'] ) : '';
 $vat_number           = ! empty( $billing_details ) ? DigiCommerce()->get_billing_value( $billing_details['vat_number'], $billing_info['vat_number'] ) : '';
 $billing_country      = ! empty( $billing_details ) ? DigiCommerce()->get_billing_value( $billing_details['country'], $billing_info['country'] ) : '';
 $billing_country_name = isset( $countries[ $billing_country ] ) ? $countries[ $billing_country ]['name'] : $billing_country;
@@ -151,6 +152,12 @@ if ( $order_data ) : ?>
 							if ( ! empty( $billing_city ) && ! empty( $billing_postcode ) ) {
 								?>
 								<span><?php echo esc_html( DigiCommerce_Orders::instance()->format_city_postal( $billing_city, $billing_postcode, $billing_country, $countries ) ); ?></span>
+								<?php
+							}
+
+							if ( ! empty( $billing_state ) ) {
+								?>
+								<span><?php echo esc_html( $billing_state ); ?></span>
 								<?php
 							}
 

@@ -104,6 +104,13 @@ defined( 'ABSPATH' ) || exit;
 					?>
 				</select>
 			</div>
+
+			<div class="field relative col-span-6 lg:col-span-2">
+				<input type="text" id="billing_state" name="billing_state" class="default-transition" value="<?php echo esc_attr( $billing_info['state'] ?? '' ); ?>">
+				<label for="billing_state">
+					<?php esc_html_e( 'State', 'digicommerce' ); ?>
+				</label>
+			</div>
 		</div>
 
 		<?php wp_nonce_field( 'digicommerce_update_profile_nonce', 'digicommerce_update_profile_nonce' ); ?>

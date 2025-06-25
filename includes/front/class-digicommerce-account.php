@@ -460,6 +460,7 @@ class DigiCommerce_Account {
 				'billing_address'    => 'address',
 				'billing_postcode'   => 'postcode',
 				'billing_city'       => 'city',
+				'billing_state'      => 'state',
 				'billing_country'    => 'country',
 				'billing_vat_number' => 'vat_number',
 			);

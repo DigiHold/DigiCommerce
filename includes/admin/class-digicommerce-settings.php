@@ -111,6 +111,11 @@ class DigiCommerce_Settings {
 			'sanitize_callback' => array( $this, 'sanitize_social_links' ),
 		);
 
+		$separator = array(
+			'type'              => 'string',
+			'sanitize_callback' => array( $this, 'sanitize_separator_callback' ),
+		);
+
 		// General Tab.
 		register_setting( 'digicommerce_options', 'digicommerce_business_name', $text ); // phpcs:ignore
 		register_setting( 'digicommerce_options', 'digicommerce_business_vat_number', $text ); // phpcs:ignore
@@ -122,6 +127,9 @@ class DigiCommerce_Settings {
 		register_setting( 'digicommerce_options', 'digicommerce_business_logo', $absint ); // phpcs:ignore
 		register_setting( 'digicommerce_options', 'digicommerce_currency', $text ); // phpcs:ignore
 		register_setting( 'digicommerce_options', 'digicommerce_currency_position', $text ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_thousand_sep', $separator ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_decimal_sep', $separator ); // phpcs:ignore
+		register_setting( 'digicommerce_options', 'digicommerce_num_decimals', $text ); // phpcs:ignore
 		register_setting( 'digicommerce_options', 'digicommerce_block_admin', $bool ); // phpcs:ignore
 		register_setting( 'digicommerce_options', 'digicommerce_redirect_login', $bool ); // phpcs:ignore
 		register_setting( 'digicommerce_options', 'digicommerce_redirect_after_logout', $absint ); // phpcs:ignore
@@ -273,6 +281,18 @@ class DigiCommerce_Settings {
 	}
 
 	/**
+	 * Sanitize separator fields (thousand_sep, decimal_sep).
+	 *
+	 * @param string $input Separator to sanitize.
+	 * @return string
+	 */
+	public function sanitize_separator_callback( $input ) {
+		$input = wp_unslash( $input );
+		$input = trim( $input );
+		return mb_substr( $input, 0, 1 );
+	}
+
+	/**
 	 * Process form submission
 	 */
 	public function process_form_submission() {
@@ -300,6 +320,9 @@ class DigiCommerce_Settings {
 			'business_logo'               => absint( $_POST['business_logo'] ), // phpcs:ignore
 			'currency'                    => sanitize_text_field( $_POST['currency'] ), // phpcs:ignore
 			'currency_position'           => sanitize_text_field( $_POST['currency_position'] ), // phpcs:ignore
+			'thousand_sep'                => $this->sanitize_separator_callback( $_POST['thousand_sep'] ?? '' ), // phpcs:ignore
+			'decimal_sep'                 => $this->sanitize_separator_callback( $_POST['decimal_sep'] ?? '' ), // phpcs:ignore
+			'num_decimals'                => absint( $_POST['num_decimals'] ), // phpcs:ignore
 			'block_admin'                 => isset( $_POST['block_admin'] ) ? 1 : 0, // phpcs:ignore
 			'redirect_login'              => isset( $_POST['redirect_login'] ) ? 1 : 0, // phpcs:ignore
 			'redirect_after_logout'       => absint( $_POST['redirect_after_logout'] ), // phpcs:ignore
@@ -793,6 +816,21 @@ class DigiCommerce_Settings {
 						<option value="left_space" <?php selected( $options['currency_position'], 'left_space' ); ?>><?php esc_html_e( 'Left with space', 'digicommerce' ); ?></option>
 						<option value="right_space" <?php selected( $options['currency_position'], 'right_space' ); ?>><?php esc_html_e( 'Right with space', 'digicommerce' ); ?></option>
 					</select>
+				</p>
+				<p class="flex flex-col gap-2">
+					<label class="cursor-pointer" for="thousand_sep"><?php esc_html_e( 'Thousand Separator', 'digicommerce' ); ?></label>
+					<input type="text" id="thousand_sep" name="thousand_sep" value="<?php echo esc_attr( $options['thousand_sep'] ); ?>" class="regular-text" style="width:5rem;min-width:5rem">
+					<small><?php esc_html_e( 'Set the thousand separator of displayed prices.', 'digicommerce' ); ?></small>
+				</p>
+				<p class="flex flex-col gap-2">
+					<label class="cursor-pointer" for="decimal_sep"><?php esc_html_e( 'Decimal Separator', 'digicommerce' ); ?></label>
+					<input type="text" id="decimal_sep" name="decimal_sep" value="<?php echo esc_attr( $options['decimal_sep'] ); ?>" class="regular-text" style="width:5rem;min-width:5rem">
+					<small><?php esc_html_e( 'Set the decimal separator of displayed prices.', 'digicommerce' ); ?></small>
+				</p>
+				<p class="flex flex-col gap-2">
+					<label class="cursor-pointer" for="num_decimals"><?php esc_html_e( 'Number Of Decimals', 'digicommerce' ); ?></label>
+					<input type="number" min="0" step="1" id="num_decimals" name="num_decimals" value="<?php echo esc_attr( $options['num_decimals'] ); ?>" class="regular-text" style="width:5rem;min-width:5rem">
+					<small><?php esc_html_e( 'Set the number of decimal points shown in displayed prices.', 'digicommerce' ); ?></small>
 				</p>
 			</div>
 		</div>
@@ -1816,6 +1854,9 @@ class DigiCommerce_Settings {
 			'business_logo'               => DigiCommerce()->get_option( 'business_logo' ),
 			'currency'                    => DigiCommerce()->get_option( 'currency', 'USD' ),
 			'currency_position'           => DigiCommerce()->get_option( 'currency_position', 'left' ),
+			'thousand_sep'                => DigiCommerce()->get_option( 'thousand_sep', ',' ),
+			'decimal_sep'                 => DigiCommerce()->get_option( 'decimal_sep', '.' ),
+			'num_decimals'                => DigiCommerce()->get_option( 'num_decimals', '2' ),
 			'block_admin'                 => DigiCommerce()->get_option( 'block_admin', false ),
 			'redirect_login'              => DigiCommerce()->get_option( 'redirect_login', false ),
 			'redirect_after_logout'       => DigiCommerce()->get_option( 'redirect_after_logout', '' ),

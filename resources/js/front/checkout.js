@@ -196,6 +196,7 @@ const DigiStripe = {
                 line1: formData.get('billing_address'),
                 city: formData.get('billing_city'),
                 postal_code: formData.get('billing_postcode'),
+                state: formData.get('billing_state'),
                 country: formData.get('billing_country')
             }
         };
@@ -211,6 +212,7 @@ const DigiStripe = {
             address: formData.get('billing_address'),
             city: formData.get('billing_city'),
             postcode: formData.get('billing_postcode'),
+            state: formData.get('billing_state'),
             country: formData.get('billing_country'),
             vat_number: formData.get('billing_vat_number') || ''
         };
@@ -286,210 +288,246 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Initialize PayPal if enabled
         if (digicommerceVars.paypalEnabled) {
-            const cartItems = JSON.parse(digicommerceVars.cartItems || '[]');
-            
-            // Check if any item is a subscription
-            const hasSubscription = cartItems.some(item => item.subscription_enabled);
-            const subscriptionItem = hasSubscription ? cartItems.find(item => item.subscription_enabled) : null;
-        
-            // PayPal button configuration
-            const paypalConfig = {
-                fundingSource: paypal.FUNDING.PAYPAL,
-                style: {
-                    layout: 'vertical',
-                    shape: 'rect',
-                    label: hasSubscription ? 'subscribe' : 'pay'
-                }
-            };
-        
-            if (hasSubscription) {
-                // Handle subscription flow
-                paypalConfig.createSubscription = async (data, actions) => {
-                    try {
-                        if (!checkoutForm) throw new Error('Checkout form not found');
-            
-                        const formData = new FormData(checkoutForm);
-                        DigiUI.toggleLoading(document.getElementById('loading-overlay'), true);
-            
-                        // First, create the PayPal plan with current pricing
-                        const planResponse = await fetch(digicommerceVars.ajaxurl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: new URLSearchParams({
-                                action: 'digicommerce_create_paypal_plan',
-                                nonce: formData.get('checkout_nonce'),
-                                first_name: formData.get('billing_first_name'),
-                                last_name: formData.get('billing_last_name'),
-                                email: formData.get('billing_email'),
-                                country: formData.get('billing_country'),
-                                vat_number: formData.get('billing_vat_number'),
-                            })
-                        });
-            
-                        const planResult = await planResponse.json();
-            
-                        if (!planResult.success || !planResult.data.plan_id) {
-                            throw new Error(planResult.data?.message || 'Failed to create PayPal plan');
-                        }
-            
-                        // Create subscription configuration
-                        const subscriptionConfig = {
-                            plan_id: planResult.data.plan_id,
-                            application_context: {
-                                shipping_preference: 'NO_SHIPPING'
-                            },
-                            subscriber: {
-                                name: {
-                                    given_name: formData.get('billing_first_name'),
-                                    surname: formData.get('billing_last_name')
-                                },
-                                email_address: formData.get('billing_email')
-                            }
-                        };
-                        
-                        // Create the subscription
-                        DigiUI.toggleLoading(document.getElementById('loading-overlay'), false);
-                        return await actions.subscription.create(subscriptionConfig);
-            
-                    } catch (error) {
-                        console.error('Subscription creation error:', error);
-                        DigiUI.showMessage(document.getElementById('checkout-message'), error.message);
-                        throw error;
-                    }
-                };
-            } else {
-                // Handle one-time payment flow
-                paypalConfig.createOrder = async (data, actions) => {
+			const cartItems = JSON.parse(digicommerceVars.cartItems || '[]');
+			
+			// Check if any item is a subscription
+			const hasSubscription = cartItems.some(item => item.subscription_enabled);
+			const subscriptionItems = cartItems.filter(item => item.subscription_enabled);
+			const oneTimeItems = cartItems.filter(item => !item.subscription_enabled);
+		
+			// Check if PayPal can handle this cart
+			const paypalCanHandleCart = hasSubscription ? 
+				(subscriptionItems.length === 1 && oneTimeItems.length === 0) : 
+				true; // PayPal can handle all one-time products
+		
+			// PayPal button configuration
+			const paypalConfig = {
+				fundingSource: paypal.FUNDING.PAYPAL,
+				style: {
+					layout: 'vertical',
+					shape: 'rect',
+					label: hasSubscription ? 'subscribe' : 'pay'
+				}
+			};
+		
+			if (hasSubscription && paypalCanHandleCart) {
+				// Handle subscription flow - only if PayPal can handle it
+				paypalConfig.createSubscription = async (data, actions) => {
 					try {
-						if (!checkoutForm) throw new Error('Checkout form not found');
-				
+						if (!checkoutForm) {
+							throw new Error(digicommerceVars.i18n.checkout_form_not_found);
+						}
+			
 						const formData = new FormData(checkoutForm);
-						
-						// Calculate subtotal first
-						const subtotal = cartItems.reduce((sum, item) => sum + parseFloat(item.price), 0);
-						
-						// Calculate discount on subtotal first (moved this up)
-						let discountAmount = 0;
-						if (digicommerceVars.cartDiscount) {
-							const discount = JSON.parse(digicommerceVars.cartDiscount);
-							if (discount.type === 'percentage') {
-								discountAmount = (subtotal * discount.amount) / 100;
-							} else {
-								discountAmount = Math.min(discount.amount, subtotal);
-							}
-						}
-						
-						// Calculate discounted subtotal
-						const discountedSubtotal = subtotal - discountAmount;
-						
-						// Get VAT rate based on country and VAT number
-						const buyerCountry = formData.get('billing_country');
-						const sellerCountry = digicommerceVars.businessCountry;
-						const vatNumber = formData.get('billing_vat_number');
-						let vatRate = 0;
-						
-						const countries = digicommerceVars.countries || {};
-						
-						// Check if taxes are enabled
-						if (!digicommerceVars.removeTaxes) {
-							if (buyerCountry === sellerCountry) {
-								// Domestic sale: Always charge seller's country VAT
-								vatRate = countries[sellerCountry]?.tax_rate || 0;
-							} else if (countries[buyerCountry]?.eu && countries[sellerCountry]?.eu) {
-								// EU cross-border sale
-								if (!vatNumber || !window.vatCalculator?.validateVATNumber(vatNumber, buyerCountry)) {
-									// No valid VAT number - charge buyer's country rate
-									vatRate = countries[buyerCountry]?.tax_rate || 0;
-								}
-								// With valid VAT number - no VAT (vatRate remains 0)
-							}
-							// Non-EU sale - no VAT (vatRate remains 0)
-						}
-				
-						// Calculate VAT on discounted subtotal (key change here)
-						const vatAmount = discountedSubtotal * vatRate;
-						
-						// Calculate final total
-						const finalTotal = discountedSubtotal + vatAmount;
-				
-						// Create PayPal order
-						return actions.order.create({
-							purchase_units: [{
-								amount: {
-									currency_code: digicommerceVars.currency,
-									value: finalTotal.toFixed(2),
-									breakdown: {
-										item_total: {
-											currency_code: digicommerceVars.currency,
-											value: subtotal.toFixed(2)
-										},
-										tax_total: vatAmount > 0 ? {
-											currency_code: digicommerceVars.currency,
-											value: vatAmount.toFixed(2)
-										} : undefined,
-										discount: discountAmount > 0 ? {
-											currency_code: digicommerceVars.currency,
-											value: discountAmount.toFixed(2)
-										} : undefined
-									}
-								},
-								items: cartItems.map(item => ({
-									name: item.name,
-									unit_amount: {
-										currency_code: digicommerceVars.currency,
-										value: item.price.toFixed(2)
-									},
-									quantity: 1
-								}))
-							}]
+						DigiUI.toggleLoading(document.getElementById('loading-overlay'), true);
+			
+						// Create the PayPal plan with current pricing
+						const planResponse = await fetch(digicommerceVars.ajaxurl, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+							body: new URLSearchParams({
+								action: 'digicommerce_create_paypal_plan',
+								nonce: formData.get('checkout_nonce'),
+								first_name: formData.get('billing_first_name'),
+								last_name: formData.get('billing_last_name'),
+								email: formData.get('billing_email'),
+								country: formData.get('billing_country'),
+								vat_number: formData.get('billing_vat_number'),
+							})
 						});
+			
+						const planResult = await planResponse.json();
+			
+						if (!planResult.success) {
+							const errorMessage = planResult.data?.message || digicommerceVars.i18n.paypal_plan_creation_failed;
+							throw new Error(errorMessage);
+						}
+						
+						if (!planResult.data.plan_id) {
+							throw new Error(digicommerceVars.i18n.paypal_plan_creation_failed);
+						}
+			
+						// Create subscription configuration
+						const subscriptionConfig = {
+							plan_id: planResult.data.plan_id,
+							application_context: {
+								shipping_preference: 'NO_SHIPPING'
+							},
+							subscriber: {
+								name: {
+									given_name: formData.get('billing_first_name'),
+									surname: formData.get('billing_last_name')
+								},
+								email_address: formData.get('billing_email')
+							}
+						};
+						
+						// Create the subscription
+						DigiUI.toggleLoading(document.getElementById('loading-overlay'), false);
+						return await actions.subscription.create(subscriptionConfig);
+			
 					} catch (error) {
-						console.error('Order creation error:', error);
+						console.error('Subscription creation error:', error);
+						DigiUI.toggleLoading(document.getElementById('loading-overlay'), false);
 						DigiUI.showMessage(document.getElementById('checkout-message'), error.message);
 						throw error;
 					}
 				};
-            }
-        
-            // Common handlers for all payment types
-            paypalConfig.onApprove = async (data, actions) => {
-                try {
-                    // First, capture the PayPal order
-                    let captureResult;
-
-                    if (data.orderID && !data.subscriptionID) {  // Only capture for one-time payments
-                        captureResult = await actions.order.capture();
-                    }
-
-                    const formData = new FormData(checkoutForm);
-                    const messageEl = document.getElementById('checkout-message');
-
-                    DigiUI.toggleLoading(document.getElementById('loading-overlay'), true);
-
-                    const checkoutData = new URLSearchParams({
-                        action: 'digicommerce_process_checkout',
-                        checkout_nonce: formData.get('checkout_nonce'),
-                        payment_method: 'paypal',
-                        paypal_order_id: data.orderID,
-                        paypal_subscription_id: data.subscriptionID,
-                        email: formData.get('billing_email'),
-                        first_name: formData.get('billing_first_name'),
-                        last_name: formData.get('billing_last_name'),
-                        company: formData.get('billing_company'),
-                        country: formData.get('billing_country'),
-                        address: formData.get('billing_address'),
-                        city: formData.get('billing_city'),
-                        postcode: formData.get('billing_postcode'),
-                        phone: formData.get('billing_phone'),
-                        vat_number: formData.get('billing_vat_number'),
-                    });
-
-                    // Add mailing list subscription status if the checkbox exists
-                    const mailingListCheckbox = document.getElementById('subscribe_mailing_list');
-                    if (mailingListCheckbox) {
-                        checkoutData.append('subscribe_mailing_list', mailingListCheckbox.checked ? '1' : '0');
-                    }
-
+			} else {
+				// Handle one-time payment flow (or mixed cart that PayPal will treat as one-time)
+				paypalConfig.createOrder = createOneTimeOrder;
+			}
+		
+			// Common one-time order creation function
+			async function createOneTimeOrder(data, actions) {
+				try {
+					if (!checkoutForm) {
+						throw new Error(digicommerceVars.i18n.checkout_form_not_found);
+					}
+		
+					const formData = new FormData(checkoutForm);
+					
+					// Calculate totals properly for multiple products
+					const subtotal = cartItems.reduce((sum, item) => sum + parseFloat(item.price), 0);
+					
+					// Calculate discount on subtotal first
+					let discountAmount = 0;
+					if (digicommerceVars.cartDiscount) {
+						const discount = JSON.parse(digicommerceVars.cartDiscount);
+						if (discount.type === 'percentage') {
+							discountAmount = (subtotal * discount.amount) / 100;
+						} else {
+							discountAmount = Math.min(discount.amount, subtotal);
+						}
+					}
+					
+					// Calculate discounted subtotal
+					const discountedSubtotal = subtotal - discountAmount;
+					
+					// Get VAT rate based on country and VAT number
+					const buyerCountry = formData.get('billing_country');
+					const sellerCountry = digicommerceVars.businessCountry;
+					const vatNumber = formData.get('billing_vat_number');
+					let vatRate = 0;
+					
+					const countries = digicommerceVars.countries || {};
+					
+					// Check if taxes are enabled
+					if (!digicommerceVars.removeTaxes) {
+						if (buyerCountry === sellerCountry) {
+							// Domestic sale: Always charge seller's country VAT
+							vatRate = countries[sellerCountry]?.tax_rate || 0;
+						} else if (countries[buyerCountry]?.eu && countries[sellerCountry]?.eu) {
+							// EU cross-border sale
+							if (!vatNumber || !window.vatCalculator?.validateVATNumber(vatNumber, buyerCountry)) {
+								// No valid VAT number - charge buyer's country rate
+								vatRate = countries[buyerCountry]?.tax_rate || 0;
+							}
+							// With valid VAT number - no VAT (vatRate remains 0)
+						}
+						// Non-EU sale - no VAT (vatRate remains 0)
+					}
+		
+					// Calculate VAT on discounted subtotal
+					const vatAmount = discountedSubtotal * vatRate;
+					
+					// Calculate final total
+					const finalTotal = discountedSubtotal + vatAmount;
+		
+					// Validate totals
+					if (finalTotal <= 0) {
+						throw new Error(digicommerceVars.i18n.invalid_order_total);
+					}
+		
+					// Create PayPal order with proper breakdown
+					const orderConfig = {
+						purchase_units: [{
+							amount: {
+								currency_code: digicommerceVars.currency,
+								value: finalTotal.toFixed(2),
+								breakdown: {
+									item_total: {
+										currency_code: digicommerceVars.currency,
+										value: subtotal.toFixed(2)
+									}
+								}
+							},
+							items: cartItems.map(item => ({
+								name: item.name + (item.variation_name ? ` (${item.variation_name})` : ''),
+								unit_amount: {
+									currency_code: digicommerceVars.currency,
+									value: parseFloat(item.price).toFixed(2)
+								},
+								quantity: 1,
+								category: 'DIGITAL_GOODS'
+							}))
+						}]
+					};
+		
+					// Add VAT to breakdown if applicable
+					if (vatAmount > 0) {
+						orderConfig.purchase_units[0].amount.breakdown.tax_total = {
+							currency_code: digicommerceVars.currency,
+							value: vatAmount.toFixed(2)
+						};
+					}
+		
+					// Add discount to breakdown if applicable
+					if (discountAmount > 0) {
+						orderConfig.purchase_units[0].amount.breakdown.discount = {
+							currency_code: digicommerceVars.currency,
+							value: discountAmount.toFixed(2)
+						};
+					}
+		
+					return actions.order.create(orderConfig);
+				} catch (error) {
+					console.error('Order creation error:', error);
+					DigiUI.showMessage(document.getElementById('checkout-message'), error.message);
+					throw error;
+				}
+			}
+		
+			// Common handlers for all payment types
+			paypalConfig.onApprove = async (data, actions) => {
+				try {
+					// First, capture the PayPal order if it's a one-time payment
+					let captureResult;
+		
+					if (data.orderID && !data.subscriptionID) {
+						captureResult = await actions.order.capture();
+					}
+		
+					const formData = new FormData(checkoutForm);
+					const messageEl = document.getElementById('checkout-message');
+		
+					DigiUI.toggleLoading(document.getElementById('loading-overlay'), true);
+		
+					const checkoutData = new URLSearchParams({
+						action: 'digicommerce_process_checkout',
+						checkout_nonce: formData.get('checkout_nonce'),
+						payment_method: 'paypal',
+						paypal_order_id: data.orderID,
+						paypal_subscription_id: data.subscriptionID,
+						email: formData.get('billing_email'),
+						first_name: formData.get('billing_first_name'),
+						last_name: formData.get('billing_last_name'),
+						company: formData.get('billing_company'),
+						country: formData.get('billing_country'),
+						address: formData.get('billing_address'),
+						city: formData.get('billing_city'),
+						postcode: formData.get('billing_postcode'),
+						state: formData.get('billing_state'),
+						phone: formData.get('billing_phone'),
+						vat_number: formData.get('billing_vat_number'),
+					});
+		
+					// Add mailing list subscription status if the checkbox exists
+					const mailingListCheckbox = document.getElementById('subscribe_mailing_list');
+					if (mailingListCheckbox) {
+						checkoutData.append('subscribe_mailing_list', mailingListCheckbox.checked ? '1' : '0');
+					}
+		
 					// Add abandoned cart params from URL if they exist
 					if (urlParams.get('from_abandoned') === '1') {
 						checkoutData.append('from_abandoned', '1');
@@ -497,51 +535,80 @@ document.addEventListener('DOMContentLoaded', function () {
 							checkoutData.append('recovery_coupon', urlParams.get('coupon'));
 						}
 					}
-        
-                    // Process checkout with PayPal data
-                    const response = await fetch(digicommerceVars.ajaxurl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: checkoutData
-                    });
-        
-                    const result = await response.json();
-                    
-                    if (result.success && result.data.redirect) {
-                        DigiUI.showMessage(messageEl, digicommerceVars.i18n.success, false);
-                        
-                        if (result.data.order_id) {
-                            localStorage.setItem('last_order_id', result.data.order_id);
-                        }
-        
-                        setTimeout(() => {
-                            window.location.href = result.data.redirect;
-                        }, 1500);
-                    } else {
-                        throw new Error(result.data?.message || 'Payment processing failed');
-                    }
-        
-                } catch (error) {
-                    console.error('PayPal payment processing error:', error);
-                    DigiUI.showMessage(document.getElementById('checkout-message'), error.message);
-                    DigiUI.toggleLoading(document.getElementById('loading-overlay'), false);
-                }
-            };
-        
-            paypalConfig.onError = (err) => {
-                console.error('PayPal error:', err);
-                DigiUI.showMessage(document.getElementById('checkout-message'), 'PayPal payment failed');
-                DigiUI.toggleLoading(document.getElementById('loading-overlay'), false);
-            };
-        
-            paypalConfig.onCancel = () => {
-                DigiUI.showMessage(document.getElementById('checkout-message'), 'Payment cancelled');
-                DigiUI.toggleLoading(document.getElementById('loading-overlay'), false);
-            };
-        
-            // Render PayPal buttons
-            paypal.Buttons(paypalConfig).render('#paypal-button-container');
-        }
+		
+					// Process checkout with PayPal data
+					const response = await fetch(digicommerceVars.ajaxurl, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+						body: checkoutData
+					});
+		
+					const result = await response.json();
+					
+					if (result.success && result.data.redirect) {
+						DigiUI.showMessage(messageEl, digicommerceVars.i18n.success, false);
+						
+						if (result.data.order_id) {
+							localStorage.setItem('last_order_id', result.data.order_id);
+						}
+		
+						setTimeout(() => {
+							window.location.href = result.data.redirect;
+						}, 1500);
+					} else {
+						const errorMessage = result.data?.message || digicommerceVars.i18n.paypal_processing_failed;
+						throw new Error(errorMessage);
+					}
+		
+				} catch (error) {
+					console.error('PayPal payment processing error:', error);
+					const errorMessage = error.message || digicommerceVars.i18n.paypal_processing_failed;
+					DigiUI.showMessage(document.getElementById('checkout-message'), errorMessage);
+					DigiUI.toggleLoading(document.getElementById('loading-overlay'), false);
+				}
+			};
+		
+			paypalConfig.onError = (err) => {
+				console.error('PayPal error:', err);
+				const errorMessage = err?.message || digicommerceVars.i18n.paypal_failed;
+				DigiUI.showMessage(document.getElementById('checkout-message'), errorMessage);
+				DigiUI.toggleLoading(document.getElementById('loading-overlay'), false);
+			};
+		
+			paypalConfig.onCancel = () => {
+				DigiUI.showMessage(document.getElementById('checkout-message'), digicommerceVars.i18n.paypal_cancelled);
+				DigiUI.toggleLoading(document.getElementById('loading-overlay'), false);
+			};
+		
+			// Always render PayPal buttons - let backend validation handle unsupported scenarios
+			paypal.Buttons(paypalConfig).render('#paypal-button-container');
+			
+			// Add payment method change handler to show PayPal limitations when PayPal is selected
+			const paypalRadio = document.getElementById('payment_method_paypal');
+			if (paypalRadio) {
+				paypalRadio.addEventListener('change', function() {
+					if (this.checked && !paypalCanHandleCart) {
+						const messageEl = document.getElementById('checkout-message');
+						const errorMessage = subscriptionItems.length > 1 
+							? digicommerceVars.i18n.multiple_subscriptions_error
+							: digicommerceVars.i18n.mixed_cart_error;
+						
+						DigiUI.showMessage(messageEl, errorMessage);
+					}
+				});
+			}
+			
+			// Clear error message when switching to Stripe
+			const stripeRadio = document.getElementById('payment_method_stripe');
+			if (stripeRadio) {
+				stripeRadio.addEventListener('change', function() {
+					if (this.checked) {
+						const messageEl = document.getElementById('checkout-message');
+						messageEl.classList.add('hidden');
+					}
+				});
+			}
+		}
     }
 
     // Country select styling

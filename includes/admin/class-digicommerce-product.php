@@ -707,14 +707,17 @@ class DigiCommerce_Product {
 		// Get settings if not provided
 		$currency          = DigiCommerce()->get_option( 'currency', 'USD' );
 		$currency_position = DigiCommerce()->get_option( 'currency_position', 'left' );
+		$thousand_sep      = DigiCommerce()->get_option( 'thousand_sep', ',' );
+		$decimal_sep       = DigiCommerce()->get_option( 'decimal_sep', '.' );
+		$num_decimals      = (int) DigiCommerce()->get_option( 'num_decimals', '2' );
 
 		// Ensure the price is numeric
 		$numeric_price = is_numeric( $price ) ? (float) $price : 0.0;
 
 		// Format the price without forcing decimal places
 		$formatted_price = $plain
-			? number_format( $numeric_price, 2 )
-			: '<span class="price">' . number_format( $numeric_price, 2 ) . '</span>';
+			? number_format( $numeric_price, $num_decimals, $decimal_sep, $thousand_sep )
+			: '<span class="price">' . number_format( $numeric_price, $num_decimals, $decimal_sep, $thousand_sep ) . '</span>';
 
 		$currency_symbol = $plain
 			? $this->get_currency_symbol( $currency )

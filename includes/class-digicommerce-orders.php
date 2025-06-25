@@ -98,7 +98,7 @@ class DigiCommerce_Orders {
 		$charset_collate = $wpdb->get_charset_collate();
 
 		// Main orders table
-		$sql_orders = "CREATE TABLE IF NOT EXISTS {$this->table_orders} (
+		$sql_orders = "CREATE TABLE {$this->table_orders} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             order_number varchar(32) NOT NULL,
             user_id bigint(20) unsigned NOT NULL,
@@ -126,7 +126,7 @@ class DigiCommerce_Orders {
         ) $charset_collate;";
 
 		// Order items table
-		$sql_items = "CREATE TABLE IF NOT EXISTS {$this->table_items} (
+		$sql_items = "CREATE TABLE {$this->table_items} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             order_id bigint(20) unsigned NOT NULL,
             product_id bigint(20) unsigned NOT NULL,
@@ -147,7 +147,7 @@ class DigiCommerce_Orders {
         ) $charset_collate;";
 
 		// Order notes table
-		$sql_notes = "CREATE TABLE IF NOT EXISTS {$this->table_notes} (
+		$sql_notes = "CREATE TABLE {$this->table_notes} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             order_id bigint(20) unsigned NOT NULL,
             content text NOT NULL,
@@ -158,7 +158,7 @@ class DigiCommerce_Orders {
         ) $charset_collate;";
 
 		// Order meta table
-		$sql_meta = "CREATE TABLE IF NOT EXISTS {$this->table_meta} (
+		$sql_meta = "CREATE TABLE {$this->table_meta} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             order_id bigint(20) unsigned NOT NULL,
             meta_key varchar(255) NOT NULL,
@@ -169,7 +169,7 @@ class DigiCommerce_Orders {
         ) $charset_collate;";
 
 		// Billing details table
-		$sql_billing = "CREATE TABLE IF NOT EXISTS {$this->table_billing} (
+		$sql_billing = "CREATE TABLE {$this->table_billing} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             order_id bigint(20) unsigned NOT NULL,
             first_name varchar(100) DEFAULT NULL,
@@ -180,6 +180,7 @@ class DigiCommerce_Orders {
             address text DEFAULT NULL,
             city varchar(100) DEFAULT NULL,
             postcode varchar(20) DEFAULT NULL,
+            state varchar(100) DEFAULT NULL,
             country varchar(2) DEFAULT NULL,
             vat_number varchar(50) DEFAULT NULL,
             PRIMARY KEY (id),

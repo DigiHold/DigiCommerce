@@ -253,6 +253,10 @@ if ( isset( $_GET['updated'] ) && '1' === trim( sanitize_text_field( $_GET['upda
 									<label for="billing_postcode"><?php esc_html_e( 'Postcode:', 'digicommerce' ); ?></label>
 									<input type="text" name="billing_postcode" value="<?php echo esc_attr( $billing['postcode'] ?? '' ); ?>" class="widefat">
 								</p>
+								<p>
+									<label for="billing_state"><?php esc_html_e( 'State:', 'digicommerce' ); ?></label>
+									<input type="text" name="billing_state" value="<?php echo esc_attr( $billing['state'] ?? '' ); ?>" class="widefat">
+								</p>
 								<p class="country-wrap">
 									<label for="billing_country"><?php esc_html_e( 'Country:', 'digicommerce' ); ?></label>
 									<select name="billing_country" class="widefat digicommerce__search">

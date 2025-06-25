@@ -97,47 +97,55 @@ class DigiCommerce_Stripe {
 				'address'    => sanitize_text_field( $_POST['address'] ?? '' ), // phpcs:ignore
 				'city'       => sanitize_text_field( $_POST['city'] ?? '' ), // phpcs:ignore
 				'postcode'   => sanitize_text_field( $_POST['postcode'] ?? '' ), // phpcs:ignore
+				'state'      => sanitize_text_field( $_POST['state'] ?? '' ), // phpcs:ignore
 				'country'    => sanitize_text_field( $_POST['country'] ?? '' ), // phpcs:ignore
 				'vat_number' => sanitize_text_field( $_POST['vat_number'] ?? '' ), // phpcs:ignore
 			);
 
-			// Calculate initial payment amount (signup fee or first payment)
-			$initial_payment  = 0;
-			$has_subscription = false;
-			$has_free_trial   = false;
-			$has_signup_fee   = false;
+			// Calculate initial payment amount
+			$initial_payment         = 0;
+			$has_subscription        = false;
+			$has_free_trial          = false;
+			$has_signup_fee          = false;
+			$charge_subscription_upfront = false;
 
-			// Track one-time products vs subscription products
+			// Track products and their details
 			$one_time_products_total     = 0;
 			$subscription_products_total = 0;
+			$subscription_items          = array();
 
 			foreach ( $cart_items as $item ) {
 				if ( ! empty( $item['subscription_enabled'] ) ) {
 					$has_subscription = true;
+					$subscription_items[] = $item;
 
-					// If there's a signup fee, charge that as initial payment
+					// Check for signup fee
 					if ( ! empty( $item['subscription_signup_fee'] ) && floatval( $item['subscription_signup_fee'] ) > 0 ) {
-						$has_signup_fee   = true;
+						$has_signup_fee = true;
 						$initial_payment += floatval( $item['subscription_signup_fee'] );
-					} else { // phpcs:ignore
-						// If there's a free trial
-						if ( ! empty( $item['subscription_free_trial'] ) &&
-							intval( $item['subscription_free_trial']['duration'] ) > 0 ) {
-							$has_free_trial = true;
-						} else {
-							$subscription_products_total += floatval( $item['price'] );
-						}
+					}
+					
+					// Check for free trial
+					if ( ! empty( $item['subscription_free_trial'] ) &&
+						intval( $item['subscription_free_trial']['duration'] ) > 0 ) {
+						$has_free_trial = true;
+					} else {
+						// No free trial - charge subscription upfront
+						$subscription_products_total += floatval( $item['price'] );
+						$charge_subscription_upfront = true;
 					}
 				} else {
-					// Add one-time product price
+					// One-time product
 					$one_time_products_total += floatval( $item['price'] );
 				}
 			}
 
-			// If we only have subscription products with no signup fee, don't do initial payment
-			// Otherwise, add one-time products to initial payment
-			if ( $one_time_products_total > 0 ) {
-				$initial_payment += $one_time_products_total;
+			// Calculate initial payment
+			$initial_payment += $one_time_products_total;
+
+			// For subscriptions without free trial, charge upfront
+			if ( $charge_subscription_upfront ) {
+				$initial_payment += $subscription_products_total;
 			}
 
 			// Apply VAT and discount calculations to initial payment
@@ -188,7 +196,7 @@ class DigiCommerce_Stripe {
 
 			$total = $total_with_vat - $discount_amount;
 
-			// IMPORTANT: Create customer once and store it
+			// Create or retrieve customer
 			$customer = null;
 			if ( ! empty( $stripe_payment_data['customer_id'] ) ) {
 				// If we already have a customer ID, retrieve it
@@ -198,31 +206,32 @@ class DigiCommerce_Stripe {
 			// If no customer yet, create one
 			if ( ! $customer ) {
 				$customer = $this->get_or_create_customer(
-					[ // phpcs:ignore
+					array(
 						'email'    => $billing_data['email'],
 						'name'     => trim( $billing_data['first_name'] . ' ' . $billing_data['last_name'] ),
 						'phone'    => $billing_data['phone'],
-						'address'  => [ // phpcs:ignore
+						'address'  => array(
 							'line1'       => $billing_data['address'],
 							'city'        => $billing_data['city'],
 							'postal_code' => $billing_data['postcode'],
+							'state'       => $billing_data['state'],
 							'country'     => $billing_data['country'],
-						],
-						'metadata' => [ // phpcs:ignore
+						),
+						'metadata' => array(
 							'vat_number' => $billing_data['vat_number'],
 							'company'    => $billing_data['company'],
-							'user_id'    => get_current_user_id() ? : 'guest', // phpcs:ignore
-						],
-					]
+							'user_id'    => get_current_user_id() ? : 'guest',
+						),
+					)
 				);
 			}
 
-			$response = [ // phpcs:ignore
+			$response = array(
 				'success' => true,
-				'data'    => [ // phpcs:ignore
+				'data'    => array(
 					'customerId' => $customer->id,
-				],
-			];
+				),
+			);
 
 			// Handle subscription creation if payment_method and setup_intent_id exist
 			if ( ! empty( $stripe_payment_data['payment_method'] ) &&
@@ -232,40 +241,39 @@ class DigiCommerce_Stripe {
 					// Retrieve and attach payment method if needed
 					$payment_method = \Stripe\PaymentMethod::retrieve( $stripe_payment_data['payment_method'] );
 					if ( $payment_method->customer !== $customer->id ) {
-						$payment_method->attach( [ 'customer' => $customer->id ] ); // phpcs:ignore
+						$payment_method->attach( array( 'customer' => $customer->id ) );
 					}
 
 					// Update customer's default payment method
 					\Stripe\Customer::update(
 						$customer->id,
-						[ // phpcs:ignore
-							'invoice_settings' => [ // phpcs:ignore
+						array(
+							'invoice_settings' => array(
 								'default_payment_method' => $stripe_payment_data['payment_method'],
-							],
-						]
+							),
+						)
 					);
 
 					// Create subscription only if needed
 					if ( $has_subscription ) {
 						// Create subscription parameters
-						$subscription_params = [ // phpcs:ignore
+						$subscription_params = array(
 							'customer'               => $customer->id,
 							'default_payment_method' => $stripe_payment_data['payment_method'],
 							'items'                  => $this->prepare_subscription_items( $cart_items, $billing_data ),
 							'metadata'               => $this->prepare_metadata( $cart_items, $billing_data ),
-							'payment_settings'       => [ // phpcs:ignore
-								'payment_method_types'        => [ 'card' ], // phpcs:ignore
+							'payment_settings'       => array(
+								'payment_method_types'        => array( 'card' ),
 								'save_default_payment_method' => 'on_subscription',
-							],
+							),
 							'collection_method'      => 'charge_automatically',
-						];
+						);
 
-						// PREVENT DOUBLE CHARGING - Add discount handling
+						// Handle different subscription scenarios
 						if ( $has_free_trial ) {
-							// If there's a trial period specified in the product
-							foreach ( $cart_items as $item ) {
-								if ( ! empty( $item['subscription_enabled'] ) &&
-									! empty( $item['subscription_free_trial'] ) &&
+							// Free trial - delay first payment
+							foreach ( $subscription_items as $item ) {
+								if ( ! empty( $item['subscription_free_trial'] ) &&
 									! empty( $item['subscription_free_trial']['duration'] ) ) {
 									$trial_days = $this->get_trial_period_days( $item['subscription_free_trial'] );
 									if ( $trial_days > 0 ) {
@@ -274,46 +282,42 @@ class DigiCommerce_Stripe {
 									break;
 								}
 							}
-						} elseif ( $has_signup_fee || $one_time_products_total > 0 ) {
-							// If we're charging an initial payment (signup fee or one-time products),
-							// delay the first subscription invoice by using billing cycle anchor
-							$subscription_params['billing_cycle_anchor'] = strtotime( '+1 ' . $this->get_stripe_interval( $item['subscription_period'] ) );
+						} elseif ( $charge_subscription_upfront || $has_signup_fee || $one_time_products_total > 0 ) {
+							// We charged upfront - delay next subscription billing
+							$subscription_period = $subscription_items[0]['subscription_period'] ?? 'month';
+							$subscription_params['billing_cycle_anchor'] = strtotime( '+1 ' . $this->get_stripe_interval( $subscription_period ) );
 							$subscription_params['proration_behavior']   = 'none';
-						} elseif ( $subscription_products_total > 0 && $initial_payment == 0 ) { // phpcs:ignore
-							// Only subscription products with no initial payment
-							// Use allow_incomplete so we can confirm the payment manually
+						} else {
+							// Pure subscription with no upfront payment
 							$subscription_params['payment_behavior'] = 'allow_incomplete';
 
-							// Handle discount for subscription-only payments with no initial payment
+							// Handle discount for subscription-only payments
 							if ( ! empty( $session_data['discount'] ) ) {
-								// Create a one-time coupon in Stripe
 								$coupon = \Stripe\Coupon::create(
-									[ // phpcs:ignore
+									array(
 										'duration' => 'once',
 										'currency' => strtolower( DigiCommerce()->get_option( 'currency', 'USD' ) ),
 										'name'     => 'One-time discount (' . ( $session_data['discount']['code'] ?? 'custom' ) . ')',
-										// Determine if percentage or fixed amount
 										'percentage' === $session_data['discount']['type']
 											? 'percent_off' : 'amount_off' => 'percentage' === $session_data['discount']['type']
 											? floatval( $session_data['discount']['amount'] )
 											: $this->convert_to_cents( floatval( $session_data['discount']['amount'] ) ),
-									]
+									)
 								);
 
-								// Add discount to subscription using the discounts array parameter
-								$subscription_params['discounts'] = [ // phpcs:ignore
-									[ 'coupon' => $coupon->id ], // phpcs:ignore
-								];
+								$subscription_params['discounts'] = array(
+									array( 'coupon' => $coupon->id ),
+								);
 							}
 						}
 
 						// Create subscription
 						$subscription = \Stripe\Subscription::create( $subscription_params );
 
-						// Check if subscription has a trial period or delayed billing
+						// Handle subscription payment scenarios
 						if ( ! empty( $subscription_params['trial_period_days'] ) ||
 							! empty( $subscription_params['billing_cycle_anchor'] ) ) {
-							// No payment needed for trial subscriptions or when using billing_cycle_anchor
+							// No immediate subscription payment needed
 							$response['data']['subscriptionId'] = $subscription->id;
 							wp_send_json_success( $response['data'] );
 							return;
@@ -321,124 +325,114 @@ class DigiCommerce_Stripe {
 
 						// For immediate payment subscriptions, handle the invoice properly
 						if ( $subscription->latest_invoice ) {
-							// Retrieve the invoice
 							$invoice = \Stripe\Invoice::retrieve( $subscription->latest_invoice );
 
-							// Check if subscription has a pending payment
 							if ( 'open' === $invoice->status ) {
-								// Retrieve the payment intent ID from the invoice
-								// The latest Stripe API might provide it in different ways
 								$payment_intent_id = null;
 
 								if ( isset( $invoice->payment_intent ) ) {
 									$payment_intent_id = $invoice->payment_intent;
-								} else if ( method_exists( $invoice, 'get' ) && $invoice->get( 'payment_intent' ) ) {
-									$payment_intent_id = $invoice->get( 'payment_intent' );
-								} else {
-									// If we can't get the payment intent, try to pay the invoice directly
-									try {
-										// Note: pay() is an instance method, not static
-										$invoice = $invoice->pay();
+								}
 
-										// If payment was successful, continue
+								if ( $payment_intent_id ) {
+									try {
+										$payment_intent = \Stripe\PaymentIntent::retrieve( $payment_intent_id );
+
+										wp_send_json_success(
+											array(
+												'subscriptionId' => $subscription->id,
+												'requiresAction' => true,
+												'clientSecret'   => $payment_intent->client_secret,
+											)
+										);
+										return;
+									} catch ( \Exception $e ) {
+										wp_send_json_error( array( 'message' => 'Error retrieving payment intent: ' . $e->getMessage() ) );
+										return;
+									}
+								} else {
+									// Try to pay the invoice directly
+									try {
+										$invoice = $invoice->pay();
 										if ( 'paid' === $invoice->status ) {
 											$response['data']['subscriptionId'] = $subscription->id;
 											wp_send_json_success( $response['data'] );
 											return;
 										}
-									} catch ( \Exception $e ) { // phpcs:ignore
-										// If there's an error paying the invoice, continue to handle it below
-										// by informing the client to perform the payment confirmation
-									}
-								}
-
-								// If we have a payment intent ID, retrieve it and send the client secret
-								if ( $payment_intent_id ) {
-									try {
-										$payment_intent = \Stripe\PaymentIntent::retrieve( $payment_intent_id );
-
-										// Force the client to confirm the payment
-										wp_send_json_success(
-											[ // phpcs:ignore
-												'subscriptionId' => $subscription->id,
-												'requiresAction' => true,
-												'clientSecret'   => $payment_intent->client_secret,
-											]
-										);
-										return;
 									} catch ( \Exception $e ) {
-										wp_send_json_error( [ 'message' => 'Error retrieving payment intent: ' . $e->getMessage() ] ); // phpcs:ignore
+										wp_send_json_error( array( 'message' => 'Error paying invoice: ' . $e->getMessage() ) );
 										return;
 									}
 								}
 							}
 						}
 
-						// If we reach here, no special handling was needed
 						$response['data']['subscriptionId'] = $subscription->id;
 					}
 
 					wp_send_json_success( $response['data'] );
 
 				} catch ( \Stripe\Exception\CardException $e ) {
-					wp_send_json_error( [ 'message' => $e->getMessage() ] ); // phpcs:ignore
+					wp_send_json_error( array( 'message' => $e->getMessage() ) );
 				} catch ( Exception $e ) {
-					wp_send_json_error( [ 'message' => $e->getMessage() ] ); // phpcs:ignore
+					wp_send_json_error( array( 'message' => $e->getMessage() ) );
 				}
 			} else {
+				// Initial request - create SetupIntent and/or PaymentIntent
+				
 				// For subscriptions, always create SetupIntent
 				if ( $has_subscription ) {
 					$setup_intent = \Stripe\SetupIntent::create(
-						[ // phpcs:ignore
+						array(
 							'customer'             => $customer->id,
-							'payment_method_types' => ['card'], // phpcs:ignore
+							'payment_method_types' => array( 'card' ),
 							'usage'                => 'off_session',
 							'metadata'             => $this->prepare_metadata( $cart_items, $billing_data ),
-						]
+						)
 					);
 
-					$response['data']['setupIntent'] = [ // phpcs:ignore
+					$response['data']['setupIntent'] = array(
 						'client_secret' => $setup_intent->client_secret,
 						'id'            => $setup_intent->id,
-					];
+					);
 				}
 
 				// Create PaymentIntent if there's an immediate payment needed
 				if ( $total > 0 ) {
 					$payment_intent = \Stripe\PaymentIntent::create(
-						[ // phpcs:ignore
+						array(
 							'amount'               => $this->convert_to_cents( $total ),
 							'currency'             => strtolower( DigiCommerce()->get_option( 'currency', 'USD' ) ),
 							'customer'             => $customer->id,
 							'setup_future_usage'   => $has_subscription ? 'off_session' : null,
-							'payment_method_types' => ['card'], // phpcs:ignore
+							'payment_method_types' => array( 'card' ),
 							'metadata'             => array_merge(
 								$this->prepare_metadata( $cart_items, $billing_data ),
-								[ // phpcs:ignore
+								array(
 									'subtotal'        => $subtotal,
 									'vat_amount'      => $vat_amount,
 									'vat_applied'     => $apply_vat ? 'yes' : 'no',
 									'tax_rate'        => $tax_rate,
 									'discount_amount' => $discount_amount,
 									'total'           => $total,
-								]
+								)
 							),
 							'description'          => $this->get_payment_description( $cart_items ),
-						]
+						)
 					);
 
-					$response['data']['paymentIntent'] = [ // phpcs:ignore
+					$response['data']['paymentIntent'] = array(
 						'client_secret'  => $payment_intent->client_secret,
 						'id'             => $payment_intent->id,
-						'requiresAction' => in_array( $payment_intent->status, [ 'requires_action', 'requires_confirmation', 'requires_capture' ] ), // phpcs:ignore
-					];
+						'requiresAction' => in_array( $payment_intent->status, array( 'requires_action', 'requires_confirmation', 'requires_capture' ) ),
+					);
 				}
 			}
 
 			wp_send_json_success( $response['data'] );
 
 		} catch ( Exception $e ) {
-			wp_send_json_error( [ 'message' => $e->getMessage() ] ); // phpcs:ignore
+			wp_send_json_error( array( 'message' => $e->getMessage() ) );
 		}
 	}
 
@@ -547,6 +541,7 @@ class DigiCommerce_Stripe {
 			'address'        => $billing_data['address'],
 			'city'           => $billing_data['city'],
 			'postcode'       => $billing_data['postcode'],
+			'state'          => $billing_data['state'],
 			'country'        => $billing_data['country'],
 			'vat_number'     => $billing_data['vat_number'],
 			'items'          => substr( implode( ', ', $items_description ), 0, 499 ),

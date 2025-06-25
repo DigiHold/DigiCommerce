@@ -28,6 +28,7 @@ $last_name            = ! empty( $data ) ? $data['last_name'] : '';
 $billing_address      = ! empty( $data ) ? $data['address'] : '';
 $billing_city         = ! empty( $data ) ? $data['city'] : '';
 $billing_postcode     = ! empty( $data ) ? $data['postcode'] : '';
+$billing_state        = ! empty( $data ) ? $data['state'] : '';
 $vat_number           = ! empty( $data ) ? $data['vat_number'] : '';
 $billing_country      = ! empty( $data ) ? $data['country'] : '';
 $billing_country_name = isset( $countries[ $billing_country ] ) ? $countries[ $billing_country ]['name'] : $billing_country;
@@ -196,6 +197,10 @@ $billing_country_name = isset( $countries[ $billing_country ] ) ? $countries[ $b
 							)
 						);
 						echo '<br>';
+					}
+
+					if ( ! empty( $billing_state ) ) {
+						echo esc_html( $billing_state ) . '<br>';
 					}
 
 					if ( ! empty( $billing_country_name ) ) {

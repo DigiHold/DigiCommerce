@@ -184,7 +184,7 @@ class DigiCommerce_Checkout {
 		$table_name      = $wpdb->prefix . 'digicommerce_sessions';
 		$charset_collate = $wpdb->get_charset_collate();
 
-		$sql = "CREATE TABLE IF NOT EXISTS $table_name (
+		$sql = "CREATE TABLE $table_name (
             session_id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             session_key VARCHAR(64) NOT NULL,
             session_value LONGTEXT NOT NULL,
@@ -1019,28 +1019,186 @@ class DigiCommerce_Checkout {
 			}
 		}
 
-		// Get product ID, variation index, and coupon code from the URL parameters.
-		$product_id      = isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0;
-		$variation_index = isset( $_GET['variation'] ) ? ( intval( $_GET['variation'] ) - 1 ) : -1;
+		// Parse multiple products from URL parameters
+		$products_to_add = $this->parse_multiple_products_from_url();
 
-		if ( ! $product_id ) {
-			return; // Exit if no product ID is provided.
+		if ( empty( $products_to_add ) ) {
+			return; // No products to add
 		}
 
+		// Get current session and cart data
+		$session_key  = $this->get_current_session_key();
+		$session_data = $this->get_session( $session_key );
+
+		if ( ! $session_data ) {
+			$session_data = array( 'cart' => array() );
+		}
+
+		$cart_items = array();
+		$products_added = array();
+
+		// Keep existing cart items (except those being replaced)
+		foreach ( $session_data['cart'] as $cart_item ) {
+			$should_keep = true;
+
+			foreach ( $products_to_add as $new_product ) {
+				// Remove existing product if it's the same product
+				// For variations, this will replace the variation
+				if ( $cart_item['product_id'] === $new_product['product_id'] ) {
+					if ( $new_product['has_variations'] ) {
+						// Skip this product entirely - we'll add the new variation
+						$should_keep = false;
+						break;
+					} else {
+						// For non-variation products, check if it already exists
+						$should_keep = false;
+						break;
+					}
+				}
+			}
+
+			if ( $should_keep ) {
+				$cart_items[] = $cart_item;
+			}
+		}
+
+		// Add new products to cart
+		foreach ( $products_to_add as $product_data ) {
+			$product = get_post( $product_data['product_id'] );
+
+			if ( ! $product || 'digi_product' !== $product->post_type ) {
+				continue; // Skip invalid products
+			}
+
+			// Create cart item
+			$cart_item = array(
+				'product_id'     => $product_data['product_id'],
+				'name'           => $product->post_title,
+				'price'          => $product_data['price'],
+				'variation_name' => $product_data['variation_name'],
+			);
+
+			// Add subscription data if subscription is enabled
+			if ( ! empty( $product_data['subscription_data']['subscription_enabled'] ) ) {
+				$cart_item['subscription_enabled']    = $product_data['subscription_data']['subscription_enabled'];
+				$cart_item['subscription_period']     = $product_data['subscription_data']['subscription_period'];
+				$cart_item['subscription_free_trial'] = $product_data['subscription_data']['subscription_free_trial'];
+				$cart_item['subscription_signup_fee'] = $product_data['subscription_data']['subscription_signup_fee'];
+
+				// Add PayPal plan flag if needed
+				if ( DigiCommerce()->is_paypal_enabled() ) {
+					$cart_item['needs_paypal_plan'] = true;
+				}
+			}
+
+			$cart_items[] = $cart_item;
+			$products_added[] = $product->post_title;
+		}
+
+		// Update session data
+		$session_data['cart'] = $cart_items;
+
+		// Save updated session data
+		$this->save_session( $session_key, $session_data );
+		$this->cart_items = $cart_items;
+	}
+
+	/**
+	 * Parse multiple products from URL parameters
+	 * Handles URLs like: ?id=123&id=456&variation=1&id=789&variation=2
+	 *
+	 * @return array Array of product data to add to cart
+	 */
+	private function parse_multiple_products_from_url() {
+		// Get the raw query string to preserve parameter order
+		$query_string = $_SERVER['QUERY_STRING'] ?? '';
+		
+		if ( empty( $query_string ) ) {
+			return array();
+		}
+
+		// Parse the query string manually to preserve order and handle duplicate keys
+		$params = array();
+		$pairs = explode( '&', $query_string );
+		
+		foreach ( $pairs as $pair ) {
+			if ( strpos( $pair, '=' ) !== false ) {
+				list( $key, $value ) = explode( '=', $pair, 2 );
+				$key = urldecode( $key );
+				$value = urldecode( $value );
+				
+				// Only capture 'id' and 'variation' parameters
+				if ( in_array( $key, array( 'id', 'variation' ), true ) ) {
+					$params[] = array(
+						'key' => $key,
+						'value' => $value,
+					);
+				}
+			}
+		}
+
+		if ( empty( $params ) ) {
+			return array();
+		}
+
+		// Group parameters into products
+		$products = array();
+		$current_product = null;
+
+		foreach ( $params as $param ) {
+			if ( 'id' === $param['key'] ) {
+				// Save previous product if exists
+				if ( $current_product !== null ) {
+					$product_data = $this->process_single_product( $current_product['id'], $current_product['variation'] );
+					if ( $product_data ) {
+						$products[] = $product_data;
+					}
+				}
+
+				// Start new product
+				$current_product = array(
+					'id' => intval( $param['value'] ),
+					'variation' => -1, // Default: no variation
+				);
+			} elseif ( 'variation' === $param['key'] && $current_product !== null ) {
+				// Set variation for current product (convert to 0-based index)
+				$current_product['variation'] = intval( $param['value'] ) - 1;
+			}
+		}
+
+		// Don't forget the last product
+		if ( $current_product !== null ) {
+			$product_data = $this->process_single_product( $current_product['id'], $current_product['variation'] );
+			if ( $product_data ) {
+				$products[] = $product_data;
+			}
+		}
+
+		return $products;
+	}
+
+	/**
+	 * Process a single product and return its data
+	 *
+	 * @param int $product_id Product ID
+	 * @param int $variation_index Variation index (-1 for no variation)
+	 * @return array|null Product data or null if invalid
+	 */
+	private function process_single_product( $product_id, $variation_index = -1 ) {
 		$product = get_post( $product_id );
 
 		if ( ! $product || 'digi_product' !== $product->post_type ) {
-			return; // Exit if the product is invalid.
+			return null;
 		}
 
-		// Determine price and variation details.
+		// Determine price and variation details
 		$price_mode        = get_post_meta( $product_id, 'digi_price_mode', true );
 		$price             = 0;
 		$variation_name    = '';
 		$subscription_data = array();
 		$has_variations    = false;
 
-		// Handle variations.
+		// Handle variations
 		if ( 'variations' === $price_mode && $variation_index >= 0 ) {
 			$has_variations = true;
 			$variations     = get_post_meta( $product_id, 'digi_price_variations', true );
@@ -1069,10 +1227,10 @@ class DigiCommerce_Checkout {
 					$price = $regular_price;
 				}
 			} else {
-				return;
+				return null; // Invalid variation
 			}
 		} else {
-			// Handle simple product.
+			// Handle simple product
 			$regular_price = floatval( get_post_meta( $product_id, 'digi_price', true ) );
 			$sale_price    = floatval( get_post_meta( $product_id, 'digi_sale_price', true ) );
 
@@ -1093,59 +1251,16 @@ class DigiCommerce_Checkout {
 		}
 
 		if ( $price <= 0 ) {
-			return;
+			return null; // Invalid price
 		}
 
-		// Check if the product (and variation, if applicable) is already in the cart.
-		$session_key  = $this->get_current_session_key();
-		$session_data = $this->get_session( $session_key );
-
-		if ( ! $session_data ) {
-			$session_data = array( 'cart' => array() );
-		}
-
-		$cart_items = array();
-		foreach ( $session_data['cart'] as $cart_item ) {
-			if ( $cart_item['product_id'] === $product_id ) {
-				if ( $has_variations ) {
-					// Skip this product entirely - we'll add the new variation
-					continue;
-				} else {
-					// For non-variation products, if it exists, don't add it
-					return;
-				}
-			}
-			// Keep all other products
-			$cart_items[] = $cart_item;
-		}
-
-		// Add product and variation to cart.
-		$cart_item = array(
-			'product_id'     => $product_id,
-			'name'           => $product->post_title,
-			'price'          => $price,
-			'variation_name' => $variation_name,
+		return array(
+			'product_id'        => $product_id,
+			'price'             => $price,
+			'variation_name'    => $variation_name,
+			'has_variations'    => $has_variations,
+			'subscription_data' => $subscription_data,
 		);
-
-		// Add subscription data if subscription is enabled
-		if ( ! empty( $subscription_data['subscription_enabled'] ) ) {
-			$cart_item['subscription_enabled']    = $subscription_data['subscription_enabled'];
-			$cart_item['subscription_period']     = $subscription_data['subscription_period'];
-			$cart_item['subscription_free_trial'] = $subscription_data['subscription_free_trial'];
-			$cart_item['subscription_signup_fee'] = $subscription_data['subscription_signup_fee'];
-
-			// Add PayPal plan flag if needed
-			if ( DigiCommerce()->is_paypal_enabled() ) {
-				$cart_item['needs_paypal_plan'] = true;
-			}
-		}
-
-		$cart_items[]         = $cart_item;
-		$session_data['cart'] = $cart_items;
-
-		// Save updated session data.
-		$this->save_session( $session_key, $session_data );
-		$this->cart_items = $cart_items;
 	}
 
 	/**
@@ -1168,6 +1283,7 @@ class DigiCommerce_Checkout {
 			'address',
 			'city',
 			'postcode',
+			'state',
 			'vat_number',
 			'payment_method',
 			'setup_intent_id',
@@ -1233,6 +1349,7 @@ class DigiCommerce_Checkout {
 				'city',
 				'postcode',
 				'country',
+				'state',
 				'vat_number',
 			);
 
@@ -1351,6 +1468,7 @@ class DigiCommerce_Checkout {
 					'address'    => $minimal_fields ? '' : sanitize_text_field( $data['address'] ?? '' ),
 					'city'       => $minimal_fields ? '' : sanitize_text_field( $data['city'] ?? '' ),
 					'postcode'   => $minimal_fields ? '' : sanitize_text_field( $data['postcode'] ?? '' ),
+					'state'      => $minimal_fields ? '' : sanitize_text_field( $data['state'] ?? '' ),
 					'country'    => sanitize_text_field( $data['country'] ?? '' ),
 					'vat_number' => sanitize_text_field( $data['vat_number'] ?? '' ),
 				),
@@ -1372,6 +1490,16 @@ class DigiCommerce_Checkout {
 
 			// Handle payment method
 			$payment_method = sanitize_text_field( $order_data['payment_method'] ?? '' );
+
+			// Validate PayPal cart if PayPal is selected
+			if ( 'paypal' === $payment_method ) {
+				try {
+					$this->validate_paypal_cart( $this->cart_items );
+				} catch ( Exception $e ) {
+					$this->send_paypal_error( $e->getMessage() );
+					return;
+				}
+			}
 
 			// Add $wpdb to update database
 			global $wpdb;
@@ -1607,6 +1735,55 @@ class DigiCommerce_Checkout {
 	}
 
 	/**
+	 * Validate PayPal cart before processing
+	 *
+	 * @param array $cart_items Cart items to validate.
+	 */
+	private function validate_paypal_cart( $cart_items ) {
+		$subscription_items = array();
+		$one_time_items = array();
+		
+		foreach ( $cart_items as $item ) {
+			if ( ! empty( $item['subscription_enabled'] ) ) {
+				$subscription_items[] = $item;
+			} else {
+				$one_time_items[] = $item;
+			}
+		}
+		
+		// PayPal subscription limitations
+		if ( ! empty( $subscription_items ) ) {
+			// PayPal subscriptions require exactly one subscription product
+			if ( count( $subscription_items ) > 1 ) {
+				throw new Exception( esc_html__( 'PayPal does not support multiple subscription products in one transaction.', 'digicommerce' ) );
+			}
+			
+			// PayPal subscriptions cannot be mixed with one-time products
+			if ( ! empty( $one_time_items ) ) {
+				throw new Exception( esc_html__( 'PayPal subscriptions cannot be combined with one-time products. Please checkout subscription and one-time products separately.', 'digicommerce' ) );
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Send properly formatted error response
+	 *
+	 * @param string $message Error message.
+	 * @param string|null $code Error code.
+	 */
+	private function send_paypal_error( $message, $code = null ) {
+		wp_send_json_error( 
+			array( 
+				'message' => $message,
+				'code'    => $code,
+				'type'    => 'paypal_error'
+			) 
+		);
+	}
+
+	/**
 	 * Prepare order items
 	 */
 	private function prepare_order_items() {
@@ -1789,6 +1966,7 @@ class DigiCommerce_Checkout {
 			'address',
 			'city',
 			'postcode',
+			'state',
 			'country',
 			'phone',
 			'email',

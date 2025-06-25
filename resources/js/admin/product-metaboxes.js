@@ -857,39 +857,74 @@
 
     // Bundle Products Management
     function initBundleProducts() {
-        const addBundleBtn = document.querySelector('.add-bundle-product');
-        if (!addBundleBtn) return;
+		const addBundleBtn = document.querySelector('.add-bundle-product');
+		const bundleList = document.querySelector('.bundle-products-list');
+		
+		if (!addBundleBtn || !bundleList) return;
+	
+		addBundleBtn.addEventListener('click', function() {
+			const bundleCount = bundleList.children.length;
+			
+			// Build options HTML from available products
+			let optionsHTML = `<option value="">${digicommerceVars.i18n.selectProduct}</option>`;
+			
+			if (digicommerceVars.available_products && digicommerceVars.available_products.length > 0) {
+				digicommerceVars.available_products.forEach(function(product) {
+					optionsHTML += `<option value="${product.id}">${escapeHtml(product.title)}</option>`;
+				});
+			}
+			
+			const bundleHTML = `
+				<div class="bundle-product-item">
+					<p>
+						<label>${digicommerceVars.i18n.product}</label>
+						<select name="bundle_products[${bundleCount}]">
+							${optionsHTML}
+						</select>
+					</p>
+					<p>
+						<button type="button" class="button-link-delete remove-bundle-product">${digicommerceVars.i18n.remove}</button>
+					</p>
+				</div>
+			`;
+			
+			bundleList.insertAdjacentHTML('beforeend', bundleHTML);
+			
+			// Update the "no products" message if it exists
+			const noProductsMsg = bundleList.querySelector('p');
+			if (noProductsMsg && noProductsMsg.textContent.includes('No products selected yet')) {
+				noProductsMsg.remove();
+			}
+		});
+	
+		// Remove bundle product
+		document.addEventListener('click', function(e) {
+			if (e.target.classList.contains('remove-bundle-product')) {
+				if (confirm(digicommerceVars.i18n.removeConfirm)) {
+					const bundleItem = e.target.closest('.bundle-product-item');
+					bundleItem.remove();
+					
+					// Show "no products" message if no items left
+					const remainingItems = document.querySelectorAll('.bundle-product-item');
+					if (remainingItems.length === 0) {
+						bundleList.innerHTML = '<p>' + digicommerceVars.i18n.noProductsSelected + '</p>';
+					}
+				}
+			}
+		});
+	}
 
-        addBundleBtn.addEventListener('click', function() {
-            const bundleList = document.querySelector('.bundle-products-list');
-            const bundleCount = bundleList.children.length;
-            
-            const bundleHTML = `
-                <div class="bundle-product-item">
-                    <p>
-                        <label>${digicommerceVars.i18n.product}</label>
-                        <select name="bundle_products[${bundleCount}]">
-                            <option value="">${digicommerceVars.i18n.selectProduct}</option>
-                        </select>
-                    </p>
-                    <p>
-                        <button type="button" class="button-link-delete remove-bundle-product">${digicommerceVars.i18n.remove}</button>
-                    </p>
-                </div>
-            `;
-            
-            bundleList.insertAdjacentHTML('beforeend', bundleHTML);
-        });
-
-        // Remove bundle product
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('remove-bundle-product')) {
-                if (confirm(digicommerceVars.i18n.removeConfirm)) {
-                    e.target.closest('.bundle-product-item').remove();
-                }
-            }
-        });
-    }
+	// Helper function to escape HTML
+	function escapeHtml(text) {
+		const map = {
+			'&': '&amp;',
+			'<': '&lt;',
+			'>': '&gt;',
+			'"': '&quot;',
+			"'": '&#039;'
+		};
+		return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+	}
 
     // Upgrade Paths Management
     function initUpgradePaths() {
@@ -1130,16 +1165,30 @@
 		const wrapper = field.closest('.digi-url-field-wrapper');
 		const tooltip = wrapper.querySelector('.digi-url-tooltip');
 		
-		// Click to copy
+		// Click to copy with fallback
 		field.addEventListener('click', async function() {
 			try {
-				await navigator.clipboard.writeText(this.value);
+				// Check if modern Clipboard API is available
+				if (navigator.clipboard && navigator.clipboard.writeText) {
+					await navigator.clipboard.writeText(this.value);
+				} else {
+					// Fallback for older browsers or non-HTTPS
+					this.select();
+					this.setSelectionRange(0, 99999); // For mobile devices
+					document.execCommand('copy');
+				}
+				
 				tooltip.textContent = digicommerceVars.i18n.linkCopied || 'Link copied';
 				setTimeout(() => {
 					tooltip.textContent = digicommerceVars.i18n.clickToCopy || 'Click to copy';
 				}, 2000);
 			} catch (err) {
 				console.error('Failed to copy:', err);
+				// Show error message to user
+				tooltip.textContent = 'Copy failed - please select and copy manually';
+				setTimeout(() => {
+					tooltip.textContent = digicommerceVars.i18n.clickToCopy || 'Click to copy';
+				}, 3000);
 			}
 		});
 		
