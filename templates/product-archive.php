@@ -20,7 +20,7 @@ $allowed_html = array(
 );
 ?>
 
-<div class="digicommerce-archive digicommerce py-12 w-full">
+<div class="digicommerce-archive digicommerce py-10 md:py-16 w-full">
 	<?php if ( have_posts() ) : ?>
 		<!-- Products Grid -->
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

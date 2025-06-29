@@ -59,7 +59,7 @@ $allowed_html = array(
 
 <?php do_action( 'digicommerce_before_wrapper' ); ?>
 
-<div class="digicommerce-single-product digicommerce flex flex-col gap-8 py-12">
+<div class="digicommerce-single-product digicommerce flex flex-col gap-8 py-10 md:py-16">
 	<div class="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start">
 		<!-- Product Image -->
 		<div class="product-gallery flex flex-col">
@@ -100,7 +100,7 @@ $allowed_html = array(
 		<div class="product-summary mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0">
 			<?php do_action( 'digicommerce_before_single_product_summary' ); ?>
 
-			<h2 class="text-3xl font-extrabold tracking-tight text-dark-blue">
+			<h2 class="text-3xl font-extrabold tracking-tight text-dark-blue mt-0 mb-2">
 				<?php the_title(); ?>
 			</h2>
 

@@ -146,7 +146,7 @@ $total = number_format( $total, 2, '.', '' );
 	if ( ! empty( $order_data ) ) {
 		?>
 		<div class="flex flex-col items-center justify-center gap-1 pb-6">
-			<p class="text-2xl sm:text-4xl font-bold text-dark-blue m-0 no-margin">
+			<p class="text-2xl sm:text-4xl text-center font-bold text-dark-blue m-0 mb-4">
 				<?php
 				printf(
 					// translators: %s: customer first name

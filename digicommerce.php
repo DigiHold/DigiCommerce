@@ -3,7 +3,7 @@
  * Plugin Name: DigiCommerce
  * Plugin URI: https://digicommerce.me/
  * Description: Powerful ecommerce plugin to sell digital products, services and online courses.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: DigiHold
  * Author URI: https://digihold.me?utm_source=wordpress.org&utm_medium=referral&utm_campaign=plugin_directory&utm_content=digicommerce
  * Text Domain: digicommerce
@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 
 // Define constants first.
 if ( ! defined( 'DIGICOMMERCE_VERSION' ) ) {
-	define( 'DIGICOMMERCE_VERSION', '1.0.2' );
+	define( 'DIGICOMMERCE_VERSION', '1.0.3' );
 }
 if ( ! defined( 'DIGICOMMERCE_PLUGIN_DIR' ) ) {
 	define( 'DIGICOMMERCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -117,7 +117,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
 
 			// Scripts and styles.
-			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ), 10 );
 
 			// Load base Tailwinds CSS without priorit to prevent theme conflicts.
 			add_action( 'wp_enqueue_scripts', array( $this, 'base_css' ) );
@@ -138,8 +138,11 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			// Add theme compatibility.
 			$this->themes_compatibility();
 
-			// Add body class.
+			// Add ReCAPTCHA body class.
 			add_action( 'template_redirect', array( $this, 'maybe_add_recaptcha_class' ) );
+
+			// Add body classes
+			add_filter( 'body_class', array( $this, 'body_classes' ) );
 
 			// Add custom color in head.
 			add_action( 'wp_enqueue_scripts', array( $this, 'custom_colors' ), 10 );
@@ -530,7 +533,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 		 * Enqueue scripts and styles
 		 */
 		public function enqueue_scripts() {
-			$localized = false;
+			static $localized = false;
 
 			$should_load_css = (
 				// Load everywhere if pro plugin exists and side cart is enabled.
@@ -790,10 +793,10 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 				// Default settings.
 				$localized_vars['ajaxurl']        = admin_url( 'admin-ajax.php' );
 				$localized_vars['i18n']           = $this->get_js_translations();
-				$localized_vars['proVersion']     = class_exists( 'DigiCommerce_Pro' );
+				$localized_vars['proVersion']     = class_exists( 'DigiCommerce_Pro' ) ? true : false;
 				$localized_vars['abandonedCart']  = $this->get_option( 'enable_abandoned_cart' );
-				$localized_vars['enableSideCart'] = $this->get_option( 'enable_side_cart' );
-				$localized_vars['autoOpen']       = $this->get_option( 'side_cart_trigger' );
+				$localized_vars['enableSideCart'] = (bool) $this->get_option( 'enable_side_cart', false );
+				$localized_vars['autoOpen']       = (bool) $this->get_option( 'side_cart_trigger', false );
 				$localized_vars['removeTaxes']    = $this->get_option( 'remove_taxes' );
 
 				// Single localization for all scripts.
@@ -1068,6 +1071,30 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 					}
 				);
 			}
+		}
+
+		/**
+		 * Add DigiCommerce page body classes
+		 *
+		 * @param array $classes Existing body classes.
+		 * @return array Modified body classes.
+		 */
+		public function body_classes( $classes ) {
+			if ( $this->is_account_page() ) {
+				$classes[] = 'digi-account';
+			} elseif ( $this->is_checkout_page() ) {
+				$classes[] = 'digi-checkout';
+			} elseif ( $this->is_payment_success_page() ) {
+				$classes[] = 'digi-payment';
+			} elseif ( $this->is_reset_password_page() ) {
+				$classes[] = 'digi-reset';
+			} elseif ( $this->is_single_product() ) {
+				$classes[] = 'digi-product';
+			} elseif ( is_post_type_archive( 'digi_product' ) ) {
+				$classes[] = 'digi-archive';
+			}
+
+			return $classes;
 		}
 
 		/**

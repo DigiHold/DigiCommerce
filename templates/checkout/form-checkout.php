@@ -770,7 +770,7 @@ if ( ! $minimal_style ) {
 								?>
 
 								<?php if ( ! empty( $order_agreement ) ) : ?>
-									<div class="text-[.68rem] text-center max-w-xl text-gray-600">
+									<div class="text-[.68rem] leading-relaxed text-center max-w-xl text-gray-600">
 										<?php echo wp_kses_post( $order_agreement ); ?>
 									</div>
 									<?php

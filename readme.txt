@@ -4,7 +4,7 @@ Tags: ecommerce, shop, digital products, appointments, sell online
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -295,6 +295,11 @@ Yes, DigiCommerce is optimized for performance even with large product catalogs.
 11. **Order Details**: Detailed view of individual order information and status.
 
 == Changelog ==
+
+= 1.0.3 =
+* Added: Body classes to each DigiCommerce pages.
+* Fixed: digicommerceVars was called more than once.
+* Fixed: Issue with Add To Cart button if Side Cart from DigiCommerce Pro enabled.
 
 = 1.0.2 - June 10, 2025 =
 * Added: State field across entire plugin.

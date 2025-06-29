@@ -77,12 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
 					}
 
 					// Case 2: Pro version but side cart disabled
-					if (!digicommerceVars.enableSideCart) {
+					if (digicommerceVars.proVersion && !digicommerceVars.enableSideCart) {
 						return true;
 					}
 
 					// Case 3: Pro version and side cart enabled but side_cart_trigger not active
-					if (!digicommerceVars.autoOpen) {
+					if (digicommerceVars.proVersion && digicommerceVars.enableSideCart && !digicommerceVars.autoOpen) {
 						return true;
 					}
 
