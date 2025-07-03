@@ -300,6 +300,7 @@ Yes, DigiCommerce is optimized for performance even with large product catalogs.
 * Added: Body classes to each DigiCommerce pages.
 * Fixed: digicommerceVars was called more than once.
 * Fixed: Issue with Add To Cart button if Side Cart from DigiCommerce Pro enabled.
+* Fixed: Total price wasn't correct on checkout page when taxes not enabled in plugin settings.
 
 = 1.0.2 - June 10, 2025 =
 * Added: State field across entire plugin.

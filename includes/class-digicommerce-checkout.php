@@ -767,8 +767,8 @@ class DigiCommerce_Checkout {
 				$new_subtotal += floatval( $item['price'] );
 			}
 
-			// Get tax rate from session or user data
-			$tax_rate = $this->get_session_tax_rate( $session_key );
+			// Check if taxes are disabled
+			$taxes_disabled = DigiCommerce()->get_option( 'remove_taxes' );
 
 			// Get class instance
 			$product = DigiCommerce_Product::instance();
@@ -790,8 +790,58 @@ class DigiCommerce_Checkout {
 			// Calculate discounted subtotal
 			$discounted_subtotal = $new_subtotal - $discount_amount;
 
-			// Calculate VAT on discounted subtotal
-			$new_vat = $discounted_subtotal * $tax_rate;
+			// Initialize VAT calculation
+			$new_vat = 0;
+			$tax_rate = 0;
+
+			// Only calculate VAT if taxes are not disabled
+			if ( ! $taxes_disabled ) {
+				// Get current country and VAT number from AJAX request
+				$buyer_country = isset( $_POST['country'] ) ? sanitize_text_field( wp_unslash( $_POST['country'] ) ) : '';
+				$vat_number = isset( $_POST['vat_number'] ) ? sanitize_text_field( wp_unslash( $_POST['vat_number'] ) ) : '';
+				
+				// Fallback to session data if not provided in request
+				if ( empty( $buyer_country ) && ! empty( $session_data['selected_country'] ) ) {
+					$buyer_country = $session_data['selected_country'];
+				}
+				
+				// Fallback to user billing country if logged in
+				if ( empty( $buyer_country ) && is_user_logged_in() ) {
+					$buyer_country = get_user_meta( get_current_user_id(), 'billing_country', true );
+					if ( empty( $vat_number ) ) {
+						$vat_number = get_user_meta( get_current_user_id(), 'billing_vat_number', true );
+					}
+				}
+				
+				if ( ! empty( $buyer_country ) ) {
+					$business_country = DigiCommerce()->get_option( 'business_country' );
+					$countries = DigiCommerce()->get_countries();
+					
+					// Apply the same VAT logic as in process_checkout
+					if ( $buyer_country === $business_country ) {
+						// Domestic sale: Always charge seller's country VAT
+						$tax_rate = $countries[ $business_country ]['tax_rate'] ?? 0;
+						$new_vat = $discounted_subtotal * $tax_rate;
+					} elseif ( ! empty( $countries[ $buyer_country ]['eu'] ) && ! empty( $countries[ $business_country ]['eu'] ) ) {
+						// EU cross-border sale
+						$is_valid_vat = false;
+						if ( ! empty( $vat_number ) ) {
+							// Use the same VAT validation as in DigiCommerce_Orders
+							if ( class_exists( 'DigiCommerce_Orders' ) ) {
+								$is_valid_vat = DigiCommerce_Orders::instance()->validate_vat_number( $vat_number, $buyer_country );
+							}
+						}
+						
+						if ( ! $is_valid_vat ) {
+							// No valid VAT number - charge buyer's country rate
+							$tax_rate = $countries[ $buyer_country ]['tax_rate'] ?? 0;
+							$new_vat = $discounted_subtotal * $tax_rate;
+						}
+						// With valid VAT number - no VAT (new_vat remains 0)
+					}
+					// Non-EU sale - no VAT (new_vat remains 0)
+				}
+			}
 
 			// Calculate final total
 			$new_total = $discounted_subtotal + $new_vat;

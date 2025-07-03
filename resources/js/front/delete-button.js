@@ -25,17 +25,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 const index = this.dataset.index;
 
                 try {
-                    const response = await fetch(digicommerceVars.ajaxurl, {
-                        method: 'POST',
-                        body: new URLSearchParams({
-                            action: 'digicommerce_remove_cart_item',
-                            index: index,
-                            nonce: digicommerceVars.order_nonce,
-                        }),
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                    });
+                    // Get current country and VAT number from form
+					const countrySelect = document.getElementById('country');
+					const vatNumberField = document.getElementById('vat_number');
+					const currentCountry = countrySelect ? countrySelect.value : '';
+					const currentVatNumber = vatNumberField ? vatNumberField.value : '';
+
+					const response = await fetch(digicommerceVars.ajaxurl, {
+						method: 'POST',
+						body: new URLSearchParams({
+							action: 'digicommerce_remove_cart_item',
+							index: index,
+							nonce: digicommerceVars.order_nonce,
+							country: currentCountry,
+							vat_number: currentVatNumber,
+						}),
+						headers: {
+							'Content-Type': 'application/x-www-form-urlencoded',
+						},
+					});
 
                     const result = await response.json();
 
@@ -71,9 +79,25 @@ document.addEventListener('DOMContentLoaded', function () {
 							if (subtotalEl) {
 								subtotalEl.innerHTML = result.data.formatted_prices.subtotal;
 							}
-					
-							if (window.vatCalculator) {
-								window.vatCalculator.updateFromSubtotal();
+
+							// Check if taxes are disabled
+							const taxesDisabled = digicommerceVars.removeTaxes;
+
+							if (taxesDisabled) {
+								// When taxes are disabled, update total directly
+								const totalEl = document.getElementById('cart-total');
+								if (totalEl) {
+									const totalPriceElement = totalEl.querySelector('.total-price .price');
+									if (totalPriceElement) {
+										totalPriceElement.textContent = result.data.raw_values.total.toFixed(2);
+									}
+									totalEl.dataset.currentTotal = result.data.raw_values.total;
+								}
+							} else {
+								// When taxes are enabled, use VAT calculator
+								if (window.vatCalculator) {
+									window.vatCalculator.updateFromSubtotal();
+								}
 							}
 						}
 					
