@@ -295,7 +295,7 @@ $total = number_format( $total, 2, '.', '' );
 			<h2 class="p-4 m-0"><?php esc_html_e( 'Order Details', 'digicommerce' ); ?></h2>
 			<?php
 			// Check if DigiCommerce Pro is active and if we have license information
-			if ( class_exists( 'DigiCommerce_Pro' ) ) :
+			if ( class_exists( 'DigiCommerce_Pro' ) && class_exists( 'DigiCommerce_Pro_License' ) ) :
 				$licenses = DigiCommerce_Pro_License::instance()->get_user_licenses(
 					$order_data['user_id'],
 					array(

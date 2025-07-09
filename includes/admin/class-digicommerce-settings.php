@@ -1674,7 +1674,7 @@ class DigiCommerce_Settings {
 			<div class="w-full 3xl:w-1/6 flex">
 				<p class="text-dark-blue text-medium"><?php esc_html_e( 'Social Media', 'digicommerce' ); ?></p>
 			</div>
-			<div class="w-full 3xl:w-11/12 9xl:w-1/2 flex flex-col gap-4">
+			<div class="w-full 9xl:w-1/2 flex flex-col gap-4">
 				<label class="flex items-center gap-2 cursor-pointer">
 					<input type="checkbox" name="show_social_links_in_email" value="1" <?php checked( $options['show_social_links_in_email'], 1 ); ?>>
 					<?php esc_html_e( 'Show social media links in emails', 'digicommerce' ); ?>

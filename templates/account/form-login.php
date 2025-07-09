@@ -10,7 +10,7 @@
 defined( 'ABSPATH' ) || exit;
 ?>
 
-<div class="w-[375px] max-w-[90%] py-16 mdl:py-28 mx-auto">
+<div class="digicommerce w-[375px] max-w-[90%] py-16 mdl:py-28 mx-auto">
 	<div class="flex flex-col items-center">
 		<!-- Logo -->
 		<div class="relative flex items-center justify-center w-full mb-12">
@@ -63,6 +63,8 @@ defined( 'ABSPATH' ) || exit;
 			<?php endif; ?>
 			
 			<div id="login-message" class="message hidden"></div>
+
+			<?php do_action( 'digicommerce_social_login_buttons', 'login' ); ?>
 			
 			<div class="field mb-4 relative">
 				<input type="text" id="username" name="username" class="default-transition" required>
@@ -131,6 +133,8 @@ defined( 'ABSPATH' ) || exit;
 				<?php endif; ?>
 
 				<div id="register-message" class="message hidden"></div>
+
+				<?php do_action( 'digicommerce_social_login_buttons', 'register' ); ?>
 				
 				<div class="field mb-4 relative">
 					<input type="text" id="reg_username" name="username" class="default-transition" required>
