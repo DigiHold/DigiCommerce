@@ -1,0 +1,73 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 2,
+    "name": "digicommerce/product-price",
+    "title": "Product Price",
+    "category": "digicommerce",
+    "description": "Display the current product price with support for variations and sale prices.",
+    "keywords": ["product", "price", "cost", "sale"],
+    "textdomain": "digicommerce",
+    "attributes": {
+        "showVariations": {
+            "type": "boolean",
+            "default": true
+        },
+        "style": {
+            "type": "object",
+            "default": {
+                "typography": {
+                    "fontSize": "var(--wp--preset--font-size--x-large)"
+                },
+                "spacing": {
+                    "margin": {
+                        "bottom": "var(--wp--preset--spacing--50)"
+                    }
+                }
+            }
+        }
+    },
+    "usesContext": ["postId", "postType"],
+    "supports": {
+        "anchor": true,
+        "align": ["wide", "full"],
+        "spacing": {
+            "margin": true,
+            "padding": true,
+            "__experimentalDefaultControls": {
+                "margin": true
+            }
+        },
+        "typography": {
+            "fontSize": true,
+            "lineHeight": true,
+            "textAlign": true,
+            "__experimentalFontFamily": true,
+            "__experimentalFontWeight": true,
+            "__experimentalFontStyle": true,
+            "__experimentalTextTransform": true,
+            "__experimentalTextDecoration": true,
+            "__experimentalLetterSpacing": true,
+            "__experimentalDefaultControls": {
+                "fontSize": true
+            }
+        },
+        "color": {
+            "text": true,
+            "background": true,
+            "gradients": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "style": true,
+            "width": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "showVariations": true
+        }
+    },
+    "style": "file:./style.css",
+    "editorStyle": "file:./style.css"
+}

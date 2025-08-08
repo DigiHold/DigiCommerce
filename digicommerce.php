@@ -61,6 +61,12 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			// Security.
 			require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/class-digicommerce-security.php';
 
+			// Check if block theme
+			if ( function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) {
+				require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/class-digicommerce-theme-compatibility.php';
+				DigiCommerce_Theme_Compatibility::instance();
+			}
+
 			if ( is_admin() ) {
 				// Plugin settings.
 				require_once DIGICOMMERCE_PLUGIN_DIR . 'includes/admin/class-digicommerce-settings.php';
@@ -1172,6 +1178,7 @@ if ( ! class_exists( 'DigiCommerce' ) ) {
 			return array();
 		}
 
+		
 		/**
 		 * Gets a template from the plugin
 		 *

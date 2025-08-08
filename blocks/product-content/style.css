@@ -1,0 +1,27 @@
+/**
+ * DigiCommerce Product Content Block Styles
+ */
+
+.wp-block-digicommerce-product-content {
+    margin: 0 0 var(--wp--preset--spacing--50) 0;
+    padding: 0;
+    word-wrap: break-word;
+
+    &.has-text-align-left {
+        .digicommerce-product-content__title {
+            text-align: left;
+        }
+    }
+
+    &.has-text-align-center {
+        .digicommerce-product-content__title {
+            text-align: center;
+        }
+    }
+
+    &.has-text-align-right {
+        .digicommerce-product-content__title {
+            text-align: right;
+        }
+    }
+}

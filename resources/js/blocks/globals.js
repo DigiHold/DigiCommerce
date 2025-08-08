@@ -1,0 +1,1 @@
+// Empty JS file to load all necessary WP components for blocks

@@ -1,0 +1,57 @@
+/**
+ * DigiCommerce Product Price Block Styles
+ */
+
+.wp-block-digicommerce-product-price {
+    margin: 0 0 var(--wp--preset--spacing--50) 0;
+    padding: 0;
+    font-size: var(--wp--preset--font-size--x-large);
+
+    &.has-text-align-left {
+        .digicommerce-product-price__container {
+            justify-content: flex-start;
+        }
+    }
+
+    &.has-text-align-center {
+        .digicommerce-product-price__container {
+            justify-content: center;
+        }
+    }
+
+    &.has-text-align-right {
+        .digicommerce-product-price__container {
+            justify-content: flex-end;
+        }
+    }
+}
+
+.digicommerce-product-price {
+    &__container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+
+        &--variations {
+            align-items: baseline;
+        }
+    }
+
+    &__price,
+    &__sale {
+        color: #16a34a;
+        font-weight: 700;
+    }
+
+    &__regular {
+        color: #6b7280;
+        text-decoration: line-through;
+        opacity: 0.6;
+    }
+
+    &__from {
+        font-weight: 500;
+        font-size: 1rem;
+    }
+}

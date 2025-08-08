@@ -1,0 +1,84 @@
+/**
+ * DigiCommerce Product Features Block Styles
+ */
+
+.wp-block-digicommerce-product-features {
+    margin: 0 0 var(--wp--preset--spacing--50) 0;
+    padding: 0;
+
+    .digicommerce-product-features {
+        &__title {
+            margin: 0 0 1rem 0;
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+
+        &__table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+
+            [dir='ltr'] & {
+                text-align: left;
+            }
+
+            [dir='rtl'] & {
+                text-align: right;
+            }
+        }
+
+        &__name,
+        &__value {
+            padding: 0.5rem 1rem;
+            vertical-align: top;
+        }
+
+        &__name {
+            font-weight: 600;
+        }
+
+        &__value {
+            color: inherit;
+        }
+    }
+}
+
+/* Bordered variant */
+.digicommerce-features-bordered {
+    .digicommerce-product-features {
+        &__table {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+        }
+
+        &__name,
+        &__value {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        &__row:last-child {
+            .digicommerce-product-features {
+                &__name,
+                &__value {
+                    border-bottom: none;
+                }
+            }
+        }
+    }
+}
+
+/* Striped variant */
+.digicommerce-features-striped {
+    .digicommerce-product-features {
+        &__row-even {
+            background-color: #f3f4f6;
+
+            .digicommerce-product-features {
+                &__name,
+                &__value {
+                    background-color: #f3f4f6;
+                }
+            }
+        }
+    }
+}

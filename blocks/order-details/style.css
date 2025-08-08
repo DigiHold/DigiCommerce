@@ -1,0 +1,192 @@
+/**
+ * DigiCommerce Order Details Block Styles
+ */
+
+.wp-block-digicommerce-order-details {
+    border: 1px solid #ddd;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    background: #fff;
+
+    .digicommerce-order-details__title {
+        padding: 1rem;
+        margin: 0;
+    }
+
+    .digicommerce-order-details__product {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .digicommerce-order-details__product-name {
+        font-size: 1rem;
+        font-weight: bold;
+        color: var(--dc-dark-blue);
+    }
+
+    .digicommerce-order-details__download {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .digicommerce-order-details__download-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        border-radius: 0.25rem;
+        padding: 0.5rem 0.75rem;
+        background-color: var(--dc-dark-blue-10);
+        color: var(--dc-dark-blue);
+        border: 1px solid var(--dc-dark-blue-20);
+        transition: all 300ms ease-in-out;
+        cursor: pointer;
+
+        &:hover {
+            background-color: var(--dc-dark-blue);
+            color: #fff;
+            border-color: var(--dc-dark-blue);
+        }
+
+        svg {
+            flex-shrink: 0;
+        }
+
+        span {
+            flex-grow: 1;
+        }
+    }
+
+    .digicommerce-order-details__discount {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    /* Table styles */
+    .digicommerce-table {
+        margin: 0;
+        width: 100%;
+        border-collapse: collapse;
+        border: 0;
+        background-color: #fff;
+
+        .end {
+            text-align: right;
+        }
+
+        th,
+        td {
+            border: 0;
+            padding: 1rem;
+            text-align: left;
+            line-height: 1.5;
+        }
+
+        th {
+            font-weight: 700;
+            color: var(--dc-dark-blue);
+        }
+
+        thead th {
+            border-bottom: 1px solid #e1e1e1;
+        }
+
+        tbody {
+            font-size: 0.875rem;
+
+            tr:nth-child(odd) {
+                background-color: #f7f7f9;
+            }
+        }
+
+        tfoot {
+            font-size: 0.875rem;
+
+            th {
+                color: var(--dc-dark-blue);
+            }
+
+            td,
+            th {
+                border-top: 1px solid #e1e1e1;
+            }
+
+            .order-total {
+                font-size: 1rem;
+                background-color: #f7f7f9;
+
+                th,
+                td {
+                    font-weight: 700;
+                }
+            }
+        }
+
+        .amount {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #16a34a;
+        }
+    }
+
+    /* Responsive styles */
+    @media only screen and (max-width: 768px) {
+        .digicommerce-table {
+            tbody,
+            tr,
+            td {
+                display: block;
+                width: 100%;
+            }
+
+            th,
+            thead {
+                display: none;
+            }
+
+            td {
+                position: relative;
+                display: flex;
+                justify-content: space-between;
+                text-align: right;
+
+                &::before {
+                    content: attr(data-label);
+                    float: left;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: var(--dc-dark-blue);
+                }
+            }
+
+            td[rowspan] {
+                display: none;
+            }
+        }
+    }
+}
+
+/* RTL Support */
+body.rtl {
+    .wp-block-digicommerce-order-details {
+        .digicommerce-table {
+            .end {
+                text-align: left;
+            }
+
+            th,
+            td {
+                text-align: right;
+            }
+
+            @media only screen and (max-width: 768px) {
+                td {
+                    text-align: left;
+                }
+            }
+        }
+    }
+}

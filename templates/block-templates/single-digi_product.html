@@ -1,0 +1,45 @@
+<!-- wp:template-part {"slug":"header","tagName":"header"} /-->
+
+<!-- wp:group {"style":{"spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|60"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group" style="padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--60);">
+    <!-- wp:columns {"style":{"spacing":{"blockGap":{"top":"var:preset|spacing|50","left":"var:preset|spacing|50"}}}} -->
+    <div class="wp-block-columns">
+        <!-- wp:column {"width":"50%"} -->
+        <div class="wp-block-column" style="flex-basis: 50%">
+            <!-- wp:digicommerce/product-gallery /-->
+        </div>
+        <!-- /wp:column -->
+
+        <!-- wp:column {"width":"50%"} -->
+        <div class="wp-block-column" style="flex-basis: 50%">
+            <!-- wp:digicommerce/product-title {"tagName":"h1","style":{"spacing":{"margin":{"top":"0","bottom":"var:preset|spacing|30"}}}} /-->
+
+            <!-- wp:digicommerce/product-price {"style":{"spacing":{"margin":{"bottom":"var:preset|spacing|40"}}}} /-->
+
+            <!-- wp:digicommerce/product-description {"style":{"spacing":{"margin":{"bottom":"var:preset|spacing|40"}}}} /-->
+
+            <!-- wp:digicommerce/product-features {"style":{"spacing":{"margin":{"bottom":"var:preset|spacing|40"}}}} /-->
+
+            <!-- wp:digicommerce/add-to-cart {"style":{"spacing":{"margin":{"bottom":"var:preset|spacing|40"}}}} /-->
+
+            <!-- wp:digicommerce/product-meta {"style":{"spacing":{"margin":{"bottom":"var:preset|spacing|40"}}}} /-->
+
+            <!-- wp:digicommerce/product-share /-->
+        </div>
+        <!-- /wp:column -->
+    </div>
+    <!-- /wp:columns -->
+
+    <!-- wp:spacer {"height":"var:preset|spacing|60"} -->
+    <div style="height:var(--wp--preset--spacing--60)" aria-hidden="true" class="wp-block-spacer"></div>
+    <!-- /wp:spacer -->
+
+    <!-- wp:group {"layout":{"type":"constrained"}} -->
+    <div class="wp-block-group">
+        <!-- wp:digicommerce/product-content {"style":{"spacing":{"margin":{"bottom":"var:preset|spacing|50"}}}} /-->
+    </div>
+    <!-- /wp:group -->
+</div>
+<!-- /wp:group -->
+
+<!-- wp:template-part {"slug":"footer","tagName":"footer"} /-->

@@ -352,10 +352,25 @@ Options -Indexes
 	 */
 	private function handle_s3_download( $file_info, $token_data ) {
 		try {
-			// Ensure filename has proper extension
-			$base_name = $file_info['name'] ?? $file_info['itemName'] ?? pathinfo( $file_info['file'], PATHINFO_FILENAME );
-			$extension = pathinfo( $file_info['file'], PATHINFO_EXTENSION );
-			$filename = $extension ? $base_name . '.' . $extension : basename( $file_info['file'] );
+			// Get the base name from file info
+			$stored_name = $file_info['name'] ?? $file_info['itemName'] ?? '';
+			
+			// Check if stored name already has the extension
+			if ( ! empty( $stored_name ) ) {
+				$stored_extension = pathinfo( $stored_name, PATHINFO_EXTENSION );
+				$file_extension = pathinfo( $file_info['file'], PATHINFO_EXTENSION );
+				
+				// If stored name already has the correct extension, use it as is
+				if ( $stored_extension === $file_extension ) {
+					$filename = $stored_name;
+				} else {
+					// Otherwise, add the extension
+					$filename = $stored_name . '.' . $file_extension;
+				}
+			} else {
+				// Fallback to the actual filename
+				$filename = basename( $file_info['file'] );
+			}
 	
 			$signed_url = $this->s3->get_file_download_url( $file_info['file'], $filename );
 	
@@ -382,10 +397,25 @@ Options -Indexes
 			throw new Exception( 'Local file not found' );
 		}
 	
-		// Ensure filename has proper extension
-		$base_name = $file_info['name'] ?? $file_info['itemName'] ?? pathinfo( $file_info['file'], PATHINFO_FILENAME );
-		$extension = pathinfo( $file_info['file'], PATHINFO_EXTENSION );
-		$filename = $extension ? $base_name . '.' . $extension : basename( $file_info['file'] );
+		// Get the base name from file info
+		$stored_name = $file_info['name'] ?? $file_info['itemName'] ?? '';
+		
+		// Check if stored name already has the extension
+		if ( ! empty( $stored_name ) ) {
+			$stored_extension = pathinfo( $stored_name, PATHINFO_EXTENSION );
+			$file_extension = pathinfo( $file_info['file'], PATHINFO_EXTENSION );
+			
+			// If stored name already has the correct extension, use it as is
+			if ( $stored_extension === $file_extension ) {
+				$filename = $stored_name;
+			} else {
+				// Otherwise, add the extension
+				$filename = $stored_name . '.' . $file_extension;
+			}
+		} else {
+			// Fallback to the actual filename
+			$filename = basename( $file_info['file'] );
+		}
 	
 		if ( ! $this->send_file( $file_path, $filename ) ) {
 			throw new Exception( 'Failed to send local file' );

@@ -1,0 +1,79 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 2,
+    "name": "digicommerce/products-filters",
+    "title": "Products Filters",
+    "category": "digicommerce",
+    "description": "Add filters to narrow down products by categories and tags.",
+    "keywords": ["filter", "category", "tag", "products", "shop"],
+    "textdomain": "digicommerce",
+    "attributes": {
+        "showCategories": {
+            "type": "boolean",
+            "default": true
+        },
+        "showTags": {
+            "type": "boolean",
+            "default": true
+        },
+        "showCount": {
+            "type": "boolean",
+            "default": true
+        },
+        "categoriesTitle": {
+            "type": "string",
+            "default": "Categories"
+        },
+        "tagsTitle": {
+            "type": "string",
+            "default": "Tags"
+        },
+        "filterStyle": {
+            "type": "string",
+            "enum": ["checkboxes", "dropdown"],
+            "default": "checkboxes"
+        }
+    },
+    "supports": {
+        "anchor": true,
+        "align": ["wide", "full"],
+        "spacing": {
+            "margin": true,
+            "padding": true,
+            "__experimentalDefaultControls": {
+                "margin": true,
+                "padding": true
+            }
+        },
+        "typography": {
+            "fontSize": true,
+            "lineHeight": true,
+            "__experimentalFontFamily": true,
+            "__experimentalFontWeight": true,
+            "__experimentalDefaultControls": {
+                "fontSize": true
+            }
+        },
+        "color": {
+            "text": true,
+            "background": true,
+            "gradients": true,
+            "link": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "style": true,
+            "width": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "showCategories": true,
+            "showTags": true,
+            "filterStyle": "checkboxes"
+        }
+    },
+    "style": "file:./style.css",
+    "editorStyle": "file:./style.css"
+}

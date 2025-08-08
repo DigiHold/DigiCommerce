@@ -1,0 +1,63 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 2,
+    "name": "digicommerce/success-message",
+    "title": "Success Message",
+    "category": "digicommerce",
+    "description": "Display success message after order completion.",
+    "keywords": ["success", "message", "thank you", "order"],
+    "textdomain": "digicommerce",
+    "attributes": {
+        "style": {
+            "type": "object",
+            "default": {
+                "typography": {
+                    "textAlign": "center"
+                }
+            }
+        },
+        "successTitle": {
+            "type": "string",
+            "default": "Thank you for your purchase {name}!"
+        },
+        "successMessage": {
+            "type": "string",
+            "default": "View the details of your order below."
+        },
+        "expiredTitle": {
+            "type": "string",
+            "default": "Your session has expired"
+        },
+        "expiredMessage": {
+            "type": "string",
+            "default": "Your session has expired. Please log in to view your orders."
+        },
+        "expiredButtonText": {
+            "type": "string",
+            "default": "Go to your account"
+        },
+        "showIcon": {
+            "type": "boolean",
+            "default": true
+        }
+    },
+    "supports": {
+        "anchor": false,
+        "align": ["wide", "full"],
+        "spacing": {
+            "margin": true,
+            "padding": true
+        },
+        "typography": {
+            "fontSize": true,
+            "lineHeight": true,
+            "textAlign": true
+        },
+        "color": {
+            "text": true,
+            "background": true
+        }
+    },
+    "style": "file:./style.css",
+    "editorStyle": "file:./style.css"
+}

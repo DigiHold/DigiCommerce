@@ -1,0 +1,75 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 2,
+    "name": "digicommerce/product-title",
+    "title": "Product Title",
+    "category": "digicommerce",
+    "description": "Display the current product title with customizable heading level.",
+    "keywords": ["product", "title", "heading", "name"],
+    "textdomain": "digicommerce",
+    "attributes": {
+        "tagName": {
+            "type": "string",
+            "default": "h1"
+        },
+        "style": {
+            "type": "object",
+            "default": {
+                "typography": {
+                    "fontSize": "var(--wp--preset--font-size--xx-large)",
+                    "fontWeight": "700"
+                },
+                "spacing": {
+                    "margin": {
+                        "bottom": "var(--wp--preset--spacing--30)"
+                    }
+                }
+            }
+        }
+    },
+    "usesContext": ["postId", "postType"],
+    "supports": {
+        "anchor": true,
+        "align": ["wide", "full"],
+        "spacing": {
+            "margin": true,
+            "padding": true,
+            "__experimentalDefaultControls": {
+                "margin": true
+            }
+        },
+        "typography": {
+            "fontSize": true,
+            "lineHeight": true,
+            "textAlign": true,
+            "__experimentalFontFamily": true,
+            "__experimentalFontWeight": true,
+            "__experimentalFontStyle": true,
+            "__experimentalTextTransform": true,
+            "__experimentalTextDecoration": true,
+            "__experimentalLetterSpacing": true,
+            "__experimentalDefaultControls": {
+                "fontSize": true
+            }
+        },
+        "color": {
+            "text": true,
+            "background": true,
+            "gradients": true,
+            "link": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "style": true,
+            "width": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "tagName": "h1"
+        }
+    },
+    "style": "file:./style.css",
+    "editorStyle": "file:./style.css"
+}

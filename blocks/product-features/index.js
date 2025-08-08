@@ -1,0 +1,17 @@
+/**
+ * DigiCommerce Product Features Block
+ */
+
+import DigiCommerceProductFeaturesEdit from './edit';
+import DigiCommerceProductFeaturesSave from './save';
+
+const { registerBlockType } = wp.blocks;
+
+registerBlockType('digicommerce/product-features', {
+	icon: {
+        src: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="24" height="24" aria-hidden="true" focusable="false"><path d="M64 64C46.3 64 32 78.3 32 96l0 64 448 0 0-64c0-17.7-14.3-32-32-32L64 64zM32 192l0 112 208 0 0-112L32 192zm240 0l0 112 208 0 0-112-208 0zM240 336L32 336l0 80c0 17.7 14.3 32 32 32l176 0 0-112zm32 112l176 0c17.7 0 32-14.3 32-32l0-80-208 0 0 112zM0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96z"></path></svg>,
+        foreground: '#ccb161'
+    },
+    edit: DigiCommerceProductFeaturesEdit,
+    save: DigiCommerceProductFeaturesSave
+});

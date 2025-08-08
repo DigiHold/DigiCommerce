@@ -17,9 +17,10 @@ class DigiCommerce_Blocks {
 	 */
 	private function __construct() {
 		add_filter( 'block_categories_all', array( $this, 'register_block_category' ), 10, 2 );
-		add_action( 'enqueue_block_assets', array( $this, 'enqueue_block_assets' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
-		add_action( 'init', array( $this, 'register_blocks' ) );
+		
+		// Load block classes early, before init
+		add_action( 'plugins_loaded', array( $this, 'load_block_classes' ), 10 );
 	}
 
 	/**
@@ -30,6 +31,38 @@ class DigiCommerce_Blocks {
 			self::$instance = new self();
 		}
 		return self::$instance;
+	}
+
+	/**
+	 * Load block classes
+	 */
+	public function load_block_classes() {
+		// Load individual block classes
+		$block_classes = array(
+			'product-button'       => 'class-digicommerce-product-button-block.php',
+			'product-title'       => 'class-digicommerce-product-title-block.php',
+			'product-price'       => 'class-digicommerce-product-price-block.php',
+			'product-description' => 'class-digicommerce-product-description-block.php',
+			'product-content'     => 'class-digicommerce-product-content-block.php',
+			'product-gallery'     => 'class-digicommerce-product-gallery-block.php',
+			'product-features'    => 'class-digicommerce-product-features-block.php',
+			'product-meta'        => 'class-digicommerce-product-meta-block.php',
+			'product-share'       => 'class-digicommerce-product-share-block.php',
+			'add-to-cart'         => 'class-digicommerce-add-to-cart-block.php',
+			'products-grid'       => 'class-digicommerce-products-grid-block.php',
+			'products-filters'    => 'class-digicommerce-products-filters-block.php',
+			'products-sorting'    => 'class-digicommerce-products-sorting-block.php',
+			'success-message'     => 'class-digicommerce-success-message-block.php',
+			'order-receipt'       => 'class-digicommerce-order-receipt-block.php',
+			'order-details'       => 'class-digicommerce-order-details-block.php',
+		);
+
+		foreach ( $block_classes as $block_name => $file_name ) {
+			$file_path = DIGICOMMERCE_PLUGIN_DIR . 'includes/blocks/' . $file_name;
+			if ( file_exists( $file_path ) ) {
+				require_once $file_path;
+			}
+		}
 	}
 
 	/**
@@ -51,42 +84,200 @@ class DigiCommerce_Blocks {
 	}
 
 	/**
-	 * Enqueue block assets
+	 * Get all available blocks dynamically
 	 */
-	public function enqueue_block_assets() {
-		$blocks = array(
-			'button',
-			'archives',
-		);
-
-		foreach ( $blocks as $block ) {
-			if ( has_block( 'digicommerce/' . $block ) ) {
-				wp_enqueue_style(
-					'digicommerce-' . $block,
-					DIGICOMMERCE_PLUGIN_URL . 'blocks/' . $block . '/style.css',
-					array(),
-					DIGICOMMERCE_VERSION
-				);
+	private function get_available_blocks() {
+		$blocks = array();
+		$blocks_dir = DIGICOMMERCE_PLUGIN_DIR . 'assets/blocks/';
+		
+		if ( is_dir( $blocks_dir ) ) {
+			$block_folders = array_filter( glob( $blocks_dir . '*' ), 'is_dir' );
+			foreach ( $block_folders as $block_folder ) {
+				$blocks[] = basename( $block_folder );
 			}
 		}
+		
+		return $blocks;
+	}
+
+	/**
+	 * Get blocks that should be loaded for current context
+	 */
+	private function get_blocks_for_current_context() {
+		$blocks_to_load = array();
+
+		// Check post content first (for regular posts/pages)
+		global $post;
+		if ( $post && has_blocks( $post->post_content ) ) {
+			$blocks = parse_blocks( $post->post_content );
+			$blocks_to_load = array_merge( $blocks_to_load, $this->extract_digicommerce_blocks( $blocks ) );
+		}
+
+		// Check current template for FSE themes
+		if ( function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) {
+			$template_blocks = $this->get_template_blocks();
+			$blocks_to_load = array_merge( $blocks_to_load, $template_blocks );
+		}
+
+		// Fallback: Load blocks based on page context
+		if ( empty( $blocks_to_load ) ) {
+			$blocks_to_load = $this->get_blocks_by_page_context();
+		}
+
+		return array_unique( $blocks_to_load );
+	}
+
+	/**
+	 * Extract DigiCommerce blocks from parsed blocks
+	 */
+	private function extract_digicommerce_blocks( $blocks ) {
+		$digi_blocks = array();
+
+		foreach ( $blocks as $block ) {
+			// Check if it's a DigiCommerce block
+			if ( strpos( $block['blockName'], 'digicommerce/' ) === 0 ) {
+				$block_name = str_replace( 'digicommerce/', '', $block['blockName'] );
+				$digi_blocks[] = $block_name;
+			}
+
+			// Recursively check inner blocks
+			if ( ! empty( $block['innerBlocks'] ) ) {
+				$inner_digi_blocks = $this->extract_digicommerce_blocks( $block['innerBlocks'] );
+				$digi_blocks = array_merge( $digi_blocks, $inner_digi_blocks );
+			}
+		}
+
+		return $digi_blocks;
+	}
+
+	/**
+	 * Get blocks used in current template
+	 */
+	private function get_template_blocks() {
+		$template_blocks = array();
+
+		// Try to get current template content
+		$template_content = $this->get_current_template_content();
+		
+		if ( $template_content ) {
+			$blocks = parse_blocks( $template_content );
+			$template_blocks = $this->extract_digicommerce_blocks( $blocks );
+		}
+
+		return $template_blocks;
+	}
+
+	/**
+	 * Get current template content
+	 */
+	private function get_current_template_content() {
+		// Try to get template content from various sources
+		global $_wp_current_template_content;
+		
+		if ( ! empty( $_wp_current_template_content ) ) {
+			return $_wp_current_template_content;
+		}
+
+		// Get template based on current context
+		$template_slug = $this->get_current_template_slug();
+		if ( $template_slug ) {
+			// Check plugin templates first
+			$plugin_template = DIGICOMMERCE_PLUGIN_DIR . 'templates/block-templates/' . $template_slug . '.html';
+			if ( file_exists( $plugin_template ) ) {
+				return file_get_contents( $plugin_template );
+			}
+
+			// Check theme templates
+			$theme_template = get_stylesheet_directory() . '/templates/' . $template_slug . '.html';
+			if ( file_exists( $theme_template ) ) {
+				return file_get_contents( $theme_template );
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Get current template slug
+	 */
+	private function get_current_template_slug() {
+		// Single product
+		if ( is_singular( 'digi_product' ) ) {
+			return 'single-digi_product';
+		}
+
+		// Product archive
+		if ( is_post_type_archive( 'digi_product' ) ) {
+			return 'archive-digi_product';
+		}
+
+		// Check specific DigiCommerce pages
+		global $post;
+		if ( $post && is_page() ) {
+			$checkout_page_id = DigiCommerce()->get_option( 'checkout_page_id' );
+			$success_page_id = DigiCommerce()->get_option( 'payment_success_page_id' );
+
+			if ( $checkout_page_id && $post->ID == $checkout_page_id ) {
+				return 'page-checkout';
+			}
+
+			if ( $success_page_id && $post->ID == $success_page_id ) {
+				return 'page-payment-success';
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get blocks based on page context (fallback)
+	 */
+	private function get_blocks_by_page_context() {
+		$blocks = array();
+
+		// Single product page
+		if ( is_singular( 'digi_product' ) ) {
+			$blocks = array(
+				'product-title',
+				'product-price',
+				'product-description',
+				'product-content',
+				'product-gallery',
+				'product-features',
+				'product-meta',
+				'product-share',
+				'add-to-cart',
+			);
+		}
+
+		// Product archive
+		elseif ( is_post_type_archive( 'digi_product' ) ) {
+			$blocks = array(
+				'products-grid',
+				'products-sorting',
+				'products-filters',
+			);
+		}
+
+		elseif ( DigiCommerce()->is_payment_success_page() ) {
+			$blocks = array(
+				'success-message',
+				'order-receipt',
+				'order-details',
+			);
+		}
+
+		return $blocks;
 	}
 
 	/**
 	 * Enqueue editor assets
 	 */
 	public function enqueue_editor_assets() {
-		// Style for Archives editor.
-		wp_enqueue_style(
-			'digicommerce-archives-editor',
-			DIGICOMMERCE_PLUGIN_URL . 'blocks/archives/editor.css',
-			array( 'wp-edit-blocks' ),
-			DIGICOMMERCE_VERSION
-		);
-
-		// Enqueue editor scripts.
+		// First enqueue the globals script
 		wp_enqueue_script(
-			'digicommerce-blocks-editor',
-			DIGICOMMERCE_PLUGIN_URL . 'assets/js/blocks/index.js',
+			'digicommerce-globals',
+			DIGICOMMERCE_PLUGIN_URL . 'assets/js/blocks/globals.js',
 			array(
 				'wp-blocks',
 				'wp-i18n',
@@ -96,31 +287,40 @@ class DigiCommerce_Blocks {
 				'wp-data',
 				'wp-block-editor',
 				'wp-hooks',
-				'wp-server-side-render',
-				'wp-core-data',
 			),
 			DIGICOMMERCE_VERSION,
 			true
 		);
 
-		// Register translations.
-		wp_set_script_translations(
-			'digicommerce-blocks-editor',
-			'digicommerce'
-		);
+		// Enqueue individual block scripts with dependencies
+		$this->enqueue_block_scripts();
+	}
 
-		// Pass data to editor script.
-		wp_localize_script(
-			'digicommerce-blocks-editor',
-			'digicommerceBlocksData',
-			array(
-				'products'         => $this->get_products_for_selector(),
-				'currencies'       => DigiCommerce()->get_currencies(),
-				'selectedCurrency' => DigiCommerce()->get_option( 'currency', 'USD' ),
-				'currencyPosition' => DigiCommerce()->get_option( 'currency_position', 'left' ),
-				'checkoutUrl'      => get_permalink( DigiCommerce()->get_option( 'checkout_page_id', '' ) ),
-			)
-		);
+	/**
+	 * Enqueue block scripts with proper dependencies
+	 */
+	private function enqueue_block_scripts() {
+		$build_dir = DIGICOMMERCE_PLUGIN_DIR . 'assets/blocks/';
+
+		if ( is_dir( $build_dir ) ) {
+			$block_folders = array_filter( glob( $build_dir . '*' ), 'is_dir' );
+
+			foreach ( $block_folders as $block_folder ) {
+				$block_name = basename( $block_folder );
+				$script_path = $block_folder . '/index.js';
+				$script_handle = 'digicommerce-' . $block_name;
+
+				if ( file_exists( $script_path ) && ! wp_script_is( $script_handle, 'enqueued' ) ) {
+					wp_enqueue_script(
+						$script_handle,
+						DIGICOMMERCE_PLUGIN_URL . 'assets/blocks/' . $block_name . '/index.js',
+						array( 'digicommerce-globals' ),
+						DIGICOMMERCE_VERSION,
+						true
+					);
+				}
+			}
+		}
 	}
 
 	/**
@@ -147,245 +347,6 @@ class DigiCommerce_Blocks {
 			},
 			$products
 		);
-	}
-
-	/**
-	 * Register blocks
-	 */
-	public function register_blocks() {
-		// Register Archives block with PHP rendering.
-		register_block_type(
-			'digicommerce/archives',
-			array(
-				'apiVersion'       => 2,
-				'title'            => __( 'Archives', 'digicommerce' ),
-				'category'         => 'digicommerce',
-				'editor_script'    => 'digicommerce-blocks-editor',
-				'editor_style'     => 'wp-edit-blocks',
-				'render_in_editor' => true,
-				'description'      => __( 'Display a grid of products with customizable settings', 'digicommerce' ),
-				'attributes'       => array(
-					'postsPerPage'       => array(
-						'type'    => 'number',
-						'default' => 9,
-					),
-					'columns'            => array(
-						'type'    => 'number',
-						'default' => 3,
-					),
-					'showTitle'          => array(
-						'type'    => 'boolean',
-						'default' => true,
-					),
-					'showPrice'          => array(
-						'type'    => 'boolean',
-						'default' => true,
-					),
-					'showButton'         => array(
-						'type'    => 'boolean',
-						'default' => true,
-					),
-					'showPagination'     => array(
-						'type'    => 'boolean',
-						'default' => true,
-					),
-					'selectedCategories' => array(
-						'type'    => 'array',
-						'default' => array(),
-					),
-					'selectedTags'       => array(
-						'type'    => 'array',
-						'default' => array(),
-					),
-				),
-				'render_callback'       => array(
-					$this,
-					'render_archives_block',
-				),
-			)
-		);
-	}
-
-	/**
-	 * Render Archives block
-	 *
-	 * @param array  $attributes Block attributes.
-	 * @param string $content Block content.
-	 */
-	public function render_archives_block( $attributes, $content ) {
-		$product = DigiCommerce_Product::instance();
-		$args    = array(
-			'post_type'      => 'digi_product',
-			'posts_per_page' => $attributes['postsPerPage'],
-			'paged'          => get_query_var( 'paged' ) ? get_query_var( 'paged' ) : 1,
-		);
-
-		// Add category filter
-		if ( ! empty( $attributes['selectedCategories'] ) ) {
-			$args['tax_query'][] = array(
-				'taxonomy' => 'digi_product_cat',
-				'field'    => 'id',
-				'terms'    => $attributes['selectedCategories'],
-			);
-		}
-
-		// Add tag filter
-		if ( ! empty( $attributes['selectedTags'] ) ) {
-			$args['tax_query'][] = array(
-				'taxonomy' => 'digi_product_tag',
-				'field'    => 'id',
-				'terms'    => $attributes['selectedTags'],
-			);
-		}
-
-		$query           = new WP_Query( $args );
-		$wrapper_classes = 'digicommerce-archive digicommerce';
-		$wrapper_style   = '';
-
-		// Add background color if set
-		if ( ! empty( $attributes['backgroundColor'] ) ) {
-			$wrapper_style .= 'background-color: ' . $attributes['backgroundColor'] . ';';
-		}
-
-		ob_start();
-		?>
-		<div class="<?php echo esc_attr( $wrapper_classes ); ?>" style="<?php echo esc_attr( $wrapper_style ); ?>">
-			<div class="dc-inner col-<?php echo esc_attr( $attributes['columns'] ); ?>">
-				<?php
-				if ( $query->have_posts() ) :
-					while ( $query->have_posts() ) :
-						$query->the_post();
-						$product_id = get_the_ID();
-						$price_mode = get_post_meta( $product_id, 'digi_price_mode', true );
-						$price      = get_post_meta( $product_id, 'digi_price', true );
-						$sale_price = get_post_meta( $product_id, 'digi_sale_price', true );
-						$variations = get_post_meta( $product_id, 'digi_price_variations', true );
-						?>
-						<article class="product-card">
-							<a href="<?php the_permalink(); ?>" class="product-link">
-								<?php
-								if ( has_post_thumbnail() ) :
-									?>
-									<div class="product-img">
-										<?php the_post_thumbnail( 'large' ); ?>
-									</div>
-									<?php
-								endif;
-								?>
-
-								<div class="product-content">
-									<?php
-									if ( $attributes['showTitle'] ) :
-										?>
-										<h2>
-											<?php the_title(); ?>
-										</h2>
-										<?php
-									endif;
-
-									if ( $attributes['showPrice'] ) :
-										if ( 'variations' === $price_mode ) :
-											if ( ! empty( $variations ) ) :
-												$prices      = array();
-												$sale_prices = array();
-
-												foreach ( $variations as $variation ) {
-													$variation_price      = floatval( $variation['price'] );
-													$variation_sale_price = ! empty( $variation['salePrice'] ) ? floatval( $variation['salePrice'] ) : 0;
-
-													if ( $variation_price > 0 ) {
-														$prices[] = $variation_price;
-														if ( $variation_sale_price > 0 && $variation_sale_price < $variation_price ) {
-															$sale_prices[] = $variation_sale_price;
-														}
-													}
-												}
-
-												if ( ! empty( $prices ) ) :
-													$lowest_regular = min( $prices );
-													$lowest_sale    = ! empty( $sale_prices ) ? min( $sale_prices ) : 0;
-													?>
-													<div class="product-prices">
-														<span class="from"><?php esc_html_e( 'From:', 'digicommerce' ); ?></span>
-														<?php
-														if ( $lowest_sale && $lowest_sale < $lowest_regular ) {
-															echo wp_kses_post( $product->format_price( $lowest_sale, 'normal-price' ) );
-															echo wp_kses_post( $product->format_price( $lowest_regular, 'regular-price' ) );
-														} else {
-															echo wp_kses_post( $product->format_price( $lowest_regular, 'normal-price' ) );
-														}
-														?>
-													</div>
-													<?php
-												endif;
-											endif;
-										else :
-											$price      = get_post_meta( $product_id, 'digi_price', true );
-											$sale_price = get_post_meta( $product_id, 'digi_sale_price', true );
-
-											if ( $sale_price && $sale_price < $price ) :
-												?>
-												<div class="product-prices">
-													<?php
-													echo wp_kses_post( $product->format_price( $sale_price, 'normal-price' ) );
-													echo wp_kses_post( $product->format_price( $price, 'regular-price' ) );
-													?>
-												</div>
-												<?php
-											else :
-												echo wp_kses_post( $product->format_price( $price, 'normal-price' ) );
-											endif;
-										endif;
-									endif;
-									?>
-								</div>
-							</a>
-
-							<?php
-							if ( $attributes['showButton'] ) :
-								?>
-								<div class="product-button">
-									<a href="<?php the_permalink(); ?>">
-										<?php esc_html_e( 'View Product', 'digicommerce' ); ?>
-									</a>
-								</div>
-								<?php
-							endif;
-							?>
-						</article>
-						<?php
-					endwhile;
-				else :
-					?>
-					<p class="no-product">
-						<?php esc_html_e( 'No products found.', 'digicommerce' ); ?>
-					</p>
-					<?php
-				endif;
-				?>
-			</div>
-
-			<?php if ( $attributes['showPagination'] && $query->max_num_pages > 1 ) : ?>
-				<nav class="pagination">
-					<?php
-					echo paginate_links( // phpcs:ignore
-						array(
-							'base'      => str_replace( 999999999, '%#%', esc_url( get_pagenum_link( 999999999 ) ) ),
-							'format'    => '?paged=%#%',
-							'current'   => max( 1, get_query_var( 'paged' ) ),
-							'total'     => $query->max_num_pages,
-							'prev_text' => '&laquo;',
-							'next_text' => '&raquo;',
-							'type'      => 'list',
-						)
-					);
-					?>
-				</nav>
-			<?php endif; ?>
-		</div>
-		<?php
-		wp_reset_postdata();
-		return ob_get_clean();
 	}
 }
 

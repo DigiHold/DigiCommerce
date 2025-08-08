@@ -67,6 +67,7 @@ $allowed_html = array(
 			<?php if ( has_post_thumbnail() ) : ?>
 				<div class="w-full aspect-w-1 aspect-h-1 bg-gray-100 rounded-lg overflow-hidden">
 					<a href="<?php echo esc_url( $gallery_images[0]['src'] ); ?>" 
+					class="flex" 
 					data-pswp-index="0" 
 					data-pswp-width="<?php echo esc_attr( $gallery_images[0]['w'] ); ?>" 
 					data-pswp-height="<?php echo esc_attr( $gallery_images[0]['h'] ); ?>">

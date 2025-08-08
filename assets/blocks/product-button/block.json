@@ -1,0 +1,117 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 2,
+    "name": "digicommerce/product-button",
+    "title": "Product Button",
+    "category": "digicommerce",
+    "description": "Display a button that links to a product or checkout.",
+    "keywords": ["product", "button", "link", "shop", "checkout"],
+    "textdomain": "digicommerce",
+    "attributes": {
+        "productId": {
+            "type": "number",
+            "default": 0
+        },
+        "buttonText": {
+            "type": "string",
+            "default": "View Product"
+        },
+        "actionType": {
+            "type": "string",
+            "default": "link"
+        },
+        "variationId": {
+            "type": "number",
+            "default": -1
+        },
+        "showPrice": {
+            "type": "boolean",
+            "default": false
+        },
+        "openInNewTab": {
+            "type": "boolean",
+            "default": false
+        },
+        "textColor": {
+            "type": "string"
+        },
+        "backgroundColor": {
+            "type": "string"
+        },
+        "gradient": {
+            "type": "string"
+        },
+        "fontSize": {
+            "type": "string"
+        },
+        "borderColor": {
+            "type": "string"
+        },
+        "style": {
+            "type": "object",
+            "default": {}
+        }
+    },
+    "supports": {
+        "anchor": true,
+        "align": ["left", "center", "right", "wide", "full"],
+        "spacing": {
+            "margin": true,
+            "padding": {
+                "__experimentalSkipSerialization": true,
+                "__experimentalDefaultControls": {
+                    "padding": true
+                }
+            },
+            "__experimentalDefaultControls": {
+                "margin": true
+            }
+        },
+        "typography": {
+            "fontSize": true,
+            "lineHeight": true,
+            "__experimentalFontFamily": true,
+            "__experimentalFontWeight": true,
+            "__experimentalFontStyle": true,
+            "__experimentalTextTransform": true,
+            "__experimentalTextDecoration": true,
+            "__experimentalLetterSpacing": true,
+            "__experimentalSkipSerialization": true,
+            "__experimentalDefaultControls": {
+                "fontSize": true
+            }
+        },
+        "color": {
+            "text": true,
+            "background": true,
+            "gradients": true,
+            "link": false,
+            "__experimentalSkipSerialization": true,
+            "__experimentalDefaultControls": {
+                "text": true,
+                "background": true
+            }
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "style": true,
+            "width": true,
+            "__experimentalSkipSerialization": true,
+            "__experimentalDefaultControls": {
+                "color": true,
+                "radius": true,
+                "style": true,
+                "width": true
+            }
+        }
+    },
+    "example": {
+        "attributes": {
+            "buttonText": "Buy Now",
+            "showPrice": true
+        }
+    },
+    "style": "file:./style.css",
+    "editorStyle": "file:./style.css"
+}

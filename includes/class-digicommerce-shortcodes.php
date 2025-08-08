@@ -35,6 +35,46 @@ class DigiCommerce_Shortcodes {
 	}
 
 	/**
+	 * Clean shortcode output from wpautop artifacts
+	 *
+	 * @param string $output The output to clean.
+	 * @return string
+	 */
+	private function clean_shortcode_output( $output ) {
+		// Remove empty paragraphs
+		$output = preg_replace( '/<p[^>]*>[\s|&nbsp;]*<\/p>/', '', $output );
+		
+		// Remove <br /> tags at the beginning and end of block elements
+		$output = preg_replace( '/<(div|section|article|aside|nav|form|table|thead|tbody|tfoot|tr|td|th)([^>]*)>\s*<br\s*\/?>/i', '<$1$2>', $output );
+		$output = preg_replace( '/<br\s*\/?>\s*<\/(div|section|article|aside|nav|form|table|thead|tbody|tfoot|tr|td|th)>/i', '</$1>', $output );
+		
+		// Remove <p> tags wrapping block-level elements
+		$output = preg_replace( '/<p[^>]*>\s*(<(?:div|section|article|aside|nav|form|table|ul|ol|h[1-6])[^>]*>)/i', '$1', $output );
+		$output = preg_replace( '/(<\/(?:div|section|article|aside|nav|form|table|ul|ol|h[1-6])>)\s*<\/p>/i', '$1', $output );
+		
+		// Remove unnecessary line breaks after opening tags and before closing tags
+		$output = preg_replace( '/>\s*<br\s*\/?>\s*</i', '><', $output );
+		
+		// Clean up multiple consecutive <br> tags
+		$output = preg_replace( '/(<br\s*\/?>[\s]*){2,}/i', '<br />', $output );
+		
+		// Remove <p> and </p> tags that wrap shortcode content incorrectly
+		$output = preg_replace( '/<p>(?=<(?:div|section|article|aside|nav|form|table|ul|ol|h[1-6]))/i', '', $output );
+		$output = preg_replace( '/(<\/(?:div|section|article|aside|nav|form|table|ul|ol|h[1-6])>)<\/p>/i', '$1', $output );
+		
+		// Remove empty <p> tags with only whitespace or <br> tags
+		$output = preg_replace( '/<p[^>]*>(\s|<br\s*\/?>)*<\/p>/i', '', $output );
+		
+		// Remove <br> tags immediately after block opening tags
+		$output = preg_replace( '/(<(?:h[1-6]|p|div|section|article|li|td|th)[^>]*>)\s*<br\s*\/?>/i', '$1', $output );
+		
+		// Remove <br> tags immediately before block closing tags
+		$output = preg_replace( '/<br\s*\/?>\s*(<\/(?:h[1-6]|p|div|section|article|li|td|th)>)/i', '$1', $output );
+		
+		return $output;
+	}
+
+	/**
 	 * Render account page
 	 *
 	 * @param array $atts Shortcode attributes.
@@ -61,7 +101,12 @@ class DigiCommerce_Shortcodes {
 			DigiCommerce()->get_template( 'account/form-login.php', $args );
 		}
 
-		return ob_get_clean();
+		$output = ob_get_clean();
+		
+		// Clean the output from wpautop artifacts
+		$output = $this->clean_shortcode_output( $output );
+		
+		return $output;
 	}
 
 	/**
@@ -73,20 +118,22 @@ class DigiCommerce_Shortcodes {
 	public function render_reset_password( $atts ) {
 		// Allow backend editing for users with the necessary capabilities
 		if ( is_admin() && current_user_can( 'edit_pages' ) ) {
-			return; // Allow WordPress to handle the page editing.
+			return ''; // Allow WordPress to handle the page editing.
 		}
 
 		// Display message for logged-in admin users on the frontend
 		if ( is_user_logged_in() && ! is_admin() && ! wp_doing_ajax() && current_user_can( 'manage_options' ) ) {
 			ob_start();
 			?>
-			<div class="w-[375px] max-w-[90%] py-16 mdl:py-28 mx-auto">
-				<div class="flex flex-col items-center">
+			<div class="digicommerce-reset-password-notice">
+				<div class="digicommerce-notice-content">
 					<?php esc_html_e( 'You cannot see the password reset form because you are already logged in', 'digicommerce' ); ?>
 				</div>
 			</div>
 			<?php
-			return ob_get_clean();
+			$output = ob_get_clean();
+			$output = $this->clean_shortcode_output( $output );
+			return $output;
 		}
 
 		// Redirect all logged-in non-admin users if they are accessing the page on the frontend
@@ -97,8 +144,8 @@ class DigiCommerce_Shortcodes {
 
 		ob_start();
 
-		$login = isset( $_GET['login'] ) ? sanitize_user( $_GET['login'] ) : ''; // phpcs:ignore
-		$key   = isset( $_GET['key'] ) ? sanitize_text_field( $_GET['key'] ) : ''; // phpcs:ignore
+		$login = isset( $_GET['login'] ) ? sanitize_user( wp_unslash( $_GET['login'] ) ) : ''; // phpcs:ignore
+		$key   = isset( $_GET['key'] ) ? sanitize_text_field( wp_unslash( $_GET['key'] ) ) : ''; // phpcs:ignore
 
 		// Verify reset key
 		$user         = check_password_reset_key( $key, $login );
@@ -114,7 +161,12 @@ class DigiCommerce_Shortcodes {
 
 		DigiCommerce()->get_template( 'account/form-reset-password.php', $args );
 
-		return ob_get_clean();
+		$output = ob_get_clean();
+		
+		// Clean the output from wpautop artifacts
+		$output = $this->clean_shortcode_output( $output );
+		
+		return $output;
 	}
 
 	/**
@@ -138,7 +190,12 @@ class DigiCommerce_Shortcodes {
 
 		DigiCommerce()->get_template( 'checkout/form-checkout.php', $args );
 
-		return ob_get_clean();
+		$output = ob_get_clean();
+		
+		// Clean the output from wpautop artifacts
+		$output = $this->clean_shortcode_output( $output );
+		
+		return $output;
 	}
 
 	/**
@@ -151,12 +208,12 @@ class DigiCommerce_Shortcodes {
 		ob_start();
 
 		// Get order ID and token from URL
-		$order_id = isset( $_GET['order_id'] ) ? absint( $_GET['order_id'] ) : 0;
-		$token    = isset( $_GET['token'] ) ? sanitize_text_field( wp_unslash( $_GET['token'] ) ) : '';
+		$order_id = isset( $_GET['order_id'] ) ? absint( $_GET['order_id'] ) : 0; // phpcs:ignore
+		$token    = isset( $_GET['token'] ) ? sanitize_text_field( wp_unslash( $_GET['token'] ) ) : ''; // phpcs:ignore
 
 		// Verify nonce
 		$nonce_valid = false;
-		if ( isset( $_GET['payment_nonce'] ) && wp_verify_nonce( sanitize_key( $_GET['payment_nonce'] ), 'digicommerce_payment_' . $order_id ) ) {
+		if ( isset( $_GET['payment_nonce'] ) && wp_verify_nonce( sanitize_key( wp_unslash( $_GET['payment_nonce'] ) ), 'digicommerce_payment_' . $order_id ) ) { // phpcs:ignore
 			$nonce_valid = true;
 		}
 
@@ -178,6 +235,14 @@ class DigiCommerce_Shortcodes {
 
 		DigiCommerce()->get_template( 'checkout/payment-success.php', $args );
 
-		return ob_get_clean();
+		$output = ob_get_clean();
+		
+		// Clean the output from wpautop artifacts
+		$output = $this->clean_shortcode_output( $output );
+		
+		return $output;
 	}
 }
+
+// Initialize the shortcodes
+DigiCommerce_Shortcodes::instance();

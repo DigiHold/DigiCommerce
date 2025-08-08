@@ -1,0 +1,13 @@
+/**
+ * DigiCommerce Product Description Block Styles
+ */
+
+.wp-block-digicommerce-product-description {
+    margin: 0 0 var(--wp--preset--spacing--40) 0;
+    padding: 0;
+    word-wrap: break-word;
+
+    p:last-child {
+        margin-bottom: 0;
+    }
+}

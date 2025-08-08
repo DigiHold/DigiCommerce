@@ -1,0 +1,113 @@
+/**
+ * DigiCommerce Order Receipt Block Styles
+ */
+
+.wp-block-digicommerce-order-receipt {
+    border: 1px solid #ddd;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    background: #fff;
+
+    .digicommerce-receipt-header {
+        display: flex;
+        flex-direction: column;
+        gap: 3rem;
+        padding: 2rem;
+
+        &__content {
+            display: grid;
+            grid-template-columns: 1fr;
+            align-items: start;
+            justify-content: space-between;
+            gap: 1rem;
+
+            @media (min-width: 640px) {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        &__logo {
+            img {
+                max-width: 10rem;
+                height: auto;
+            }
+        }
+
+        &__invoice {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            align-items: flex-end;
+
+            @media (max-width: 639px) {
+                align-items: flex-start;
+            }
+        }
+
+        &__order-id {
+            display: flex;
+            gap: 0.5rem;
+            font-size: 2rem;
+            line-height: normal;
+            font-weight: bold;
+            color: var(--dc-dark-blue);
+        }
+
+        &__order-date {
+            display: flex;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+    }
+
+    .digicommerce-receipt-info {
+        display: grid;
+        grid-template-columns: 1fr;
+        justify-content: space-between;
+        gap: 1rem;
+
+        @media (min-width: 640px) {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        &__business,
+        &__billing {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 1rem;
+            line-height: 1.25;
+        }
+
+        &__billing {
+            align-items: flex-end;
+            gap: 1rem;
+            text-align: right;
+
+            @media (max-width: 639px) {
+                align-items: flex-start;
+                text-align: left;
+            }
+        }
+
+        &__business-name,
+        &__billing-company {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--dc-dark-blue);
+        }
+
+        &__business-address,
+        &__billing-address {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        &__status {
+            display: flex;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+    }
+}

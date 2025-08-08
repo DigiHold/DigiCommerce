@@ -1,0 +1,92 @@
+/**
+ * DigiCommerce Product Button Block Styles
+ */
+
+.wp-block-digicommerce-product-button {
+    &.alignleft {
+        text-align: left;
+    }
+
+    &.aligncenter {
+        text-align: center;
+    }
+
+    &.alignright {
+        text-align: right;
+    }
+
+    &.alignwide {
+        width: 100%;
+        max-width: var(--wp--style--global--wide-size);
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    &.alignfull {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* Button inherits all visual styles */
+    .wp-element-button {
+        display: inline-block;
+        box-sizing: border-box;
+        word-break: break-word;
+        text-decoration: none;
+        cursor: pointer;
+
+        /* Ensure font-size inheritance works */
+        font-size: inherit;
+
+        /* Default padding only if none is set inline */
+        &:not([style*='padding']) {
+            padding: 0.75rem 1.5rem;
+        }
+
+        /* Ensure proper transition for hover states */
+        transition: all 0.3s ease;
+
+        &:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+    }
+
+    /* Editor specific styles */
+    .block-editor-block-list__block & {
+        .wp-element-button {
+            /* Ensure button is clickable in editor */
+            pointer-events: none;
+
+            /* Ensure proper display in editor */
+            display: inline-block;
+        }
+    }
+}
+
+/* Ensure preset font sizes work correctly */
+.wp-block-digicommerce-product-button .wp-element-button {
+    &.has-small-font-size {
+        font-size: var(--wp--preset--font-size--small);
+    }
+
+    &.has-medium-font-size {
+        font-size: var(--wp--preset--font-size--medium);
+    }
+
+    &.has-large-font-size {
+        font-size: var(--wp--preset--font-size--large);
+    }
+
+    &.has-x-large-font-size {
+        font-size: var(--wp--preset--font-size--x-large);
+    }
+
+    &.has-xx-large-font-size {
+        font-size: var(--wp--preset--font-size--xx-large);
+    }
+}

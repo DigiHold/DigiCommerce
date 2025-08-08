@@ -1,0 +1,12 @@
+/**
+ * Order Receipt Block Save Component
+ * 
+ * Returns null because this is a dynamic block rendered entirely in PHP
+ */
+
+const DigiCommerceOrderReceiptSave = () => {
+    // Return null for dynamic blocks - all rendering handled by PHP
+    return null;
+};
+
+export default DigiCommerceOrderReceiptSave;

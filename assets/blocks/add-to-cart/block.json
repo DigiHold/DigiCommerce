@@ -1,0 +1,56 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 2,
+    "name": "digicommerce/add-to-cart",
+    "title": "Add to Cart",
+    "category": "digicommerce",
+    "description": "Display an add to cart button with optional variations for the current product.",
+    "keywords": ["add to cart", "buy", "purchase", "button", "variations"],
+    "textdomain": "digicommerce",
+    "attributes": {
+        "buttonText": {
+            "type": "string",
+            "default": ""
+        },
+        "showVariationLabels": {
+            "type": "boolean",
+            "default": true
+        },
+        "style": {
+            "type": "object",
+            "default": {
+                "spacing": {
+                    "margin": {
+                        "bottom": "var(--wp--preset--spacing--50)"
+                    }
+                }
+            }
+        }
+    },
+    "usesContext": ["postId", "postType"],
+    "supports": {
+        "anchor": true,
+        "align": ["wide", "full"],
+        "spacing": {
+            "margin": true,
+            "padding": true,
+            "__experimentalDefaultControls": {
+                "margin": true
+            }
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "style": true,
+            "width": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "buttonText": "Purchase for $29.99",
+            "showVariationLabels": true
+        }
+    },
+    "style": "file:./style.css",
+    "editorStyle": "file:./style.css"
+}

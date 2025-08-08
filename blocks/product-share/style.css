@@ -1,0 +1,130 @@
+/**
+ * DigiCommerce Product Share Block Styles
+ */
+
+.wp-block-digicommerce-product-share {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0 0 var(--wp--preset--spacing--50) 0;
+    padding: 0;
+
+    &.has-text-align-left {
+        .digicommerce-share-buttons {
+            justify-content: flex-start;
+        }
+    }
+
+    &.has-text-align-center {
+        .digicommerce-share-buttons {
+            justify-content: center;
+        }
+    }
+
+    &.has-text-align-right {
+        .digicommerce-share-buttons {
+            justify-content: flex-end;
+        }
+    }
+}
+
+.digicommerce-share-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #374151;
+}
+
+.digicommerce-share-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.digicommerce-share-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    color: #374151;
+    text-decoration: none;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+    position: relative;
+
+    &:hover {
+        background-color: #374151;
+        color: #ffffff;
+        border-color: #374151;
+        transform: translateY(-1px);
+    }
+
+    svg {
+        flex-shrink: 0;
+        fill: currentColor;
+    }
+
+    &.digicommerce-share-facebook:hover {
+        background-color: #1877f2;
+        border-color: #1877f2;
+    }
+
+    &.digicommerce-share-twitter:hover {
+        background-color: #1da1f2;
+        border-color: #1da1f2;
+    }
+
+    &.digicommerce-share-pinterest:hover {
+        background-color: #bd081c;
+        border-color: #bd081c;
+    }
+
+    &.digicommerce-share-linkedin:hover {
+        background-color: #0077b5;
+        border-color: #0077b5;
+    }
+
+    &.digicommerce-share-email:hover {
+        background-color: #6b7280;
+        border-color: #6b7280;
+    }
+}
+
+/* Screen reader text */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .wp-block-digicommerce-product-share {
+        flex-direction: column;
+    }
+
+    .digicommerce-share-link {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    .digicommerce-share-title {
+        font-size: 0.875rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .wp-block-digicommerce-product-share {
+        display: none;
+    }
+}

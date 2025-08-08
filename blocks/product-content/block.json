@@ -1,0 +1,71 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 2,
+    "name": "digicommerce/product-content",
+    "title": "Product Content",
+    "category": "digicommerce",
+    "description": "Display the full product content/description.",
+    "keywords": ["product", "content", "description", "details"],
+    "textdomain": "digicommerce",
+    "attributes": {
+        "showTitle": {
+            "type": "boolean",
+            "default": false
+        },
+        "style": {
+            "type": "object",
+            "default": {
+                "spacing": {
+                    "margin": {
+                        "bottom": "var(--wp--preset--spacing--50)"
+                    }
+                }
+            }
+        }
+    },
+    "usesContext": ["postId", "postType"],
+    "supports": {
+        "anchor": true,
+        "align": ["wide", "full"],
+        "spacing": {
+            "margin": true,
+            "padding": true,
+            "__experimentalDefaultControls": {
+                "margin": true
+            }
+        },
+        "typography": {
+            "fontSize": true,
+            "lineHeight": true,
+            "textAlign": true,
+            "__experimentalFontFamily": true,
+            "__experimentalFontWeight": true,
+            "__experimentalFontStyle": true,
+            "__experimentalTextTransform": true,
+            "__experimentalTextDecoration": true,
+            "__experimentalLetterSpacing": true,
+            "__experimentalDefaultControls": {
+                "fontSize": true
+            }
+        },
+        "color": {
+            "text": true,
+            "background": true,
+            "gradients": true,
+            "link": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "style": true,
+            "width": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "showTitle": true
+        }
+    },
+    "style": "file:./style.css",
+    "editorStyle": "file:./style.css"
+}

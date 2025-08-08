@@ -1,0 +1,31 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 2,
+    "name": "digicommerce/order-details",
+    "title": "Order Details",
+    "category": "digicommerce",
+    "description": "Display order table with products, prices, and download buttons.",
+    "keywords": ["order", "details", "products", "download", "table"],
+    "textdomain": "digicommerce",
+    "attributes": {},
+    "supports": {
+        "anchor": true,
+        "align": ["wide", "full"],
+        "spacing": {
+            "margin": true,
+            "padding": true
+        },
+        "color": {
+            "background": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "style": true,
+            "width": true
+        }
+    },
+    "example": {},
+    "style": "file:./style.css",
+    "editorStyle": "file:./style.css"
+}

@@ -1,0 +1,72 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 2,
+    "name": "digicommerce/products-grid",
+    "title": "Products Grid",
+    "category": "digicommerce",
+    "description": "Display products in a grid layout with automatic context detection.",
+    "keywords": ["products", "grid", "archive", "shop", "catalog"],
+    "textdomain": "digicommerce",
+    "attributes": {
+        "columns": {
+            "type": "number",
+            "default": 3
+        },
+        "rows": {
+            "type": "number",
+            "default": 4
+        },
+        "showPagination": {
+            "type": "boolean",
+            "default": true
+        },
+        "showImage": {
+            "type": "boolean",
+            "default": true
+        },
+        "showTitle": {
+            "type": "boolean",
+            "default": true
+        },
+        "showPrice": {
+            "type": "boolean",
+            "default": true
+        },
+        "showButton": {
+            "type": "boolean",
+            "default": true
+        }
+    },
+    "supports": {
+        "anchor": true,
+        "align": ["wide", "full"],
+        "spacing": {
+            "margin": true,
+            "padding": true,
+            "__experimentalDefaultControls": {
+                "margin": true,
+                "padding": true
+            }
+        },
+        "color": {
+            "text": true,
+            "background": true,
+            "gradients": true,
+            "link": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "style": true,
+            "width": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "columns": 1,
+            "rows": 1
+        }
+    },
+    "style": "file:./style.css",
+    "editorStyle": "file:./style.css"
+}

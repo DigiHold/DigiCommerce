@@ -1,0 +1,1 @@
+(()=>{(function(){"use strict";document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll(".digicommerce-products-sorting__select").forEach(function(e){e.addEventListener("change",function(){let t=this.closest("form");t&&t.submit()})})})})();})();

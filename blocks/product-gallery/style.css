@@ -1,0 +1,74 @@
+/**
+ * DigiCommerce Product Gallery Block Styles
+ */
+
+.wp-block-digicommerce-product-gallery {
+    margin: 0 0 var(--wp--preset--spacing--50) 0;
+    padding: 0;
+
+    .gallery-main-container {
+        width: 100%;
+        background-color: #f6f7f9;
+        border-radius: 8px;
+        overflow: hidden;
+
+        a {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .gallery-main-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        display: flex;
+    }
+
+    .gallery-thumbnails {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+
+        @media (max-width: 768px) {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        @media (max-width: 480px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+    }
+
+    .gallery-thumbnail-container {
+        background-color: #f6f7f9;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .gallery-thumbnail-button {
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: none;
+        padding: 0;
+        cursor: pointer;
+        display: flex;
+    }
+
+    .gallery-thumbnail-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        display: flex;
+    }
+
+    a:hover .gallery-main-image {
+        transform: scale(1.02);
+        transition: transform 0.3s ease;
+    }
+}

@@ -1,0 +1,52 @@
+/**
+ * DigiCommerce Products Sorting Block Styles
+ */
+
+.wp-block-digicommerce-products-sorting {
+    margin: 0 0 2rem 0;
+    padding: 0;
+
+    /* Form container */
+    .digicommerce-products-sorting__form {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .digicommerce-products-sorting__label {
+        margin: 0;
+    }
+
+    /* Alignment variations */
+    &.has-text-align-left {
+        .digicommerce-products-sorting__form {
+            justify-content: flex-start;
+        }
+    }
+
+    &.has-text-align-center {
+        .digicommerce-products-sorting__form {
+            justify-content: center;
+        }
+    }
+
+    &.has-text-align-right {
+        .digicommerce-products-sorting__form {
+            justify-content: flex-end;
+        }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+        .digicommerce-products-sorting__form {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.5rem;
+        }
+
+        .digicommerce-products-sorting__select {
+            width: 100%;
+        }
+    }
+}

@@ -1,0 +1,119 @@
+/**
+ * DigiCommerce Product Meta Block Styles
+ */
+
+.wp-block-digicommerce-product-meta {
+    margin: 0 0 var(--wp--preset--spacing--40) 0;
+    padding: 0;
+}
+
+.digicommerce-meta {
+    &-item {
+        margin-bottom: 0.75rem;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        &.digicommerce-meta-categories {
+            .digicommerce-meta-label {
+                color: #374151;
+            }
+        }
+
+        &.digicommerce-meta-tags {
+            .digicommerce-meta-label {
+                color: #374151;
+            }
+        }
+    }
+
+    &-label {
+        font-weight: 600;
+        margin-right: 0.5rem;
+
+        [dir='rtl'] & {
+            margin-right: 0;
+            margin-left: 0.5rem;
+        }
+    }
+
+    &-value {
+        color: #6b7280;
+    }
+
+    &-link {
+        color: #2563eb;
+        text-decoration: none;
+        transition: color 0.15s ease-in-out;
+
+        &:hover {
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+
+        &:focus {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+            border-radius: 2px;
+        }
+    }
+}
+
+/* Layout variants */
+.digicommerce-meta-layout {
+    &-stacked {
+        .digicommerce-meta-item {
+            display: flex;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+
+        .digicommerce-meta-label {
+            flex-shrink: 0;
+            margin-right: 0;
+
+            [dir='rtl'] & {
+                margin-left: 0;
+            }
+        }
+
+        .digicommerce-meta-value {
+            flex: 1;
+            min-width: 0;
+        }
+    }
+
+    &-inline {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+
+        .digicommerce-meta-item {
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+
+        .digicommerce-meta-label {
+            margin-right: 0.25rem;
+
+            [dir='rtl'] & {
+                margin-right: 0;
+                margin-left: 0.25rem;
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            flex-direction: column;
+            gap: 0.5rem;
+
+            .digicommerce-meta-item {
+                white-space: normal;
+            }
+        }
+    }
+}

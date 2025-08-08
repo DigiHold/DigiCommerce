@@ -289,14 +289,17 @@ Yes, DigiCommerce is optimized for performance even with large product catalogs.
 5. **Pro Addons**: Browse and manage premium extensions for DigiCommerce Pro.
 6. **Product Custom Post Type**: Create and manage digital products with our intuitive interface.
 7. **Single Product Page**: Professional product display optimized for conversions.
-8. **Checkout Page With All Fields**: Checout with all fields and login form.
+8. **Checkout Page With All Fields**: Checkout with all fields and login form.
 9. **Checkout Page Minimal Fields**: Streamlined, conversion-focused checkout experience.
 10. **Account Page**: Customer account dashboard for managing purchases and downloads.
 11. **Order Details**: Detailed view of individual order information and status.
 
 == Changelog ==
 
-= 1.0.3 =
+= 1.0.3 - August 8, 2025 =
+* Added: Many custom blocks.
+* Added: Templates for archive products, single product and payment success page for block theme.
+* Added: Full compatibility with block themes.
 * Added: Body classes to each DigiCommerce pages.
 * Fixed: digicommerceVars was called more than once.
 * Fixed: Issue with Add To Cart button if Side Cart from DigiCommerce Pro enabled.
