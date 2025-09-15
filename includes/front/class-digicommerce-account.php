@@ -597,12 +597,27 @@ class DigiCommerce_Account {
 			exit;
 		}
 
-		// Redirect non-admins from wp-admin
+		// Redirect non-admins from wp-admin (but allow WordPress core endpoints)
 		if ( strpos( $current_url, '/wp-admin' ) !== false &&
 			! ( current_user_can( 'manage_options' ) ||
 				current_user_can( 'edit_posts' ) ||
 				current_user_can( 'edit_pages' ) )
 			) {
+			
+			// Allow WordPress core endpoints that frontend needs
+			$allowed_endpoints = array(
+				'/wp-admin/admin-post.php',  // Frontend form processing
+				'/wp-admin/admin-ajax.php',  // AJAX requests
+				'/wp-admin/async-upload.php' // File uploads
+			);
+			
+			foreach ( $allowed_endpoints as $endpoint ) {
+				if ( strpos( $current_url, $endpoint ) !== false ) {
+					return; // Allow access to these endpoints
+				}
+			}
+			
+			// Block access to actual admin pages
 			wp_safe_redirect( home_url() );
 			exit;
 		}

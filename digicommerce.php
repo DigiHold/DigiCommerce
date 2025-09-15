@@ -3,13 +3,13 @@
  * Plugin Name: DigiCommerce
  * Plugin URI: https://digicommerce.me/
  * Description: Powerful ecommerce plugin to sell digital products, services and online courses.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: DigiHold
  * Author URI: https://digihold.me?utm_source=wordpress.org&utm_medium=referral&utm_campaign=plugin_directory&utm_content=digicommerce
  * Text Domain: digicommerce
  * Domain Path: /languages
  * Requires at least: 6.0
- * Tested up to: 6.7
+ * Tested up to: 6.8
  * Requires PHP: 7.4
  * Network: false
  * License: GPL v2 or later
@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 
 // Define constants first.
 if ( ! defined( 'DIGICOMMERCE_VERSION' ) ) {
-	define( 'DIGICOMMERCE_VERSION', '1.0.3' );
+	define( 'DIGICOMMERCE_VERSION', '1.0.4' );
 }
 if ( ! defined( 'DIGICOMMERCE_PLUGIN_DIR' ) ) {
 	define( 'DIGICOMMERCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );

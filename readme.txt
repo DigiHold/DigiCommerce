@@ -4,7 +4,7 @@ Tags: ecommerce, shop, digital products, appointments, sell online
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -295,6 +295,9 @@ Yes, DigiCommerce is optimized for performance even with large product catalogs.
 11. **Order Details**: Detailed view of individual order information and status.
 
 == Changelog ==
+
+= 1.0.4 =
+* Fixed: Issue with admin page redirection when using custom ajax call or form submission.
 
 = 1.0.3 - August 8, 2025 =
 * Added: Many custom blocks.
