@@ -296,7 +296,9 @@ Yes, DigiCommerce is optimized for performance even with large product catalogs.
 
 == Changelog ==
 
-= 1.0.4 =
+= 1.0.4 - October 21, 2025 =
+* Fixed: Issue with subscription for DigiCommerce Pro.
+* Fixed: Issue with URL parameters on the My Account page.
 * Fixed: Issue with admin page redirection when using custom ajax call or form submission.
 
 = 1.0.3 - August 8, 2025 =

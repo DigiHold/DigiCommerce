@@ -375,6 +375,8 @@ class DigiCommerce_Orders {
 				);
 			}
 
+			$wpdb->query( 'COMMIT' ); // phpcs:ignore
+
 			// Handle subscriptions if DigiCommerce Pro is active
 			if ( class_exists( 'DigiCommerce_Pro' ) ) {
 				foreach ( $order_data['items'] as $item ) {
@@ -398,8 +400,6 @@ class DigiCommerce_Orders {
 					}
 				}
 			}
-
-			$wpdb->query( 'COMMIT' ); // phpcs:ignore
 
 			// Record coupon usage if discount was applied
 			if ( ! empty( $order_data['discount_code'] ) && ! empty( $order_data['discount_amount'] ) ) {
