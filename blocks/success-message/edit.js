@@ -37,6 +37,7 @@ const DigiCommerceSuccessMessageEdit = ({ attributes, setAttributes }) => {
                         checked={isExpiredView}
                         onChange={(value) => setIsExpiredView(value)}
                         help={__('Preview how the block looks when session is expired.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
                 </PanelBody>
 
@@ -54,6 +55,7 @@ const DigiCommerceSuccessMessageEdit = ({ attributes, setAttributes }) => {
                         checked={showIcon}
                         onChange={(value) => setAttributes({ showIcon: value })}
                         help={__('Display the clock icon for expired sessions.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
 
                     <TextControl

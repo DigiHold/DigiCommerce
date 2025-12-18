@@ -186,30 +186,35 @@ const DigiCommerceProductsGridEdit = ({ attributes, setAttributes }) => {
                         label={__('Show Product Image', 'digicommerce')}
                         checked={showImage}
                         onChange={(value) => setAttributes({ showImage: value })}
+						__nextHasNoMarginBottom={true}
                     />
 
                     <ToggleControl
                         label={__('Show Product Title', 'digicommerce')}
                         checked={showTitle}
                         onChange={(value) => setAttributes({ showTitle: value })}
+						__nextHasNoMarginBottom={true}
                     />
 
                     <ToggleControl
                         label={__('Show Product Price', 'digicommerce')}
                         checked={showPrice}
                         onChange={(value) => setAttributes({ showPrice: value })}
+						__nextHasNoMarginBottom={true}
                     />
 
                     <ToggleControl
                         label={__('Show View Button', 'digicommerce')}
                         checked={showButton}
                         onChange={(value) => setAttributes({ showButton: value })}
+						__nextHasNoMarginBottom={true}
                     />
 
                     <ToggleControl
                         label={__('Show Pagination', 'digicommerce')}
                         checked={showPagination}
                         onChange={(value) => setAttributes({ showPagination: value })}
+						__nextHasNoMarginBottom={true}
                     />
                 </PanelBody>
             </InspectorControls>

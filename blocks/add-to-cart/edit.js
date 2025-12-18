@@ -49,6 +49,7 @@ const DigiCommerceAddToCartEdit = ({ attributes, setAttributes }) => {
                         checked={showVariationLabels}
                         onChange={(value) => setAttributes({ showVariationLabels: value })}
                         help={__('Show "Select an option" label above variations.', 'digicommerce')}
+                        __nextHasNoMarginBottom={true}
                     />
                 </PanelBody>
             </InspectorControls>

@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 		<div id="profile-message" class="hidden rounded-md p-4 mb-6"></div>
 
 		<!-- Profile Fields -->
-		<div class="grid sm:grid-cols-2 gap-6">
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
 			<div class="field relative">
 				<input type="text" id="billing_first_name" name="billing_first_name" class="default-transition" value="<?php echo esc_attr( $billing_info['first_name'] ?? '' ); ?>" required>
 				<label for="billing_first_name">
@@ -105,7 +105,7 @@ defined( 'ABSPATH' ) || exit;
 				</select>
 			</div>
 
-			<div class="field relative col-span-6 lg:col-span-2">
+			<div class="field relative col-span-2">
 				<input type="text" id="billing_state" name="billing_state" class="default-transition" value="<?php echo esc_attr( $billing_info['state'] ?? '' ); ?>">
 				<label for="billing_state">
 					<?php esc_html_e( 'State', 'digicommerce' ); ?>

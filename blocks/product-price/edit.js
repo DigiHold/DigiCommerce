@@ -70,6 +70,7 @@ const DigiCommerceProductPriceEdit = ({ attributes, setAttributes }) => {
                         checked={showVariations}
                         onChange={(value) => setAttributes({ showVariations: value })}
                         help={__('Display "From:" prefix for products with price variations.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
                 </PanelBody>
             </InspectorControls>

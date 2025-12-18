@@ -18,7 +18,7 @@
     } = wp.components;
     const { useSelect, useDispatch } = wp.data;
     const { useState, useEffect } = wp.element;
-    const { __ } = wp.i18n;
+    const { __, sprintf } = wp.i18n;
 
     // Shared utility functions
     const formatFileName = (fileName) => {

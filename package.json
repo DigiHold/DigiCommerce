@@ -2,6 +2,9 @@
     "name": "digicommerce",
     "version": "1.0.3",
     "description": "WordPress plugin to sell digital products and services easily.",
+    "overrides": {
+        "glob": ">=10.5.0"
+    },
     "scripts": {
         "clean": "rm -rf assets/css/* assets/js/*",
         "clean:ds_store": "find . -name '.DS_Store' -type f -delete",
@@ -43,7 +46,7 @@
         "build:js-globals": "esbuild ./resources/js/blocks/globals.js --bundle --minify --outfile=assets/js/blocks/globals.js --loader:.js=jsx",
         "watch": "npm run clean && npm run clean:ds_store && concurrently \"npm run photoswipe\" \"npm run copy:vendor-js\" \"npm run dev:css-base\" \"npm run dev:css-front\" \"npm run dev:css-admin\" \"npm run dev:css-pro-addons\" \"npm run dev:css-wizard\" \"npm run dev:css-review-notice\" \"npm run dev:css-orders-admin\" \"npm run dev:css-dashboard\" \"npm run dev:css-reports\" \"npm run dev:css-import-export\" \"npm run dev:css-product-metaboxes\" \"npm run dev:css-sidebar\" \"npm run dev:js-front\" \"npm run dev:js-admin\" \"npm run dev:js-blocks\" \"npm run dev:js-sidebar\" \"npm run dev:js-globals\"",
         "build": "npm run clean && npm run clean:ds_store && npm run photoswipe && npm run copy:vendor-js && npm run build:css-base && npm run build:css-front && npm run build:css-admin && npm run build:css-pro-addons && npm run build:css-wizard && npm run build:css-review-notice && npm run build:css-orders-admin && npm run build:css-dashboard && npm run build:css-reports && npm run build:css-import-export && npm run build:css-product-metaboxes && npm run build:css-sidebar && npm run build:js-front && npm run build:js-admin && npm run build:js-blocks && npm run build:js-sidebar && npm run build:js-globals",
-        "pack": "npm run build && find . -name '.DS_Store' -type f -delete && zip -r digicommerce.zip . -x '*node_modules*' -x '*/node_modules/*' -x '*/.*' -x '*.DS_Store' -x '*__MACOSX*' -x 'package.json' -x 'package-lock.json' -x 'tailwind*.config.js' -x 'postcss.config.js' -x 'extract-classes.js' -x 'build-blocks.js' -x 'composer.json' -x 'composer.lock' -x 'CONTRIBUTING.md' -x 'README.md' -x '.gitattributes' -x '.gitignore' -x '.prettierignore' -x 'prettier.config.mjs' -x 'phpcs.xml' -x '.git/*' -x '.git/**/*'",
+        "pack": "npm run build && find . -name '.DS_Store' -type f -delete && zip -r digicommerce.zip . -x '*node_modules*' -x '*/node_modules/*' -x '.*' -x '*/.*' -x '*.DS_Store' -x '*__MACOSX*' -x 'package.json' -x 'package-lock.json' -x 'postcss.config.js' -x 'composer.json' -x 'composer.lock' -x '.claude/*' -x '*.md' -x 'phpcs.xml' -x '.git/*' -x '.git/**/*'",
         "format": "prettier --write \"**/*.{js,jsx,ts,tsx,css,md,json}\""
     },
     "devDependencies": {
@@ -53,7 +56,7 @@
         "clean-css-cli": "^5.6.2",
         "concurrently": "^8.2.2",
         "cssnano": "^6.0.1",
-        "esbuild": "^0.19.11",
+        "esbuild": "^0.25.0",
         "postcss": "^8.4.32",
         "postcss-cli": "^11.0.0",
         "postcss-import": "^15.1.0",

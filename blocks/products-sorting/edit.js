@@ -41,6 +41,7 @@ const DigiCommerceProductsSortingEdit = ({ attributes, setAttributes }) => {
                         checked={showLabel}
                         onChange={(value) => setAttributes({ showLabel: value })}
                         help={__('Display the label text before the dropdown.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
 
                     {showLabel && (

@@ -2,9 +2,9 @@
 Contributors: digihold
 Tags: ecommerce, shop, digital products, appointments, sell online
 Requires at least: 5.8
-Tested up to: 6.8
+Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -295,6 +295,9 @@ Yes, DigiCommerce is optimized for performance even with large product catalogs.
 11. **Order Details**: Detailed view of individual order information and status.
 
 == Changelog ==
+
+= 1.0.5 - December 18, 2025 =
+* Fixed: JavaScript issues.
 
 = 1.0.4 - October 21, 2025 =
 * Fixed: Issue with subscription for DigiCommerce Pro.

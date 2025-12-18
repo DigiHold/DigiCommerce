@@ -97,6 +97,7 @@ const DigiCommerceProductMetaEdit = ({ attributes, setAttributes }) => {
                         checked={showCategories}
                         onChange={(value) => setAttributes({ showCategories: value })}
                         help={__('Display product categories.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
 
                     <ToggleControl
@@ -104,6 +105,7 @@ const DigiCommerceProductMetaEdit = ({ attributes, setAttributes }) => {
                         checked={showTags}
                         onChange={(value) => setAttributes({ showTags: value })}
                         help={__('Display product tags.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
 
                     <SelectControl

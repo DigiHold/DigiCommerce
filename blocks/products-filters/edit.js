@@ -97,6 +97,7 @@ const DigiCommerceProductsFiltersEdit = ({ attributes, setAttributes }) => {
                         label={__('Show Categories', 'digicommerce')}
                         checked={showCategories}
                         onChange={(value) => setAttributes({ showCategories: value })}
+						__nextHasNoMarginBottom={true}
                     />
 
                     {showCategories && (
@@ -112,6 +113,7 @@ const DigiCommerceProductsFiltersEdit = ({ attributes, setAttributes }) => {
                         label={__('Show Tags', 'digicommerce')}
                         checked={showTags}
                         onChange={(value) => setAttributes({ showTags: value })}
+						__nextHasNoMarginBottom={true}
                     />
 
                     {showTags && (
@@ -128,6 +130,7 @@ const DigiCommerceProductsFiltersEdit = ({ attributes, setAttributes }) => {
                         checked={showCount}
                         onChange={(value) => setAttributes({ showCount: value })}
                         help={__('Display the number of products in each category/tag.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
                 </PanelBody>
             </InspectorControls>

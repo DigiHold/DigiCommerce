@@ -152,6 +152,7 @@ const DigiCommerceProductGalleryEdit = ({ attributes, setAttributes }) => {
                         checked={showThumbnails}
                         onChange={(value) => setAttributes({ showThumbnails: value })}
                         help={__('Display thumbnail images for gallery navigation.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
 
                     {showThumbnails && (
@@ -169,6 +170,7 @@ const DigiCommerceProductGalleryEdit = ({ attributes, setAttributes }) => {
                         checked={enableLightbox}
                         onChange={(value) => setAttributes({ enableLightbox: value })}
                         help={__('Allow users to view full-size images in a lightbox.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
                 </PanelBody>
             </InspectorControls>

@@ -63,6 +63,7 @@ const DigiCommerceProductContentEdit = ({ attributes, setAttributes }) => {
                         checked={showTitle}
                         onChange={(value) => setAttributes({ showTitle: value })}
                         help={__('Display "Description" title above the content.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
                 </PanelBody>
             </InspectorControls>

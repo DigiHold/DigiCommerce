@@ -84,6 +84,7 @@ const DigiCommerceProductShareEdit = ({ attributes, setAttributes }) => {
                         label={__('Show Title', 'digicommerce')}
                         checked={showTitle}
                         onChange={(value) => setAttributes({ showTitle: value })}
+						__nextHasNoMarginBottom={true}
                     />
 
                     {showTitle && (

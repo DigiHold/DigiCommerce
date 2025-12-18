@@ -53,6 +53,7 @@ const DigiCommerceProductFeaturesEdit = ({ attributes, setAttributes }) => {
                         checked={showTitle}
                         onChange={(value) => setAttributes({ showTitle: value })}
                         help={__('Display a title above the features table.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
 
                     {showTitle && (
@@ -70,6 +71,7 @@ const DigiCommerceProductFeaturesEdit = ({ attributes, setAttributes }) => {
                         checked={showBorders}
                         onChange={(value) => setAttributes({ showBorders: value })}
                         help={__('Add borders to the features table.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
 
                     <ToggleControl
@@ -77,6 +79,7 @@ const DigiCommerceProductFeaturesEdit = ({ attributes, setAttributes }) => {
                         checked={alternateRows}
                         onChange={(value) => setAttributes({ alternateRows: value })}
                         help={__('Apply alternating background colors to table rows.', 'digicommerce')}
+						__nextHasNoMarginBottom={true}
                     />
                 </PanelBody>
             </InspectorControls>

@@ -216,12 +216,14 @@ const DigiCommerceProductButtonEdit = ({ attributes, setAttributes }) => {
 						label={__('Show Price', 'digicommerce')}
 						checked={showPrice}
 						onChange={(value) => setAttributes({ showPrice: value })}
+						__nextHasNoMarginBottom={true}
 					/>
 
 					<ToggleControl
 						label={__('Open in New Tab', 'digicommerce')}
 						checked={openInNewTab}
 						onChange={(value) => setAttributes({ openInNewTab: value })}
+						__nextHasNoMarginBottom={true}
 					/>
 				</PanelBody>
 			</InspectorControls>
